@@ -151,7 +151,7 @@ class SimpleSQLiteDB {
       const upperSql = sql.toUpperCase();
 
       if (upperSql.includes('INSERT INTO CUSTOMERS')) {
-        const id = this.generateId('customers');
+        const id = params[0];
         const customer = {
           id,
           name: params[1],
@@ -167,7 +167,7 @@ class SimpleSQLiteDB {
       }
 
       if (upperSql.includes('INSERT INTO SITES')) {
-        const id = this.generateId('sites');
+        const id = params[0];
         const site = {
           id,
           customer_id: params[1],
@@ -184,7 +184,7 @@ class SimpleSQLiteDB {
       }
 
       if (upperSql.includes('INSERT INTO DOCUMENTS')) {
-        const id = this.generateId('documents');
+        const id = params[0];
         const doc = {
           id,
           site_id: params[1],
@@ -204,7 +204,7 @@ class SimpleSQLiteDB {
       }
 
       if (upperSql.includes('INSERT INTO CHUNKS')) {
-        const id = this.generateId('chunks');
+        const id = params[0];
         const chunk = {
           id,
           document_id: params[1],
@@ -220,7 +220,7 @@ class SimpleSQLiteDB {
       }
 
       if (upperSql.includes('INSERT INTO CONVERSATIONS')) {
-        const id = this.generateId('conversations');
+        const id = params[0];
         const conversation = {
           id,
           site_id: params[1],
@@ -242,7 +242,7 @@ class SimpleSQLiteDB {
       }
 
       if (upperSql.includes('INSERT INTO MESSAGES')) {
-        const id = this.generateId('messages');
+        const id = params[0];
         const message = {
           id,
           conversation_id: params[1],

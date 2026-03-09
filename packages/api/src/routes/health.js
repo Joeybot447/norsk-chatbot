@@ -62,28 +62,28 @@ router.get('/ready', async (req, res) => {
  */
 router.get('/demo', (req, res) => {
   try {
-    // Get the demo site (first site for fjordtech@demo.no customer)
-    const customer = getOne(
-      'SELECT id FROM customers WHERE email = ?',
-      ['fjordtech@demo.no']
-    );
+    const db = getDb();
 
-    if (!customer) {
+    // Get the demo site (first site for fjordtech@demo.no customer)
+    const customers = db.data.customers.filter((c) => c.email === 'fjordtech@demo.no');
+    if (customers.length === 0) {
       return res.status(404).json({
         error: 'Demo site not found',
         message: 'Please ensure the API has been properly initialized',
       });
     }
 
-    // Get demo site for this customer
-    const db = getDb();
-    const site = db.prepare('SELECT id, name, widget_config FROM sites WHERE customer_id = ?').get(customer.id);
+    const customerId = customers[0].id;
 
-    if (!site) {
+    // Get demo site for this customer
+    const sites = db.data.sites.filter((s) => s.customer_id === customerId);
+    if (sites.length === 0) {
       return res.status(404).json({
         error: 'Demo site not found',
       });
     }
+
+    const site = sites[0];
 
     res.json({
       siteId: site.id,
