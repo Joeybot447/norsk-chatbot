@@ -21,6 +21,7 @@ let dbInstance = null;
 class SimpleSQLiteDB {
   constructor() {
     this.data = {
+      users: [],
       customers: [],
       sites: [],
       documents: [],
@@ -28,14 +29,17 @@ class SimpleSQLiteDB {
       conversations: [],
       messages: [],
       guardrail_rules: [],
+      sources: [],
     };
     this.nextIds = {
+      users: 1,
       customers: 1,
       sites: 1,
       documents: 1,
       chunks: 1,
       conversations: 1,
       messages: 1,
+      sources: 1,
     };
   }
 
@@ -66,7 +70,61 @@ class SimpleSQLiteDB {
       // Very basic parsing for SELECT statements
       const upperSql = sql.toUpperCase();
 
-      if (upperSql.includes('FROM CUSTOMERS')) {
+      // Handle COUNT queries
+      if (upperSql.includes('COUNT(*)')) {
+        if (upperSql.includes('FROM CONVERSATIONS')) {
+          let results = this.data.conversations;
+          if (sql.includes('WHERE')) {
+            if (sql.includes('site_id')) {
+              results = results.filter((c) => c.site_id === params[0]);
+            }
+          }
+          return [{ count: results.length }];
+        } else if (upperSql.includes('FROM DOCUMENTS')) {
+          let results = this.data.documents;
+          if (sql.includes('WHERE')) {
+            if (sql.includes('site_id')) {
+              results = results.filter((d) => d.site_id === params[0]);
+            }
+          }
+          return [{ count: results.length }];
+        } else if (upperSql.includes('FROM SITES')) {
+          let results = this.data.sites;
+          if (sql.includes('WHERE')) {
+            if (sql.includes('user_id')) {
+              results = results.filter((s) => s.user_id === params[0]);
+            }
+          }
+          return [{ count: results.length }];
+        }
+      }
+
+      if (upperSql.includes('FROM USERS')) {
+        let results = this.data.users;
+        if (sql.includes('WHERE')) {
+          if (sql.includes('email')) {
+            results = results.filter((u) => u.email === params[0]);
+          } else if (sql.includes('id')) {
+            results = results.filter((u) => u.id === params[0]);
+          } else if (sql.includes('api_key')) {
+            results = results.filter((u) => u.api_key === params[0]);
+          }
+        }
+        return results;
+      } else if (upperSql.includes('FROM SOURCES')) {
+        let results = this.data.sources;
+        if (sql.includes('WHERE')) {
+          if (sql.includes('site_id')) {
+            results = results.filter((s) => s.site_id === params[0]);
+          } else if (sql.includes('id')) {
+            results = results.filter((s) => s.id === params[0]);
+          }
+        }
+        if (sql.includes('ORDER BY')) {
+          results = results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+        return results;
+      } else if (upperSql.includes('FROM CUSTOMERS')) {
         let results = this.data.customers;
         if (sql.includes('WHERE')) {
           // Basic WHERE clause handling
@@ -85,9 +143,16 @@ class SimpleSQLiteDB {
             results = results.filter((s) => s.api_key === params[0]);
           } else if (sql.includes('WHERE customer_id')) {
             results = results.filter((s) => s.customer_id === params[0]);
+          } else if (sql.includes('WHERE id') && sql.includes('AND user_id')) {
+            results = results.filter((s) => s.id === params[0] && s.user_id === params[1]);
+          } else if (sql.includes('WHERE user_id')) {
+            results = results.filter((s) => s.user_id === params[0]);
           } else if (sql.includes('WHERE id')) {
             results = results.filter((s) => s.id === params[0]);
           }
+        }
+        if (sql.includes('ORDER BY')) {
+          results = results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         }
         return results;
       } else if (upperSql.includes('FROM CHUNKS')) {
@@ -151,6 +216,43 @@ class SimpleSQLiteDB {
     try {
       const upperSql = sql.toUpperCase();
 
+      if (upperSql.includes('INSERT INTO USERS')) {
+        const id = params[0];
+        const user = {
+          id,
+          email: params[1],
+          password_hash: params[2],
+          company_name: params[3] || null,
+          api_key: params[4] || null,
+          plan: params[5] || 'starter',
+          status: params[6] || 'active',
+          metadata: params[7] || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        this.data.users.push(user);
+        return { lastInsertRowid: id, changes: 1 };
+      }
+
+      if (upperSql.includes('INSERT INTO SOURCES')) {
+        const id = params[0];
+        const source = {
+          id,
+          site_id: params[1],
+          type: params[2],
+          name: params[3] || null,
+          url: params[4] || null,
+          content: params[5] || null,
+          status: params[6] || 'processing',
+          processed_at: null,
+          metadata: params[7] || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        this.data.sources.push(source);
+        return { lastInsertRowid: id, changes: 1 };
+      }
+
       if (upperSql.includes('INSERT INTO CUSTOMERS')) {
         const id = params[0];
         const customer = {
@@ -171,12 +273,13 @@ class SimpleSQLiteDB {
         const id = params[0];
         const site = {
           id,
-          customer_id: params[1],
-          domain: params[2],
-          name: params[3],
-          api_key: params[4],
-          widget_config: params[5],
-          status: params[6],
+          user_id: params[1] || null,
+          customer_id: params[2] || null,
+          domain: params[3],
+          name: params[4],
+          api_key: params[5],
+          widget_config: params[6],
+          status: params[7] || 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -283,12 +386,33 @@ class SimpleSQLiteDB {
         return { changes: 0 };
       }
 
+      if (upperSql.includes('UPDATE SITES SET widget_config')) {
+        const id = params[1];
+        const site = this.data.sites.find((s) => s.id === id);
+        if (site) {
+          site.widget_config = params[0];
+          site.updated_at = new Date().toISOString();
+          return { changes: 1 };
+        }
+        return { changes: 0 };
+      }
+
       if (upperSql.includes('UPDATE MESSAGES SET feedback')) {
         const messageId = params[1];
         const siteId = params[2];
         const message = this.data.messages.find((m) => m.id === messageId && m.site_id === siteId);
         if (message) {
           message.feedback = params[0];
+          return { changes: 1 };
+        }
+        return { changes: 0 };
+      }
+
+      if (upperSql.includes('DELETE FROM SOURCES')) {
+        const id = params[0];
+        const idx = this.data.sources.findIndex((s) => s.id === id);
+        if (idx >= 0) {
+          this.data.sources.splice(idx, 1);
           return { changes: 1 };
         }
         return { changes: 0 };
@@ -389,6 +513,17 @@ export function getOne(sql, params = []) {
  * @returns {array} Array of rows
  */
 export function getMany(sql, params = []) {
+  const result = query(sql, params);
+  return result.rows;
+}
+
+/**
+ * Get all rows (alias for getMany)
+ * @param {string} sql - SQL query
+ * @param {array} params - Query parameters
+ * @returns {array} Array of rows
+ */
+export function getAll(sql, params = []) {
   const result = query(sql, params);
   return result.rows;
 }

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NorskBot Dashboard - Logg inn eller opprett konto">
+    <title>NorskBot Dashboard - Logg inn</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .form-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            color: #1a365d;
+            text-decoration: none;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+            color: #1a365d;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .form-subtitle {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #1a365d;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: #ffffff;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+        }
+
+        .form-actions {
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.85rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(49, 130, 206, 0.2);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #f5f7fa;
+            color: #3182ce;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .toggle-form {
+            text-align: center;
+            color: #4a5568;
+            font-size: 0.9rem;
+        }
+
+        .toggle-form button {
+            background: none;
+            border: none;
+            color: #3182ce;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .toggle-form button:hover {
+            color: #2563eb;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            color: #cbd5e0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #3182ce;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .company-group {
+            display: none;
+        }
+
+        .company-group.show {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            .form-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .form-title {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-card">
+            <div class="logo">
+                <h1>NorskBot</h1>
+            </div>
+
+            <div class="form-title" id="formTitle">Logg inn</div>
+            <div class="form-subtitle" id="formSubtitle">Åpne din dashboard</div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <form id="authForm">
+                <div class="form-group">
+                    <label for="email">E-post</label>
+                    <input type="email" id="email" name="email" required placeholder="navn@bedrift.no">
+                </div>
+
+                <div class="form-group company-group" id="companyGroup">
+                    <label for="company">Bedriftsnavn</label>
+                    <input type="text" id="company" name="company" placeholder="Din bedrift AS">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Passord</label>
+                    <input type="password" id="password" name="password" required placeholder="Minst 8 tegn">
+                </div>
+
+                <div class="form-actions">
+                    <div class="loading" id="loading">
+                        <span class="spinner"></span>
+                        <p style="margin-top: 0.5rem;">Behandler...</p>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Logg inn</button>
+                </div>
+            </form>
+
+            <div class="toggle-form">
+                Har du ikke konto? <button type="button" id="toggleBtn" onclick="toggleForm()">Opprett konto</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let isLoginMode = true;
+
+        function toggleForm() {
+            isLoginMode = !isLoginMode;
+            const formTitle = document.getElementById('formTitle');
+            const formSubtitle = document.getElementById('formSubtitle');
+            const submitBtn = document.getElementById('submitBtn');
+            const toggleBtn = document.getElementById('toggleBtn');
+            const companyGroup = document.getElementById('companyGroup');
+
+            if (isLoginMode) {
+                formTitle.textContent = 'Logg inn';
+                formSubtitle.textContent = 'Åpne din dashboard';
+                submitBtn.textContent = 'Logg inn';
+                toggleBtn.textContent = 'Opprett konto';
+                companyGroup.classList.remove('show');
+            } else {
+                formTitle.textContent = 'Opprett konto';
+                formSubtitle.textContent = 'Kom i gang med NorskBot';
+                submitBtn.textContent = 'Opprett konto';
+                toggleBtn.textContent = 'Logg inn i stedet';
+                companyGroup.classList.add('show');
+            }
+
+            // Clear form
+            document.getElementById('authForm').reset();
+            clearMessages();
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+        }
+
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const company = document.getElementById('company').value;
+
+            const loading = document.getElementById('loading');
+            const submitBtn = document.getElementById('submitBtn');
+
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+
+            try {
+                let endpoint, body;
+
+                if (isLoginMode) {
+                    endpoint = `${API_BASE}/auth/login`;
+                    body = { email, password };
+                } else {
+                    if (!company) {
+                        throw new Error('Bedriftsnavn er påkrevd');
+                    }
+                    endpoint = `${API_BASE}/auth/register`;
+                    body = { email, password, company_name: company };
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'En feil oppstod');
+                }
+
+                showSuccess(isLoginMode ? 'Innlogging vellykket! Omdirigerer...' : 'Konto opprettet! Omdirigerer...');
+
+                // Save token and redirect
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                setTimeout(() => {
+                    window.location.href = '/dashboard/';
+                }, 1500);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

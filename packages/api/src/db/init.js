@@ -10,6 +10,25 @@ export async function initializeDatabase() {
   const db = getDb();
 
   try {
+    // ===== USERS TABLE (Dashboard authentication) =====
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        company_name VARCHAR(255),
+        api_key VARCHAR(255) UNIQUE,
+        plan VARCHAR(50) DEFAULT 'starter',
+        status VARCHAR(50) DEFAULT 'active',
+        metadata TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key)`);
+
     // ===== CUSTOMERS TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS customers (
@@ -28,6 +47,7 @@ export async function initializeDatabase() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS sites (
         id TEXT PRIMARY KEY,
+        user_id TEXT,
         customer_id TEXT NOT NULL,
         domain VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL,
@@ -36,12 +56,34 @@ export async function initializeDatabase() {
         status VARCHAR(50) DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(customer_id) REFERENCES customers(id)
+        FOREIGN KEY(customer_id) REFERENCES customers(id),
+        FOREIGN KEY(user_id) REFERENCES users(id)
       )
     `);
 
     db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_customer_id ON sites(customer_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_api_key ON sites(api_key)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id)`);
+
+    // ===== SOURCES TABLE (Knowledge sources - dashboard UI) =====
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sources (
+        id TEXT PRIMARY KEY,
+        site_id TEXT NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        name VARCHAR(255),
+        url VARCHAR(500),
+        content TEXT,
+        status VARCHAR(50) DEFAULT 'processing',
+        processed_at TIMESTAMP,
+        metadata TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(site_id) REFERENCES sites(id)
+      )
+    `);
+
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sources_site_id ON sources(site_id)`);
 
     // ===== DOCUMENTS TABLE =====
     db.exec(`

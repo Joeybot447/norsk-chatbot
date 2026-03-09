@@ -17,6 +17,8 @@ import widgetRouter from './routes/widget.js';
 import ingestRouter from './routes/ingest.js';
 import healthRouter from './routes/health.js';
 import debugRouter from './routes/debug.js';
+import authRouter from './routes/auth.js';
+import dashboardRouter from './routes/dashboard.js';
 
 // Load environment variables
 dotenv.config();
@@ -61,6 +63,12 @@ app.use('/health', healthRouter);
 
 // Debug routes (MVP only)
 app.use('/debug', debugRouter);
+
+// Auth routes (public)
+app.use('/api/auth', authRouter);
+
+// Dashboard routes (JWT auth required)
+app.use('/api/dashboard', dashboardRouter);
 
 // Chat API (public, site_id in headers for multi-tenancy)
 app.use('/v1/chat', rateLimitMiddleware, tenantMiddleware, chatRouter);

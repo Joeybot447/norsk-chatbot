@@ -1,12 +1,1203 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NorskBot Dashboard">
     <title>NorskBot Dashboard</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/index.jsx"></script>
-  </body>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            color: #1a1a1a;
+        }
+
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            padding: 0 2rem;
+            margin-bottom: 2rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a365d;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .nav-item {
+            padding: 0 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            width: 100%;
+            text-align: left;
+        }
+
+        .nav-link:hover {
+            background: #f5f7fa;
+            color: #3182ce;
+        }
+
+        .nav-link.active {
+            background: #e0e7ff;
+            color: #3182ce;
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            width: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 2rem;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 2rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #f5f7fa;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3182ce;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-details {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .user-email {
+            font-size: 0.8rem;
+            color: #4a5568;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 0.5rem;
+            background: #fee2e2;
+            color: #c53030;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: #fecaca;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 2rem;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            color: #1a365d;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #4a5568;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-label {
+            color: #4a5568;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a365d;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(49, 130, 206, 0.2);
+        }
+
+        .btn-secondary {
+            background: #f5f7fa;
+            color: #1a365d;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-danger {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .btn-danger:hover {
+            background: #fecaca;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        /* Lists */
+        .item-list {
+            background: #ffffff;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item:hover {
+            background: #f5f7fa;
+        }
+
+        .item-content {
+            flex: 1;
+        }
+
+        .item-title {
+            font-weight: 600;
+            color: #1a365d;
+            margin-bottom: 0.25rem;
+        }
+
+        .item-meta {
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+
+        .item-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+
+        .status-ready {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-processing {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .status-error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        /* Forms */
+        .form-section {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+
+        .form-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a365d;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #1a365d;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="url"],
+        textarea,
+        input[type="color"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        input[type="text"]:focus,
+        input[type="url"]:focus,
+        textarea:focus,
+        input[type="color"]:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+        }
+
+        .input-helper {
+            font-size: 0.85rem;
+            color: #4a5568;
+            margin-top: 0.5rem;
+        }
+
+        /* Dropzone */
+        .dropzone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f5f7fa;
+        }
+
+        .dropzone:hover {
+            border-color: #3182ce;
+            background: #e0e7ff;
+        }
+
+        .dropzone.active {
+            border-color: #3182ce;
+            background: #dbeafe;
+        }
+
+        .dropzone-text {
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+
+        .dropzone-hint {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        /* Colors Preview */
+        .color-preview {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .preview-item {
+            flex: 1;
+        }
+
+        .preview-label {
+            font-size: 0.8rem;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-box {
+            width: 100%;
+            height: 80px;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Messages */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 1px solid #fc8181;
+        }
+
+        .alert-info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+
+        .code-block {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .copy-btn {
+            float: right;
+            padding: 0.5rem 1rem;
+            background: #3182ce;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .copy-btn:hover {
+            background: #2563eb;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group:nth-child(2) {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">NorskBot</div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-item">
+                    <button class="nav-link active" onclick="switchPage('overview')">
+                        <span class="nav-icon">🏠</span>
+                        <span>Oversikt</span>
+                    </button>
+                </div>
+                <div class="nav-item">
+                    <button class="nav-link" onclick="switchPage('knowledge')">
+                        <span class="nav-icon">📚</span>
+                        <span>Kunnskapsbase</span>
+                    </button>
+                </div>
+                <div class="nav-item">
+                    <button class="nav-link" onclick="switchPage('conversations')">
+                        <span class="nav-icon">💬</span>
+                        <span>Samtaler</span>
+                    </button>
+                </div>
+                <div class="nav-item">
+                    <button class="nav-link" onclick="switchPage('settings')">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Innstillinger</span>
+                    </button>
+                </div>
+                <div class="nav-item">
+                    <button class="nav-link" onclick="switchPage('analytics')">
+                        <span class="nav-icon">📊</span>
+                        <span>Analyse</span>
+                    </button>
+                </div>
+                <div class="nav-item">
+                    <button class="nav-link" onclick="switchPage('embed')">
+                        <span class="nav-icon">🔑</span>
+                        <span>API & Embed</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="avatarInitial">U</div>
+                    <div class="user-details">
+                        <div class="user-email" id="userEmail">user@email.com</div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">Logg ut</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Page -->
+            <div id="overview" class="page active">
+                <div class="page-header">
+                    <h1 class="page-title">Oversikt</h1>
+                    <p class="page-subtitle">Velkomst til din NorskBot dashboard</p>
+                </div>
+
+                <div id="statsContainer">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Totale samtaler</div>
+                            <div class="stat-value" id="totalConversations">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Aktive chatbots</div>
+                            <div class="stat-value" id="activeChatbots">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Kilder lastet opp</div>
+                            <div class="stat-value" id="documentsUploaded">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
+                    <button class="btn btn-primary" onclick="switchPage('knowledge')">➕ Legg til ny kilde</button>
+                    <button class="btn btn-secondary" onclick="switchPage('embed')">📋 Kopier embed-kode</button>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Nylige samtaler</div>
+                    <div id="recentConversations" style="color: #4a5568; text-align: center; padding: 2rem;">
+                        Ingen samtaler ennå
+                    </div>
+                </div>
+            </div>
+
+            <!-- Knowledge Base Page -->
+            <div id="knowledge" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Kunnskapsbase</h1>
+                    <p class="page-subtitle">Legger inn og styrer kilder for chatboten din</p>
+                </div>
+
+                <!-- URL Source -->
+                <div class="form-section">
+                    <div class="form-section-title">📌 Scan nettside</div>
+                    <div class="form-group">
+                        <label for="urlInput">Nettadressen din</label>
+                        <input type="url" id="urlInput" placeholder="https://bedrift.no">
+                    </div>
+                    <button class="btn btn-primary" onclick="addUrlSource()">Scan nettside</button>
+                </div>
+
+                <!-- File Upload -->
+                <div class="form-section">
+                    <div class="form-section-title">📄 Last opp dokument</div>
+                    <div class="dropzone" id="dropzone">
+                        <div class="dropzone-text">Dra og slipp fil her</div>
+                        <div class="dropzone-hint">eller klikk for å velge (PDF, DOCX, TXT)</div>
+                    </div>
+                    <input type="file" id="fileInput" style="display: none;" accept=".pdf,.docx,.txt">
+                </div>
+
+                <!-- Raw Text -->
+                <div class="form-section">
+                    <div class="form-section-title">✏️ Lim inn tekst</div>
+                    <div class="form-group">
+                        <label for="textInput">Skriv eller lim inn tekst</label>
+                        <textarea id="textInput" placeholder="Skriv tekst som skal brukes i kunnskapsbasen..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="addTextSource()">Lagre tekst</button>
+                </div>
+
+                <!-- Sources List -->
+                <div class="form-section">
+                    <div class="form-section-title">Dine kilder</div>
+                    <div id="sourcesList" style="color: #4a5568; text-align: center; padding: 2rem;">
+                        Ingen kilder ennå
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversations Page -->
+            <div id="conversations" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Samtaler</h1>
+                    <p class="page-subtitle">Se historikk over kundesamtaler</p>
+                </div>
+
+                <div class="form-section">
+                    <div id="conversationsList" style="color: #4a5568; text-align: center; padding: 2rem;">
+                        Ingen samtaler ennå
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Innstillinger</h1>
+                    <p class="page-subtitle">Tilpass chatboten din</p>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Widget-tilpassing</div>
+                    
+                    <div class="form-group">
+                        <label for="botName">Navn på chatbot</label>
+                        <input type="text" id="botName" placeholder="Min chatbot" value="NorskBot">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="welcomeMessage">Velkomstmelding</label>
+                        <textarea id="welcomeMessage" placeholder="Hej! Jeg er chatbot. Hva kan jeg hjelpe deg med?">Hej! Jeg er chatbot. Hva kan jeg hjelpe deg med?</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="primaryColor">Primærfarge</label>
+                        <input type="color" id="primaryColor" value="#3182ce">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="position">Posisjon</label>
+                        <select id="position" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;">
+                            <option value="bottom-right">Nederst til høyre</option>
+                            <option value="bottom-left">Nederst til venstre</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="saveSettings()">Lagre innstillinger</button>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Forhåndsvisning</div>
+                    <div style="border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 2rem; text-align: center; color: #4a5568;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+                        <p>Widget-forhåndsvisning vil vises her</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div id="analytics" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Analyse</h1>
+                    <p class="page-subtitle">Innsikt i chatbot-ytelse</p>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-label">Gjennomsnittlig responstid</div>
+                        <div class="stat-value">0.8s</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Bruker satisfaksjon</div>
+                        <div class="stat-value">92%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Eskalering</div>
+                        <div class="stat-value">8%</div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Topp spørsmål</div>
+                    <div style="color: #4a5568; text-align: center; padding: 2rem;">
+                        Data kommer snart
+                    </div>
+                </div>
+            </div>
+
+            <!-- Embed Page -->
+            <div id="embed" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">API & Embed</h1>
+                    <p class="page-subtitle">Integrer chatboten på nettsiden din</p>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Embed-kode</div>
+                    <p style="color: #4a5568; margin-bottom: 1rem;">Kopier denne koden og lim den inn før &lt;/body&gt; på nettsiden din:</p>
+                    
+                    <div style="position: relative;">
+                        <button class="copy-btn" onclick="copyEmbedCode()">📋 Kopier</button>
+                        <div class="code-block" id="embedCode">&lt;script src="https://norskbot.no/widget.js" data-site="loading..."&gt;&lt;/script&gt;</div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">API-nøkkel</div>
+                    <p style="color: #4a5568; margin-bottom: 1rem;">Bruk denne nøkkelen til API-kall:</p>
+                    
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" id="apiKey" style="flex: 1;" readonly>
+                        <button class="btn btn-secondary btn-small" onclick="copyApiKey()">📋 Kopier</button>
+                        <button class="btn btn-secondary btn-small" onclick="regenerateApiKey()">🔄 Regenerer</button>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">API-dokumentasjon</div>
+                    <p style="color: #4a5568;">Se <a href="#" style="color: #3182ce; text-decoration: underline;">full API-dokumentasjon</a> for integrasjon og eksempler.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentSite = null;
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadStats();
+            loadSites();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = '/dashboard/auth.html';
+                return;
+            }
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user.email) {
+                document.getElementById('userEmail').textContent = user.email;
+                const initial = user.email.charAt(0).toUpperCase();
+                document.getElementById('avatarInitial').textContent = initial;
+            }
+        }
+
+        function loadSites() {
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/sites`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.sites && data.sites.length > 0) {
+                        currentSite = data.sites[0];
+                        loadSourcesList();
+                        loadConversations();
+                        loadSettings();
+                        loadEmbedCode();
+                    }
+                })
+                .catch(e => console.error('Error loading sites:', e));
+        }
+
+        function loadStats() {
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('totalConversations').textContent = data.total_conversations;
+                    document.getElementById('activeChatbots').textContent = data.active_chatbots;
+                    document.getElementById('documentsUploaded').textContent = data.documents_uploaded;
+                })
+                .catch(e => console.error('Error loading stats:', e));
+        }
+
+        function loadSourcesList() {
+            if (!currentSite) return;
+            
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/sources/${currentSite.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('sourcesList');
+                    if (!data.sources || data.sources.length === 0) {
+                        container.innerHTML = '<div style="color: #4a5568; text-align: center; padding: 2rem;">Ingen kilder ennå</div>';
+                        return;
+                    }
+
+                    const html = `<div class="item-list">${data.sources
+                        .map(
+                            (source) => `
+                        <div class="item">
+                            <div class="item-content">
+                                <div class="item-title">${source.name || source.url || 'Tekstkilde'}</div>
+                                <div class="item-meta">${source.type === 'url' ? '🌐 ' + source.url : source.type === 'file' ? '📄 ' + source.name : '✏️ Tekst'}</div>
+                            </div>
+                            <span class="item-status status-${source.status}">${source.status === 'processing' ? 'Prosesserer' : 'Klar'}</span>
+                            <div class="item-actions">
+                                <button class="btn btn-danger btn-small" onclick="deleteSource('${source.id}')">Slett</button>
+                            </div>
+                        </div>
+                    `
+                        )
+                        .join('')}</div>`;
+                    
+                    container.innerHTML = html;
+                })
+                .catch(e => console.error('Error loading sources:', e));
+        }
+
+        function loadConversations() {
+            if (!currentSite) return;
+            
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/conversations/${currentSite.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('conversationsList');
+                    if (!data.conversations || data.conversations.length === 0) {
+                        container.innerHTML = '<div style="color: #4a5568; text-align: center; padding: 2rem;">Ingen samtaler ennå</div>';
+                        return;
+                    }
+
+                    const html = `<div class="item-list">${data.conversations
+                        .map(
+                            (conv) => `
+                        <div class="item">
+                            <div class="item-content">
+                                <div class="item-title">${conv.visitor_name || 'Anonym'}</div>
+                                <div class="item-meta">${conv.message_count} meldinger • ${new Date(conv.started_at).toLocaleString('no-NO')}</div>
+                            </div>
+                        </div>
+                    `
+                        )
+                        .join('')}</div>`;
+                    
+                    container.innerHTML = html;
+                })
+                .catch(e => console.error('Error loading conversations:', e));
+
+            // Also load recent conversations in overview
+            const token2 = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/conversations/${currentSite.id}`, {
+                headers: { 'Authorization': `Bearer ${token2}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('recentConversations');
+                    if (!data.conversations || data.conversations.length === 0) {
+                        container.innerHTML = '<div style="color: #4a5568; text-align: center; padding: 2rem;">Ingen samtaler ennå</div>';
+                        return;
+                    }
+
+                    const limited = data.conversations.slice(0, 5);
+                    const html = `<div class="item-list">${limited
+                        .map(
+                            (conv) => `
+                        <div class="item">
+                            <div class="item-content">
+                                <div class="item-title">${conv.visitor_name || 'Anonym'}</div>
+                                <div class="item-meta">${conv.message_count} meldinger</div>
+                            </div>
+                        </div>
+                    `
+                        )
+                        .join('')}</div>`;
+                    
+                    container.innerHTML = html;
+                })
+                .catch(e => console.error('Error loading recent conversations:', e));
+        }
+
+        function loadSettings() {
+            if (!currentSite) return;
+            
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/settings/${currentSite.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.settings) {
+                        document.getElementById('botName').value = data.settings.name || '';
+                        document.getElementById('welcomeMessage').value = data.settings.welcome_message || '';
+                        document.getElementById('primaryColor').value = data.settings.primary_color || '#3182ce';
+                        document.getElementById('position').value = data.settings.position || 'bottom-right';
+                    }
+                })
+                .catch(e => console.error('Error loading settings:', e));
+        }
+
+        function loadEmbedCode() {
+            if (!currentSite) return;
+            
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/embed/${currentSite.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('embedCode').innerHTML = `&lt;script src="https://norskbot.no/widget.js" data-site="${data.site_id}"&gt;&lt;/script&gt;`;
+                    document.getElementById('apiKey').value = data.api_key;
+                })
+                .catch(e => console.error('Error loading embed code:', e));
+        }
+
+        function switchPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            
+            // Show selected page
+            document.getElementById(pageName).classList.add('active');
+
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            event.target.closest('.nav-link').classList.add('active');
+        }
+
+        function addUrlSource() {
+            if (!currentSite) return;
+            
+            const url = document.getElementById('urlInput').value;
+            if (!url) {
+                alert('Vennligst skriv inn en URL');
+                return;
+            }
+
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/sources/url`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ site_id: currentSite.id, url }),
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('urlInput').value = '';
+                        loadSourcesList();
+                        alert('Kilde lagt til! Den prosesseres nå.');
+                    }
+                })
+                .catch(e => alert('Feil: ' + e.message));
+        }
+
+        function addTextSource() {
+            if (!currentSite) return;
+            
+            const content = document.getElementById('textInput').value;
+            if (!content) {
+                alert('Vennligst skriv inn tekst');
+                return;
+            }
+
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/sources/text`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ site_id: currentSite.id, content }),
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('textInput').value = '';
+                        loadSourcesList();
+                        alert('Tekst lagret!');
+                    }
+                })
+                .catch(e => alert('Feil: ' + e.message));
+        }
+
+        function deleteSource(sourceId) {
+            if (!confirm('Er du sikker?')) return;
+
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/sources/${sourceId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        loadSourcesList();
+                        alert('Kilde slettet');
+                    }
+                })
+                .catch(e => alert('Feil: ' + e.message));
+        }
+
+        function saveSettings() {
+            if (!currentSite) return;
+            
+            const settings = {
+                name: document.getElementById('botName').value,
+                welcome_message: document.getElementById('welcomeMessage').value,
+                primary_color: document.getElementById('primaryColor').value,
+                position: document.getElementById('position').value,
+            };
+
+            const token = localStorage.getItem('authToken');
+            fetch(`${API_BASE}/dashboard/settings/${currentSite.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(settings),
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Innstillinger lagret!');
+                    }
+                })
+                .catch(e => alert('Feil: ' + e.message));
+        }
+
+        function copyEmbedCode() {
+            const code = document.getElementById('embedCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Embed-kode kopiert!');
+            });
+        }
+
+        function copyApiKey() {
+            const key = document.getElementById('apiKey').value;
+            navigator.clipboard.writeText(key).then(() => {
+                alert('API-nøkkel kopiert!');
+            });
+        }
+
+        function regenerateApiKey() {
+            alert('API-nøkkel regenerering kommer snart');
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = '/dashboard/auth.html';
+        }
+
+        // File upload handling
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('active');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('active');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('active');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        function handleFileUpload(file) {
+            if (!currentSite) {
+                alert('Laster inn... prøv igjen om en sekund');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                const token = localStorage.getItem('authToken');
+
+                fetch(`${API_BASE}/dashboard/sources/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        site_id: currentSite.id,
+                        file_name: file.name,
+                        file_content: content,
+                    }),
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadSourcesList();
+                            alert('Fil lastet opp!');
+                        }
+                    })
+                    .catch(e => alert('Feil: ' + e.message));
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
 </html>
