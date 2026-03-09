@@ -1,0 +1,35 @@
+{
+  "name": "norsk-chatbot",
+  "version": "0.1.0",
+  "description": "Norwegian B2B AI Chatbot SaaS Platform",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspace=packages/api --workspace=packages/widget --workspace=packages/dashboard",
+    "dev:api": "npm run dev --workspace=packages/api",
+    "dev:widget": "npm run dev --workspace=packages/widget",
+    "dev:dashboard": "npm run dev --workspace=packages/dashboard",
+    "dev": "npm run dev:api & npm run dev:widget & npm run dev:dashboard",
+    "build:all": "npm run build --workspace=packages/api --workspace=packages/widget --workspace=packages/dashboard",
+    "test": "npm test --workspace=packages/api --workspace=packages/widget",
+    "lint": "npm run lint --workspace=packages/api --workspace=packages/widget --workspace=packages/dashboard",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "keywords": [
+    "chatbot",
+    "ai",
+    "norwegian",
+    "saas",
+    "customer-service"
+  ],
+  "author": "NorskBot Team",
+  "license": "PROPRIETARY"
+}
