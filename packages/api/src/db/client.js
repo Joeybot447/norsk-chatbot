@@ -80,12 +80,13 @@ class SimpleSQLiteDB {
       } else if (upperSql.includes('FROM SITES')) {
         let results = this.data.sites;
         if (sql.includes('WHERE')) {
-          if (sql.includes('customer_id')) {
-            results = results.filter((s) => s.customer_id === params[0]);
-          } else if (sql.includes('id')) {
-            results = results.filter((s) => s.id === params[0]);
-          } else if (sql.includes('api_key')) {
+          // More specific WHERE clause checks
+          if (sql.includes('WHERE api_key')) {
             results = results.filter((s) => s.api_key === params[0]);
+          } else if (sql.includes('WHERE customer_id')) {
+            results = results.filter((s) => s.customer_id === params[0]);
+          } else if (sql.includes('WHERE id')) {
+            results = results.filter((s) => s.id === params[0]);
           }
         }
         return results;

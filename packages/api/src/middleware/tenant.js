@@ -18,11 +18,15 @@ export async function tenantMiddleware(req, res, next) {
       return res.status(400).json({ error: 'Missing site ID' });
     }
 
+    logger.info(`Tenant middleware: Looking for site ${siteId}`);
+
     // Validate site exists
     const site = getOne(
       'SELECT id, customer_id, widget_config FROM sites WHERE id = ?',
       [siteId]
     );
+
+    logger.info(`Tenant middleware: Found site: ${JSON.stringify(site)}`);
 
     if (!site) {
       return res.status(404).json({ error: 'Site not found' });

@@ -19,7 +19,7 @@ export const llmService = {
       const prompt = this.buildPrompt({ userMessage, context });
 
       const response = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 1024,
         system: context.systemPrompt + '\n\n' + context.context,
         messages: [
