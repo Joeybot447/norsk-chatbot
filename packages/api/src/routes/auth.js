@@ -20,10 +20,11 @@ const JWT_EXPIRY = '7d';
  */
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, company_name } = req.body;
+    const { email, password, company_name, companyName } = req.body;
+    const company = company_name || companyName;
 
     // Validation
-    if (!email || !password || !company_name) {
+    if (!email || !password || !company) {
       return res.status(400).json({
         error: 'Email, password, and company name are required',
       });
@@ -53,12 +54,12 @@ router.post('/register', async (req, res) => {
     query(
       `INSERT INTO users (id, email, password_hash, company_name, api_key, plan, status)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, email, password_hash, company_name, api_key, 'starter', 'active']
+      [userId, email, password_hash, company, api_key, 'starter', 'active']
     );
 
     // Generate JWT
     const token = jwt.sign(
-      { userId, email, company_name },
+      { userId, email, company_name: company },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
@@ -71,7 +72,7 @@ router.post('/register', async (req, res) => {
       user: {
         id: userId,
         email,
-        company_name,
+        company_name: company,
         api_key,
         plan: 'starter',
       },

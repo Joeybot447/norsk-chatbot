@@ -132,8 +132,8 @@ export const guardrailsService = {
    */
   async getRules(siteId) {
     try {
-      const rules = await getMany(
-        `SELECT * FROM guardrail_rules WHERE site_id = $1 AND enabled = true`,
+      const rules = getMany(
+        `SELECT * FROM guardrail_rules WHERE site_id = ? AND enabled = 1`,
         [siteId]
       );
       return rules;

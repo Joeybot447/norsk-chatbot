@@ -10,7 +10,7 @@ export async function initializeDatabase() {
   const db = getDb();
 
   try {
-    // ===== USERS TABLE (Dashboard authentication) =====
+    // ===== USERS TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -26,9 +26,6 @@ export async function initializeDatabase() {
       )
     `);
 
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key)`);
-
     // ===== CUSTOMERS TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS customers (
@@ -43,7 +40,7 @@ export async function initializeDatabase() {
       )
     `);
 
-    // ===== SITES TABLE (Chatbots) =====
+    // ===== SITES TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS sites (
         id TEXT PRIMARY KEY,
@@ -61,11 +58,7 @@ export async function initializeDatabase() {
       )
     `);
 
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_customer_id ON sites(customer_id)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_api_key ON sites(api_key)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id)`);
-
-    // ===== SOURCES TABLE (Knowledge sources - dashboard UI) =====
+    // ===== SOURCES TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS sources (
         id TEXT PRIMARY KEY,
@@ -82,8 +75,6 @@ export async function initializeDatabase() {
         FOREIGN KEY(site_id) REFERENCES sites(id)
       )
     `);
-
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_sources_site_id ON sources(site_id)`);
 
     // ===== DOCUMENTS TABLE =====
     db.exec(`
@@ -104,9 +95,7 @@ export async function initializeDatabase() {
       )
     `);
 
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_documents_site_id ON documents(site_id)`);
-
-    // ===== CHUNKS TABLE (simple keyword storage for MVP) =====
+    // ===== CHUNKS TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS chunks (
         id TEXT PRIMARY KEY,
@@ -118,13 +107,9 @@ export async function initializeDatabase() {
         metadata TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(document_id) REFERENCES documents(id),
-        FOREIGN KEY(site_id) REFERENCES sites(id),
-        UNIQUE(document_id, chunk_index)
+        FOREIGN KEY(site_id) REFERENCES sites(id)
       )
     `);
-
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_chunks_site_id ON chunks(site_id)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id)`);
 
     // ===== CONVERSATIONS TABLE =====
     db.exec(`
@@ -147,9 +132,6 @@ export async function initializeDatabase() {
       )
     `);
 
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_conversations_site_id ON conversations(site_id)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_conversations_session_id ON conversations(session_id)`);
-
     // ===== MESSAGES TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS messages (
@@ -169,9 +151,6 @@ export async function initializeDatabase() {
       )
     `);
 
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id)`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_site_id ON messages(site_id)`);
-
     // ===== GUARDRAIL RULES TABLE =====
     db.exec(`
       CREATE TABLE IF NOT EXISTS guardrail_rules (
@@ -189,6 +168,20 @@ export async function initializeDatabase() {
       )
     `);
 
+    // Create indexes
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_customer_id ON sites(customer_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_api_key ON sites(api_key)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sources_site_id ON sources(site_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_documents_site_id ON documents(site_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_chunks_site_id ON chunks(site_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_conversations_site_id ON conversations(site_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_conversations_session_id ON conversations(session_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_site_id ON messages(site_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_guardrail_rules_site_id ON guardrail_rules(site_id)`);
 
     logger.info('Database tables initialized successfully');
@@ -248,91 +241,25 @@ export async function seedDemoData() {
       ]
     );
 
-    // Create demo documents with company info
+    // Create demo documents
     const demoDocuments = [
       {
         title: 'About Fjordtech',
         type: 'webpage',
-        content: `
-Fjordtech AS - Om oss
-
-Fjordtech AS er et norsk teknologiselskap spesialisert i kunstig intelligens og maskinlæring.
-
-Vi ble grunnlagt i 2015 og har kontorer i Oslo, Bergen og Stavanger.
-
-Våre tjenester:
-- AI-konsultasjon for bedrifter
-- Maskinlæringsløsninger
-- Dataanalyse
-- Chatbot-teknologi
-- Cloud-løsninger
-
-Vi har en dedikert team på 50+ ingenører og eksperter innen AI.
-
-Kontaktinformasjon:
-Telefon: +47 22 12 34 56
-Email: kontakt@fjordtech.no
-Adresse: Nedre Slottsgate 5, 0157 Oslo
-        `,
+        content: `Fjordtech AS - Om oss\n\nFjordtech AS er et norsk teknologiselskap spesialisert i kunstig intelligens og maskinlæring.\n\nVi ble grunnlagt i 2015 og har kontorer i Oslo, Bergen og Stavanger.\n\nVåre tjenester:\n- AI-konsultasjon for bedrifter\n- Maskinlæringsløsninger\n- Dataanalyse\n- Chatbot-teknologi\n- Cloud-løsninger\n\nVi har en dedikert team på 50+ ingenører og eksperter innen AI.\n\nKontaktinformasjon:\nTelefon: +47 22 12 34 56\nEmail: kontakt@fjordtech.no\nAdresse: Nedre Slottsgate 5, 0157 Oslo`,
       },
       {
         title: 'Fjordtech Services',
         type: 'webpage',
-        content: `
-Tjenester fra Fjordtech
-
-1. AI Consulting
-Vi hjelper bedrifter med å implementere AI-løsninger som passer deres behov.
-
-2. Machine Learning Development
-Vi utvikler tilpassede ML-modeller for klassifikasjon, prediksjon og optimalisering.
-
-3. Data Analytics
-Vårt team analyserer data for å avdekke innsikter og forbedringspotensial.
-
-4. Chatbot Solutions
-Vi bygger intelligente chatboter som kan håndtere kundeservice, salg og support.
-
-5. Cloud Infrastructure
-Vi setter opp og administrerer cloud-løsninger på AWS, Google Cloud og Azure.
-
-Alle våre tjenester er tilpasset deres spesifikke behov og budsjett.
-        `,
+        content: `Tjenester fra Fjordtech\n\n1. AI Consulting\nVi hjelper bedrifter med å implementere AI-løsninger som passer deres behov.\n\n2. Machine Learning Development\nVi utvikler tilpassede ML-modeller for klassifikasjon, prediksjon og optimalisering.\n\n3. Data Analytics\nVårt team analyserer data for å avdekke innsikter og forbedringspotensial.\n\n4. Chatbot Solutions\nVi bygger intelligente chatboter som kan håndtere kundeservice, salg og support.\n\n5. Cloud Infrastructure\nVi setter opp og administrerer cloud-løsninger på AWS, Google Cloud og Azure.\n\nAlle våre tjenester er tilpasset deres spesifikke behov og budsjett.`,
       },
       {
         title: 'Fjordtech Pricing',
         type: 'webpage',
-        content: `
-Priser og Planer
-
-Fjordtech tilbyr fleksible priser basert på dine behov:
-
-Starter Plan: 10,000 kr/måned
-- Opp til 10,000 API-kall per måned
-- 1 integrasjon
-- Email-support
-
-Professional Plan: 50,000 kr/måned
-- Opp til 1,000,000 API-kall per måned
-- Ubegrensede integrasjoner
-- Prioritert support
-- Custom features
-
-Enterprise Plan: Kontakt oss
-- Ubegrensede API-kall
-- Dedikert account manager
-- Custom SLA
-- On-premise deployment
-
-Alle planer inkluderer:
-- 30 dagers gratis trial
-- Dokumentasjon og SDK
-- Monitorering og analytics
-        `,
+        content: `Priser og Planer\n\nFjordtech tilbyr fleksible priser basert på dine behov:\n\nStarter Plan: 10,000 kr/måned\n- Opp til 10,000 API-kall per måned\n- 1 integrasjon\n- Email-support\n\nProfessional Plan: 50,000 kr/måned\n- Opp til 1,000,000 API-kall per måned\n- Ubegrensede integrasjoner\n- Prioritert support\n- Custom features\n\nEnterprise Plan: Kontakt oss\n- Ubegrensede API-kall\n- Dedikert account manager\n- Custom SLA\n- On-premise deployment\n\nAlle planer inkluderer:\n- 30 dagers gratis trial\n- Dokumentasjon og SDK\n- Monitorering og analytics`,
       },
     ];
 
-    // Insert demo documents
     for (const doc of demoDocuments) {
       const docId = uuid();
       query(
@@ -341,28 +268,18 @@ Alle planer inkluderer:
         [docId, siteId, doc.type, doc.title, doc.content, 'active']
       );
 
-      // Create chunks from content
       const chunks = doc.content.split('\n\n').filter((c) => c.trim().length > 0);
       for (let i = 0; i < chunks.length; i++) {
         const chunkId = uuid();
         query(
           `INSERT INTO chunks (id, document_id, site_id, chunk_index, content, tokens)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            chunkId,
-            docId,
-            siteId,
-            i,
-            chunks[i].trim(),
-            Math.ceil(chunks[i].length / 4),
-          ]
+          [chunkId, docId, siteId, i, chunks[i].trim(), Math.ceil(chunks[i].length / 4)]
         );
       }
     }
 
     logger.info(`Demo data seeded for site: ${siteId}`);
-    logger.info(`Demo site ID: ${siteId}`);
-    logger.info(`Demo customer email: fjordtech@demo.no`);
   } catch (err) {
     logger.error(`Demo data seeding error: ${err.message}`);
     throw err;

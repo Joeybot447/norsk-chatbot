@@ -50,6 +50,11 @@ desktop.ini
 *.sqlite
 *.sqlite3
 /data/
+packages/api/data/
+
+# Uploads
+packages/api/uploads/
+uploads/
 
 # Docker
 .dockerignore

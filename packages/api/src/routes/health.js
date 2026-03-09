@@ -1,8 +1,5 @@
 /**
  * Health Check Routes
- * GET /health - Basic health check
- * GET /health/ready - Readiness check (dependencies)
- * GET /health/demo - Get demo site ID for MVP
  */
 
 import express from 'express';
@@ -13,7 +10,6 @@ const router = express.Router();
 
 /**
  * GET /health
- * Simple liveness check
  */
 router.get('/', (req, res) => {
   res.json({
@@ -25,66 +21,37 @@ router.get('/', (req, res) => {
 
 /**
  * GET /health/ready
- * Readiness check - ensures all dependencies are available
  */
 router.get('/ready', async (req, res) => {
   try {
-    // Check database
-    const dbReady = await checkDatabase();
-
-    if (dbReady) {
+    const db = getDb();
+    const result = db.prepare('SELECT 1 as ok').get();
+    if (result && result.ok === 1) {
       return res.json({
         status: 'ready',
-        checks: {
-          database: 'ok',
-        },
+        checks: { database: 'ok' },
       });
     }
-
-    res.status(503).json({
-      status: 'not ready',
-      checks: {
-        database: 'failed',
-      },
-    });
+    res.status(503).json({ status: 'not ready', checks: { database: 'failed' } });
   } catch (err) {
     logger.error(`Health check error: ${err.message}`);
-    res.status(503).json({
-      status: 'error',
-      error: err.message,
-    });
+    res.status(503).json({ status: 'error', error: err.message });
   }
 });
 
 /**
  * GET /health/demo
- * Get demo site ID and configuration for MVP
  */
 router.get('/demo', (req, res) => {
   try {
-    const db = getDb();
-
-    // Get the demo site (first site for fjordtech@demo.no customer)
-    const customers = db.data.customers.filter((c) => c.email === 'fjordtech@demo.no');
-    if (customers.length === 0) {
-      return res.status(404).json({
-        error: 'Demo site not found',
-        message: 'Please ensure the API has been properly initialized',
-      });
+    const customer = getOne('SELECT id FROM customers WHERE email = ?', ['fjordtech@demo.no']);
+    if (!customer) {
+      return res.status(404).json({ error: 'Demo site not found' });
     }
-
-    const customerId = customers[0].id;
-
-    // Get demo site for this customer
-    const sites = db.data.sites.filter((s) => s.customer_id === customerId);
-    if (sites.length === 0) {
-      return res.status(404).json({
-        error: 'Demo site not found',
-      });
+    const site = getOne('SELECT id, name FROM sites WHERE customer_id = ?', [customer.id]);
+    if (!site) {
+      return res.status(404).json({ error: 'Demo site not found' });
     }
-
-    const site = sites[0];
-
     res.json({
       siteId: site.id,
       siteName: site.name,
@@ -95,19 +62,5 @@ router.get('/demo', (req, res) => {
     res.status(500).json({ error: 'Failed to get demo site ID' });
   }
 });
-
-/**
- * Check database connection
- */
-async function checkDatabase() {
-  try {
-    const db = getDb();
-    const result = db.prepare('SELECT 1').all();
-    return result && result.length > 0;
-  } catch (err) {
-    logger.error(`Database health check failed: ${err.message}`);
-    return false;
-  }
-}
 
 export default router;

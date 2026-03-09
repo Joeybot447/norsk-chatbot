@@ -474,7 +474,10 @@
 
       try {
         // Try to get demo site ID from API
-        const response = await fetch(API_URL + '/health/demo');
+        let response = await fetch(API_URL + '/api/demo-info');
+        if (!response.ok) {
+          response = await fetch(API_URL + '/health/demo');
+        }
         if (response.ok) {
           const data = await response.json();
           DEMO_SITE_ID = data.siteId;
