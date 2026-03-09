@@ -3,1201 +3,490 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="NorskBot Dashboard">
+    <meta name="description" content="NorskBot Dashboard — Samtalehistorikk">
     <title>NorskBot Dashboard</title>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f7fa;
-            color: #1a1a1a;
-        }
-
-        .dashboard {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 240px;
-            background: #ffffff;
-            border-right: 1px solid #e2e8f0;
-            padding: 2rem 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .sidebar-logo {
-            padding: 0 2rem;
-            margin-bottom: 2rem;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #1a365d;
-        }
-
-        .sidebar-nav {
-            list-style: none;
-        }
-
-        .nav-item {
-            padding: 0 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            color: #4a5568;
-            text-decoration: none;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-            width: 100%;
-            text-align: left;
-        }
-
-        .nav-link:hover {
-            background: #f5f7fa;
-            color: #3182ce;
-        }
-
-        .nav-link.active {
-            background: #e0e7ff;
-            color: #3182ce;
-            font-weight: 600;
-        }
-
-        .nav-icon {
-            font-size: 1.2rem;
-            width: 20px;
-        }
-
-        .sidebar-footer {
-            padding: 2rem;
-            border-top: 1px solid #e2e8f0;
-            margin-top: 2rem;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            background: #f5f7fa;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #3182ce;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
-
-        .user-details {
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .user-email {
-            font-size: 0.8rem;
-            color: #4a5568;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .btn-logout {
-            width: 100%;
-            padding: 0.5rem;
-            background: #fee2e2;
-            color: #c53030;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-logout:hover {
-            background: #fecaca;
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            margin-left: 240px;
-            padding: 2rem;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        .page-header {
-            margin-bottom: 2rem;
-        }
-
-        .page-title {
-            font-size: 2rem;
-            color: #1a365d;
-            margin-bottom: 0.5rem;
-        }
-
-        .page-subtitle {
-            color: #4a5568;
-        }
-
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .stat-card {
-            background: #ffffff;
-            padding: 2rem;
-            border-radius: 1rem;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        }
-
-        .stat-label {
-            color: #4a5568;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1a365d;
-        }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-        }
-
-        .btn-primary {
-            background: #3182ce;
-            color: #ffffff;
-        }
-
-        .btn-primary:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(49, 130, 206, 0.2);
-        }
-
-        .btn-secondary {
-            background: #f5f7fa;
-            color: #1a365d;
-            border: 1px solid #e2e8f0;
-        }
-
-        .btn-secondary:hover {
-            background: #e2e8f0;
-        }
-
-        .btn-danger {
-            background: #fed7d7;
-            color: #c53030;
-        }
-
-        .btn-danger:hover {
-            background: #fecaca;
-        }
-
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
-
-        /* Lists */
-        .item-list {
-            background: #ffffff;
-            border-radius: 1rem;
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-        }
-
-        .item {
-            padding: 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.3s ease;
-        }
-
-        .item:last-child {
-            border-bottom: none;
-        }
-
-        .item:hover {
-            background: #f5f7fa;
-        }
-
-        .item-content {
-            flex: 1;
-        }
-
-        .item-title {
-            font-weight: 600;
-            color: #1a365d;
-            margin-bottom: 0.25rem;
-        }
-
-        .item-meta {
-            font-size: 0.85rem;
-            color: #4a5568;
-        }
-
-        .item-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-left: 1rem;
-        }
-
-        .status-ready {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-
-        .status-processing {
-            background: #bee3f8;
-            color: #2c5282;
-        }
-
-        .status-error {
-            background: #fed7d7;
-            color: #c53030;
-        }
-
-        .item-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-left: 1rem;
-        }
-
-        /* Forms */
-        .form-section {
-            background: #ffffff;
-            padding: 2rem;
-            border-radius: 1rem;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 2rem;
-        }
-
-        .form-section-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1a365d;
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group:last-child {
-            margin-bottom: 0;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #1a365d;
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        input[type="text"],
-        input[type="url"],
-        textarea,
-        input[type="color"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-
-        input[type="text"]:focus,
-        input[type="url"]:focus,
-        textarea:focus,
-        input[type="color"]:focus {
-            outline: none;
-            border-color: #3182ce;
-            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
-        }
-
-        .input-helper {
-            font-size: 0.85rem;
-            color: #4a5568;
-            margin-top: 0.5rem;
-        }
-
-        /* Dropzone */
-        .dropzone {
-            border: 2px dashed #cbd5e0;
-            border-radius: 1rem;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f5f7fa;
-        }
-
-        .dropzone:hover {
-            border-color: #3182ce;
-            background: #e0e7ff;
-        }
-
-        .dropzone.active {
-            border-color: #3182ce;
-            background: #dbeafe;
-        }
-
-        .dropzone-text {
-            color: #4a5568;
-            margin-bottom: 0.5rem;
-        }
-
-        .dropzone-hint {
-            font-size: 0.85rem;
-            color: #999;
-        }
-
-        /* Colors Preview */
-        .color-preview {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .preview-item {
-            flex: 1;
-        }
-
-        .preview-label {
-            font-size: 0.8rem;
-            color: #4a5568;
-            margin-bottom: 0.5rem;
-        }
-
-        .preview-box {
-            width: 100%;
-            height: 80px;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-        }
-
-        /* Messages */
-        .alert {
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1.5rem;
-            display: none;
-        }
-
-        .alert.show {
-            display: block;
-        }
-
-        .alert-success {
-            background: #c6f6d5;
-            color: #22543d;
-            border: 1px solid #9ae6b4;
-        }
-
-        .alert-error {
-            background: #fed7d7;
-            color: #c53030;
-            border: 1px solid #fc8181;
-        }
-
-        .alert-info {
-            background: #bee3f8;
-            color: #2c5282;
-            border: 1px solid #90cdf4;
-        }
-
-        .code-block {
-            background: #1a1a1a;
-            color: #00ff00;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            margin: 1rem 0;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-        }
-
-        .copy-btn {
-            float: right;
-            padding: 0.5rem 1rem;
-            background: #3182ce;
-            color: #ffffff;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        .copy-btn:hover {
-            background: #2563eb;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                height: 100vh;
-                z-index: 100;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-group:nth-child(2) {
-                grid-column: 1 / -1;
-            }
-        }
+        /* ── Reset & Base ─────────────────────────────── */
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html,body{height:100%;overflow:hidden}
+        body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1F2937;background:#F9FAFB;font-size:14px;-webkit-font-smoothing:antialiased}
+        button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+        input{font-family:inherit;border:none;outline:none}
+        a{text-decoration:none;color:inherit}
+
+        /* ── Top Nav ──────────────────────────────────── */
+        .topnav{display:flex;align-items:center;height:52px;background:#fff;border-bottom:1px solid #E5E7EB;padding:0 20px;position:fixed;top:0;left:0;right:0;z-index:100}
+        .topnav-logo{display:flex;align-items:center;gap:8px;margin-right:auto}
+        .topnav-logo .logo-circle{width:30px;height:30px;background:#3B82F6;border-radius:50%;display:flex;align-items:center;justify-content:center}
+        .topnav-logo .logo-circle svg{width:16px;height:16px;fill:#fff}
+        .topnav-logo span{font-weight:700;font-size:16px;color:#1F2937}
+        .topnav-links{display:flex;align-items:center;gap:6px}
+        .topnav-links a{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:6px;font-size:13px;color:#6B7280;transition:background .15s,color .15s}
+        .topnav-links a:hover{background:#F3F4F6;color:#1F2937}
+        .topnav-links a svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+        .topnav-links .logout{color:#EF4444}
+
+        /* ── Layout Shell ─────────────────────────────── */
+        .shell{display:flex;height:calc(100vh - 52px);margin-top:52px}
+
+        /* ── Left Sidebar ─────────────────────────────── */
+        .sidebar{width:200px;min-width:200px;background:#fff;border-right:1px solid #E5E7EB;overflow-y:auto;padding:16px 0}
+        .sidebar::-webkit-scrollbar{width:4px}
+        .sidebar::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:4px}
+        .sb-item{display:flex;align-items:center;gap:9px;padding:8px 16px;font-size:14px;color:#374151;cursor:pointer;transition:background .12s,color .12s;border-radius:0;position:relative}
+        .sb-item:hover{background:#F3F4F6}
+        .sb-item.active{color:#3B82F6;background:#EFF6FF}
+        .sb-item.active .sb-icon{color:#3B82F6}
+        .sb-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:#6B7280;flex-shrink:0}
+        .sb-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+        .sb-section{padding:18px 16px 6px;font-size:11px;font-weight:600;color:#9CA3AF;letter-spacing:1.2px;text-transform:uppercase}
+        .sb-badge{margin-left:auto;background:#3B82F6;color:#fff;font-size:11px;font-weight:600;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+
+        /* ── Conversation List ────────────────────────── */
+        .convlist{width:280px;min-width:280px;background:#fff;border-right:1px solid #E5E7EB;display:flex;flex-direction:column}
+        .convlist-toolbar{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #E5E7EB}
+        .convlist-filter{display:flex;align-items:center;gap:4px;padding:5px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;color:#374151;background:#fff;cursor:pointer}
+        .convlist-filter:hover{border-color:#9CA3AF}
+        .convlist-filter svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+        .convlist-toolbar-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:#6B7280;transition:background .12s}
+        .convlist-toolbar-btn:hover{background:#F3F4F6}
+        .convlist-toolbar-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+        .convlist-search{flex:1;padding:8px 12px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;background:#F9FAFB;transition:border-color .15s}
+        .convlist-search:focus{border-color:#3B82F6;background:#fff}
+        .convlist-items{flex:1;overflow-y:auto}
+        .convlist-items::-webkit-scrollbar{width:4px}
+        .convlist-items::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:4px}
+        .conv-row{display:flex;gap:10px;padding:12px 14px;cursor:pointer;transition:background .1s;border-bottom:1px solid #F3F4F6;position:relative}
+        .conv-row:hover{background:#F9FAFB}
+        .conv-row.selected{background:#DBEAFE}
+        .conv-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:15px;flex-shrink:0}
+        .conv-body{flex:1;min-width:0}
+        .conv-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px}
+        .conv-name{font-weight:600;font-size:13.5px;color:#1F2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .conv-time{font-size:11px;color:#9CA3AF;flex-shrink:0;margin-left:8px}
+        .conv-preview{font-size:12.5px;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .conv-unread{position:absolute;right:14px;bottom:12px;background:#3B82F6;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+
+        /* ── Chat Area ────────────────────────────────── */
+        .chat{flex:1;display:flex;flex-direction:column;background:#fff;min-width:0}
+        .chat-header{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #E5E7EB;min-height:56px}
+        .chat-header-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;flex-shrink:0}
+        .chat-header-info{flex:1;min-width:0}
+        .chat-header-name{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+        .chat-header-name .status-dot{width:8px;height:8px;background:#22C55E;border-radius:50%;flex-shrink:0}
+        .chat-header-name .status-label{font-size:12px;font-weight:400;color:#22C55E}
+        .chat-header-actions{display:flex;gap:4px}
+        .chat-header-actions button{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:#6B7280;transition:background .12s,color .12s}
+        .chat-header-actions button:hover{background:#F3F4F6;color:#1F2937}
+        .chat-header-actions button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+        .chat-messages{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:4px;background:#FAFBFC}
+        .chat-messages::-webkit-scrollbar{width:5px}
+        .chat-messages::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:4px}
+
+        .msg-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#9CA3AF;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase}
+        .msg-divider::before,.msg-divider::after{content:'';flex:1;height:1px;background:#E5E7EB}
+
+        .msg-system{text-align:center;font-size:11px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;margin:8px 0;font-weight:500}
+
+        .msg-row{display:flex;flex-direction:column;margin-bottom:2px}
+        .msg-row.user{align-items:flex-start}
+        .msg-row.bot{align-items:flex-end}
+        .msg-bubble{max-width:65%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5;word-wrap:break-word}
+        .msg-row.user .msg-bubble{background:#F3F4F6;color:#1F2937;border-bottom-left-radius:4px}
+        .msg-row.bot .msg-bubble{background:#3B82F6;color:#fff;border-bottom-right-radius:4px}
+        .msg-ts{font-size:11px;color:#9CA3AF;margin-top:2px;padding:0 4px}
+        .msg-row.bot .msg-ts{text-align:right}
+
+        .chat-input-bar{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid #E5E7EB;background:#fff}
+        .chat-input{flex:1;padding:10px 14px;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;background:#F9FAFB;transition:border-color .15s}
+        .chat-input:focus{border-color:#3B82F6;background:#fff}
+        .chat-send{width:38px;height:38px;background:#3B82F6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .15s}
+        .chat-send:hover{background:#2563EB}
+        .chat-send svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+        /* ── Right Detail Panel ───────────────────────── */
+        .detail{width:260px;min-width:260px;background:#fff;border-left:1px solid #E5E7EB;overflow-y:auto;padding:0}
+        .detail::-webkit-scrollbar{width:4px}
+        .detail::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:4px}
+        .detail-section{padding:16px 18px;border-bottom:1px solid #F3F4F6}
+        .detail-section:last-child{border-bottom:none}
+        .detail-title{font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+        .detail-add-link{font-size:13px;color:#3B82F6;cursor:pointer}
+        .detail-add-link:hover{text-decoration:underline}
+        .detail-summary-header{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+        .detail-summary-header .green-dot{width:7px;height:7px;background:#22C55E;border-radius:50%}
+        .detail-summary-header .ai-badge{font-size:11px;font-weight:500;color:#3B82F6;background:#DBEAFE;padding:2px 8px;border-radius:4px}
+        .detail-summary-text{font-size:13px;color:#4B5563;line-height:1.55}
+        .detail-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
+        .detail-row .label{color:#6B7280}
+        .detail-row .value{color:#1F2937;font-weight:500;display:flex;align-items:center;gap:4px}
+        .detail-row .thumb-up{color:#22C55E}
+        .detail-row .thumb-down{color:#EF4444}
+
+        /* ── Scrollbar global ─────────────────────────── */
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:4px}
+
+        /* ── Empty / placeholder state ────────────────── */
+        .chat-empty{flex:1;display:flex;align-items:center;justify-content:center;color:#9CA3AF;font-size:15px;background:#FAFBFC}
     </style>
 </head>
 <body>
-    <div class="dashboard">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">NorskBot</div>
-            
-            <nav class="sidebar-nav">
-                <div class="nav-item">
-                    <button class="nav-link active" onclick="switchPage('overview')">
-                        <span class="nav-icon">🏠</span>
-                        <span>Oversikt</span>
-                    </button>
-                </div>
-                <div class="nav-item">
-                    <button class="nav-link" onclick="switchPage('knowledge')">
-                        <span class="nav-icon">📚</span>
-                        <span>Kunnskapsbase</span>
-                    </button>
-                </div>
-                <div class="nav-item">
-                    <button class="nav-link" onclick="switchPage('conversations')">
-                        <span class="nav-icon">💬</span>
-                        <span>Samtaler</span>
-                    </button>
-                </div>
-                <div class="nav-item">
-                    <button class="nav-link" onclick="switchPage('settings')">
-                        <span class="nav-icon">⚙️</span>
-                        <span>Innstillinger</span>
-                    </button>
-                </div>
-                <div class="nav-item">
-                    <button class="nav-link" onclick="switchPage('analytics')">
-                        <span class="nav-icon">📊</span>
-                        <span>Analyse</span>
-                    </button>
-                </div>
-                <div class="nav-item">
-                    <button class="nav-link" onclick="switchPage('embed')">
-                        <span class="nav-icon">🔑</span>
-                        <span>API & Embed</span>
-                    </button>
-                </div>
-            </nav>
 
-            <div class="sidebar-footer">
-                <div class="user-info">
-                    <div class="user-avatar" id="avatarInitial">U</div>
-                    <div class="user-details">
-                        <div class="user-email" id="userEmail">user@email.com</div>
-                    </div>
-                </div>
-                <button class="btn-logout" onclick="logout()">Logg ut</button>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Overview Page -->
-            <div id="overview" class="page active">
-                <div class="page-header">
-                    <h1 class="page-title">Oversikt</h1>
-                    <p class="page-subtitle">Velkomst til din NorskBot dashboard</p>
-                </div>
-
-                <div id="statsContainer">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Totale samtaler</div>
-                            <div class="stat-value" id="totalConversations">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Aktive chatbots</div>
-                            <div class="stat-value" id="activeChatbots">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Kilder lastet opp</div>
-                            <div class="stat-value" id="documentsUploaded">0</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
-                    <button class="btn btn-primary" onclick="switchPage('knowledge')">➕ Legg til ny kilde</button>
-                    <button class="btn btn-secondary" onclick="switchPage('embed')">📋 Kopier embed-kode</button>
-                </div>
-
-                <div class="form-section">
-                    <div class="form-section-title">Nylige samtaler</div>
-                    <div id="recentConversations" style="color: #4a5568; text-align: center; padding: 2rem;">
-                        Ingen samtaler ennå
-                    </div>
-                </div>
-            </div>
-
-            <!-- Knowledge Base Page -->
-            <div id="knowledge" class="page">
-                <div class="page-header">
-                    <h1 class="page-title">Kunnskapsbase</h1>
-                    <p class="page-subtitle">Legger inn og styrer kilder for chatboten din</p>
-                </div>
-
-                <!-- URL Source -->
-                <div class="form-section">
-                    <div class="form-section-title">📌 Scan nettside</div>
-                    <div class="form-group">
-                        <label for="urlInput">Nettadressen din</label>
-                        <input type="url" id="urlInput" placeholder="https://bedrift.no">
-                    </div>
-                    <button class="btn btn-primary" onclick="addUrlSource()">Scan nettside</button>
-                </div>
-
-                <!-- File Upload -->
-                <div class="form-section">
-                    <div class="form-section-title">📄 Last opp dokument</div>
-                    <div class="dropzone" id="dropzone">
-                        <div class="dropzone-text">Dra og slipp fil her</div>
-                        <div class="dropzone-hint">eller klikk for å velge (PDF, DOCX, TXT)</div>
-                    </div>
-                    <input type="file" id="fileInput" style="display: none;" accept=".pdf,.docx,.txt">
-                </div>
-
-                <!-- Raw Text -->
-                <div class="form-section">
-                    <div class="form-section-title">✏️ Lim inn tekst</div>
-                    <div class="form-group">
-                        <label for="textInput">Skriv eller lim inn tekst</label>
-                        <textarea id="textInput" placeholder="Skriv tekst som skal brukes i kunnskapsbasen..."></textarea>
-                    </div>
-                    <button class="btn btn-primary" onclick="addTextSource()">Lagre tekst</button>
-                </div>
-
-                <!-- Sources List -->
-                <div class="form-section">
-                    <div class="form-section-title">Dine kilder</div>
-                    <div id="sourcesList" style="color: #4a5568; text-align: center; padding: 2rem;">
-                        Ingen kilder ennå
-                    </div>
-                </div>
-            </div>
-
-            <!-- Conversations Page -->
-            <div id="conversations" class="page">
-                <div class="page-header">
-                    <h1 class="page-title">Samtaler</h1>
-                    <p class="page-subtitle">Se historikk over kundesamtaler</p>
-                </div>
-
-                <div class="form-section">
-                    <div id="conversationsList" style="color: #4a5568; text-align: center; padding: 2rem;">
-                        Ingen samtaler ennå
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Page -->
-            <div id="settings" class="page">
-                <div class="page-header">
-                    <h1 class="page-title">Innstillinger</h1>
-                    <p class="page-subtitle">Tilpass chatboten din</p>
-                </div>
-
-                <div class="form-section">
-                    <div class="form-section-title">Widget-tilpassing</div>
-                    
-                    <div class="form-group">
-                        <label for="botName">Navn på chatbot</label>
-                        <input type="text" id="botName" placeholder="Min chatbot" value="NorskBot">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="welcomeMessage">Velkomstmelding</label>
-                        <textarea id="welcomeMessage" placeholder="Hej! Jeg er chatbot. Hva kan jeg hjelpe deg med?">Hej! Jeg er chatbot. Hva kan jeg hjelpe deg med?</textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="primaryColor">Primærfarge</label>
-                        <input type="color" id="primaryColor" value="#3182ce">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="position">Posisjon</label>
-                        <select id="position" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;">
-                            <option value="bottom-right">Nederst til høyre</option>
-                            <option value="bottom-left">Nederst til venstre</option>
-                        </select>
-                    </div>
-
-                    <button class="btn btn-primary" onclick="saveSettings()">Lagre innstillinger</button>
-                </div>
-
-                <div class="form-section">
-                    <div class="form-section-title">Forhåndsvisning</div>
-                    <div style="border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 2rem; text-align: center; color: #4a5568;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
-                        <p>Widget-forhåndsvisning vil vises her</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Analytics Page -->
-            <div id="analytics" class="page">
-                <div class="page-header">
-                    <h1 class="page-title">Analyse</h1>
-                    <p class="page-subtitle">Innsikt i chatbot-ytelse</p>
-                </div>
-
-                <div class="stats-grid" style="margin-bottom: 2rem;">
-                    <div class="stat-card">
-                        <div class="stat-label">Gjennomsnittlig responstid</div>
-                        <div class="stat-value">0.8s</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Bruker satisfaksjon</div>
-                        <div class="stat-value">92%</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Eskalering</div>
-                        <div class="stat-value">8%</div>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <div class="form-section-title">Topp spørsmål</div>
-                    <div style="color: #4a5568; text-align: center; padding: 2rem;">
-                        Data kommer snart
-                    </div>
-                </div>
-            </div>
-
-            <!-- Embed Page -->
-            <div id="embed" class="page">
-                <div class="page-header">
-                    <h1 class="page-title">API & Embed</h1>
-                    <p class="page-subtitle">Integrer chatboten på nettsiden din</p>
-                </div>
-
-                <div class="form-section">
-                    <div class="form-section-title">Embed-kode</div>
-                    <p style="color: #4a5568; margin-bottom: 1rem;">Kopier denne koden og lim den inn før &lt;/body&gt; på nettsiden din:</p>
-                    
-                    <div style="position: relative;">
-                        <button class="copy-btn" onclick="copyEmbedCode()">📋 Kopier</button>
-                        <div class="code-block" id="embedCode">&lt;script src="https://norskbot.no/widget.js" data-site="loading..."&gt;&lt;/script&gt;</div>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <div class="form-section-title">API-nøkkel</div>
-                    <p style="color: #4a5568; margin-bottom: 1rem;">Bruk denne nøkkelen til API-kall:</p>
-                    
-                    <div style="display: flex; gap: 1rem;">
-                        <input type="text" id="apiKey" style="flex: 1;" readonly>
-                        <button class="btn btn-secondary btn-small" onclick="copyApiKey()">📋 Kopier</button>
-                        <button class="btn btn-secondary btn-small" onclick="regenerateApiKey()">🔄 Regenerer</button>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <div class="form-section-title">API-dokumentasjon</div>
-                    <p style="color: #4a5568;">Se <a href="#" style="color: #3182ce; text-decoration: underline;">full API-dokumentasjon</a> for integrasjon og eksempler.</p>
-                </div>
-            </div>
-        </main>
+<!-- ═══════════ TOP NAV ═══════════ -->
+<nav class="topnav">
+    <a href="index.html" class="topnav-logo">
+        <div class="logo-circle">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <span>NorskBot</span>
+    </a>
+    <div class="topnav-links">
+        <a href="index.html"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chatbots</a>
+        <a href="#"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Demo</a>
+        <a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Abonnement</a>
+        <a href="#"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Forbruk</a>
+        <a href="#"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil</a>
+        <a href="auth.html" class="logout"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logg ut</a>
     </div>
+</nav>
 
-    <script>
-        const API_BASE = '/api';
-        let currentSite = null;
+<!-- ═══════════ SHELL ═══════════ -->
+<div class="shell">
 
-        // Initialize
-        window.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            loadStats();
-            loadSites();
-        });
+    <!-- ─── LEFT SIDEBAR ─── -->
+    <aside class="sidebar">
+        <div class="sb-item" data-page="index.html">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+            Dashboard
+        </div>
 
-        function checkAuth() {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                window.location.href = '/dashboard/auth.html';
-                return;
-            }
+        <div class="sb-section">Innhold</div>
+        <div class="sb-item" data-page="knowledge.html">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+            Lenker
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            Filer
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></span>
+            Tekst
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            Spørsmål & Svar
+        </div>
 
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            if (user.email) {
-                document.getElementById('userEmail').textContent = user.email;
-                const initial = user.email.charAt(0).toUpperCase();
-                document.getElementById('avatarInitial').textContent = initial;
-            }
-        }
+        <div class="sb-section">Tilpasninger</div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+            Hurtigmeldinger
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            Personas
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></span>
+            Utseende
+        </div>
 
-        function loadSites() {
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/sites`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.sites && data.sites.length > 0) {
-                        currentSite = data.sites[0];
-                        loadSourcesList();
-                        loadConversations();
-                        loadSettings();
-                        loadEmbedCode();
-                    }
-                })
-                .catch(e => console.error('Error loading sites:', e));
-        }
+        <div class="sb-section">Avansert</div>
+        <div class="sb-item active">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            Samtalehistorikk
+            <span class="sb-badge">4</span>
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+            Lekeplass
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+            Funksjoner
+        </div>
+        <div class="sb-item">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            Medlemmer
+        </div>
+        <div class="sb-item" data-page="settings.html">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+            Innstillinger
+        </div>
+    </aside>
 
-        function loadStats() {
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/stats`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('totalConversations').textContent = data.total_conversations;
-                    document.getElementById('activeChatbots').textContent = data.active_chatbots;
-                    document.getElementById('documentsUploaded').textContent = data.documents_uploaded;
-                })
-                .catch(e => console.error('Error loading stats:', e));
-        }
+    <!-- ─── CONVERSATION LIST ─── -->
+    <section class="convlist">
+        <div class="convlist-toolbar">
+            <button class="convlist-filter">
+                Åpne
+                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div style="flex:1"></div>
+            <button class="convlist-toolbar-btn" title="Filter">
+                <svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            </button>
+            <button class="convlist-toolbar-btn" title="Eksporter">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+        </div>
+        <div class="convlist-items" id="convList"></div>
+    </section>
 
-        function loadSourcesList() {
-            if (!currentSite) return;
-            
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/sources/${currentSite.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    const container = document.getElementById('sourcesList');
-                    if (!data.sources || data.sources.length === 0) {
-                        container.innerHTML = '<div style="color: #4a5568; text-align: center; padding: 2rem;">Ingen kilder ennå</div>';
-                        return;
-                    }
+    <!-- ─── MAIN CHAT ─── -->
+    <main class="chat" id="chatArea">
+        <div class="chat-header" id="chatHeader" style="display:none">
+            <div class="chat-header-avatar" id="chatAvatar"></div>
+            <div class="chat-header-info">
+                <div class="chat-header-name">
+                    <span id="chatName"></span>
+                    <span class="status-dot"></span>
+                    <span class="status-label">Åpen</span>
+                </div>
+            </div>
+            <div class="chat-header-actions">
+                <button title="Stjerne"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
+                <button title="Merk som løst"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+                <button title="Varsler"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+                <button title="Mer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-empty">Velg en samtale for å starte</div>
+        </div>
+        <div class="chat-input-bar" id="chatInputBar" style="display:none">
+            <input class="chat-input" id="chatInput" type="text" placeholder="Skriv en melding…">
+            <button class="chat-send" id="chatSend">
+                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+        </div>
+    </main>
 
-                    const html = `<div class="item-list">${data.sources
-                        .map(
-                            (source) => `
-                        <div class="item">
-                            <div class="item-content">
-                                <div class="item-title">${source.name || source.url || 'Tekstkilde'}</div>
-                                <div class="item-meta">${source.type === 'url' ? '🌐 ' + source.url : source.type === 'file' ? '📄 ' + source.name : '✏️ Tekst'}</div>
-                            </div>
-                            <span class="item-status status-${source.status}">${source.status === 'processing' ? 'Prosesserer' : 'Klar'}</span>
-                            <div class="item-actions">
-                                <button class="btn btn-danger btn-small" onclick="deleteSource('${source.id}')">Slett</button>
-                            </div>
-                        </div>
-                    `
-                        )
-                        .join('')}</div>`;
-                    
-                    container.innerHTML = html;
-                })
-                .catch(e => console.error('Error loading sources:', e));
-        }
+    <!-- ─── RIGHT DETAIL PANEL ─── -->
+    <aside class="detail" id="detailPanel" style="display:none">
+        <div class="detail-section">
+            <div class="detail-title">Emneord</div>
+            <span class="detail-add-link">+ Legg til emneord</span>
+        </div>
+        <div class="detail-section">
+            <div class="detail-title">Sammendrag</div>
+            <div class="detail-summary-header">
+                <span class="green-dot"></span>
+                <span class="ai-badge">AI-generert</span>
+            </div>
+            <p class="detail-summary-text" id="detailSummary"></p>
+        </div>
+        <div class="detail-section">
+            <div class="detail-title">Samtaledetaljer</div>
+            <div id="detailConvInfo"></div>
+        </div>
+        <div class="detail-section">
+            <div class="detail-title">Brukerdetaljer</div>
+            <div id="detailUserInfo"></div>
+        </div>
+    </aside>
 
-        function loadConversations() {
-            if (!currentSite) return;
-            
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/conversations/${currentSite.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    const container = document.getElementById('conversationsList');
-                    if (!data.conversations || data.conversations.length === 0) {
-                        container.innerHTML = '<div style="color: #4a5568; text-align: center; padding: 2rem;">Ingen samtaler ennå</div>';
-                        return;
-                    }
+</div><!-- /shell -->
 
-                    const html = `<div class="item-list">${data.conversations
-                        .map(
-                            (conv) => `
-                        <div class="item">
-                            <div class="item-content">
-                                <div class="item-title">${conv.visitor_name || 'Anonym'}</div>
-                                <div class="item-meta">${conv.message_count} meldinger • ${new Date(conv.started_at).toLocaleString('no-NO')}</div>
-                            </div>
-                        </div>
-                    `
-                        )
-                        .join('')}</div>`;
-                    
-                    container.innerHTML = html;
-                })
-                .catch(e => console.error('Error loading conversations:', e));
+<script>
+/* ══════════════════════════════════════════════════
+   DEMO DATA
+   ══════════════════════════════════════════════════ */
+const CONVERSATIONS = [
+  {
+    id:1, name:"Kari Nordmann", avatar:"K", color:"#3B82F6",
+    email:"kari.nordmann@gmail.com", phone:"+47 912 34 567",
+    unread:2, time:"14:32",
+    preview:"Hva koster det for en skole med 500 elever?",
+    summary:"Kari spør om priser for plagiatkontroll-tjenesten for en videregående skole med ca. 500 elever. Hun er interessert i årsabonnement og rabatter for kommunale skoler.",
+    tone:"Vennlig", totalMsg:8, positive:6, negative:2, convId:"#10291", started:"9. mars 2026",
+    messages:[
+      {from:"system", text:"Samtalen startet"},
+      {from:"user", ts:"14:20", text:"Hei! Jeg er rektor på Lillehammer videregående skole. Vi vurderer å ta i bruk NorskBot for plagiatkontroll."},
+      {from:"bot", ts:"14:21", text:"Hei Kari! Velkommen 👋 Så flott at dere vurderer NorskBot. Jeg hjelper gjerne med informasjon om våre løsninger for skoler. Hvor mange elever har dere?"},
+      {from:"user", ts:"14:23", text:"Vi har ca. 500 elever fordelt på tre studieretninger."},
+      {from:"bot", ts:"14:24", text:"For en skole med 500 elever anbefaler vi vår Skole Pro-pakke. Den inkluderer ubegrenset antall kontroller, integrasjon med It's Learning, og detaljerte rapporter.\n\nPrisen er 24 900 kr/år ekskl. mva. For kommunale skoler tilbyr vi 15% rabatt ved avtale for flere skoler."},
+      {from:"user", ts:"14:28", text:"Det høres interessant ut. Har dere noen referansekunder i Innlandet?"},
+      {from:"bot", ts:"14:29", text:"Ja, absolutt! Gjøvik kommune bruker NorskBot på alle sine videregående skoler, og Hamar katedralskole har vært kunde siden 2024. Jeg kan sette opp en referansesamtale hvis du ønsker det."},
+      {from:"user", ts:"14:32", text:"Hva koster det for en skole med 500 elever? Finnes det en gratis prøveperiode?"},
+    ]
+  },
+  {
+    id:2, name:"Erik Hansen", avatar:"E", color:"#0D9488",
+    email:"erik.hansen@techfirma.no", phone:"+47 987 65 432",
+    unread:0, time:"12:15",
+    preview:"Har dere REST API for integrasjon med vårt LMS?",
+    summary:"Erik fra et EdTech-selskap ønsker å integrere NorskBot sin API med deres eget læringsplattform. Han trenger dokumentasjon og API-nøkler for testing.",
+    tone:"Profesjonell", totalMsg:12, positive:9, negative:3, convId:"#10287", started:"8. mars 2026",
+    messages:[
+      {from:"system", text:"Samtalen startet"},
+      {from:"user", ts:"11:40", text:"Hei, jeg er utvikler hos TechFirma AS. Vi bygger et LMS og ønsker å integrere plagiatkontroll via API."},
+      {from:"bot", ts:"11:41", text:"Hei Erik! Vi har et REST API med full dokumentasjon. Dere kan sjekke tekster, hente rapporter og administrere brukere programmatisk. Hvilken type integrasjon ser dere for dere?"},
+      {from:"user", ts:"11:45", text:"Vi trenger å sende inn tekster fra studentoppgaver og få tilbake en prosentskår + detaljert rapport. Har dere REST API for integrasjon med vårt LMS?"},
+      {from:"bot", ts:"11:47", text:"Ja! Vårt API støtter akkurat det. Endepunktet POST /api/v1/check tar imot tekst eller fil (PDF/DOCX) og returnerer:\n\n• Plagiatscore (0-100%)\n• Matchende kilder med URL-er\n• AI-deteksjon (sannsynlighet)\n• Detaljert JSON-rapport\n\nResponse-tid er typisk 5-15 sekunder avhengig av tekstlengde."},
+      {from:"user", ts:"12:01", text:"Perfekt. Kan vi få en sandbox API-nøkkel for testing?"},
+      {from:"bot", ts:"12:03", text:"Selvfølgelig! Jeg oppretter en sandbox-konto for dere nå. Du vil motta API-nøkkel og dokumentasjonslenke på e-post innen 10 minutter. Sandbox-miljøet har 1000 gratis API-kall for testing."},
+      {from:"user", ts:"12:15", text:"Takk, ser frem til det. Er det rate limiting vi bør ta hensyn til?"},
+    ]
+  },
+  {
+    id:3, name:"Maria Olsen", avatar:"M", color:"#7C3AED",
+    email:"maria.olsen@kommune.no", phone:"+47 456 78 901",
+    unread:1, time:"I går",
+    preview:"Kan vi booke en demo for avdelingen vår?",
+    summary:"Maria fra en kommune ønsker en live demo av NorskBot for sin utdanningsavdeling. Hun har ansvar for digitale verktøy i skolene.",
+    tone:"Entusiastisk", totalMsg:6, positive:5, negative:1, convId:"#10285", started:"7. mars 2026",
+    messages:[
+      {from:"system", text:"Samtalen startet"},
+      {from:"user", ts:"09:10", text:"God morgen! Jeg jobber i utdanningsavdelingen i Drammen kommune. Vi har 12 skoler og leter etter en norsk plagiatkontroll-løsning."},
+      {from:"bot", ts:"09:11", text:"God morgen, Maria! Med 12 skoler er dere en perfekt kandidat for vår Kommune-pakke. Vil du at jeg forteller mer, eller foretrekker du en live demo?"},
+      {from:"user", ts:"09:14", text:"En demo hadde vært perfekt! Vi er 4-5 personer som gjerne vil se systemet i aksjon."},
+      {from:"bot", ts:"09:15", text:"Supert! Jeg kan sette opp en 30-minutters demo via Teams eller Zoom. Vi viser alt fra innsending av tekst til ferdig rapport, inkludert AI-deteksjon.\n\nLedige tider denne uken:\n• Onsdag 11. mars kl. 10:00\n• Torsdag 12. mars kl. 14:00\n• Fredag 13. mars kl. 09:00\n\nHvilken passer best?"},
+      {from:"user", ts:"09:20", text:"Kan vi booke en demo for avdelingen vår? Torsdag kl. 14 passer fint."},
+      {from:"bot", ts:"09:21", text:"Perfekt! Demoen er booket: torsdag 12. mars kl. 14:00. Jeg sender en kalenderinvitasjon med Teams-lenke til e-postadressen din. Noe spesielt dere vil at vi fokuserer på?"},
+    ]
+  },
+  {
+    id:4, name:"Anders Berg", avatar:"A", color:"#DC2626",
+    email:"anders.berg@skole.no", phone:"+47 321 09 876",
+    unread:3, time:"I går",
+    preview:"Rapporten viser feil prosent, kan dere sjekke?",
+    summary:"Anders rapporterer et problem med feil plagiatprosent i en rapport. Systemet viste 45% men teksten var original. Saken eskaleres til teknisk support.",
+    tone:"Frustrert", totalMsg:14, positive:5, negative:9, convId:"#10280", started:"6. mars 2026",
+    messages:[
+      {from:"system", text:"Samtalen startet"},
+      {from:"user", ts:"15:30", text:"Hei, vi har et problem. En av lærerne våre kjørte en plagiatsjekk og fikk 45% plagiatscore på en tekst som eleven skrev helt selv."},
+      {from:"bot", ts:"15:31", text:"Hei Anders, det er beklagelig å høre. En feil-positiv på 45% er uvanlig. Kan du sende meg rapport-ID-en slik at jeg kan undersøke dette nærmere?"},
+      {from:"user", ts:"15:35", text:"Rapport-ID er RPT-2026-4521. Eleven er veldig opprørt, og vi trenger en avklaring raskt."},
+      {from:"bot", ts:"15:37", text:"Jeg har funnet rapporten. Det ser ut som systemet matchet teksten mot en eldre versjon av den samme elevens innlevering fra forrige semester. Dette er en kjent begrensning vi jobber med å fikse.\n\nJeg kan:\n1. Manuelt korrigere rapporten nå\n2. Ekskludere selvplagiering for deres skole\n\nHvilket foretrekker du?"},
+      {from:"user", ts:"15:40", text:"Rapporten viser feil prosent, kan dere sjekke? Begge deler, helst. Vi kan ikke ha slike feil."},
+      {from:"bot", ts:"15:42", text:"Helt forståelig. Jeg korrigerer rapporten umiddelbart og aktiverer filteret for selvplagiering for hele deres skole. Du vil motta en oppdatert rapport på e-post innen 5 minutter. Beklager ulempen! 🙏"},
+    ]
+  }
+];
 
-            // Also load recent conversations in overview
-            const token2 = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/conversations/${currentSite.id}`, {
-                headers: { 'Authorization': `Bearer ${token2}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    const container = document.getElementById('recentConversations');
-                    if (!data.conversations || data.conversations.length === 0) {
-                        container.innerHTML = '<div style="color: #4a5568; text-align: center; padding: 2rem;">Ingen samtaler ennå</div>';
-                        return;
-                    }
+/* ══════════════════════════════════════════════════
+   RENDER
+   ══════════════════════════════════════════════════ */
+let activeConvId = null;
 
-                    const limited = data.conversations.slice(0, 5);
-                    const html = `<div class="item-list">${limited
-                        .map(
-                            (conv) => `
-                        <div class="item">
-                            <div class="item-content">
-                                <div class="item-title">${conv.visitor_name || 'Anonym'}</div>
-                                <div class="item-meta">${conv.message_count} meldinger</div>
-                            </div>
-                        </div>
-                    `
-                        )
-                        .join('')}</div>`;
-                    
-                    container.innerHTML = html;
-                })
-                .catch(e => console.error('Error loading recent conversations:', e));
-        }
+function renderConvList(){
+  const el = document.getElementById('convList');
+  el.innerHTML = CONVERSATIONS.map(c => `
+    <div class="conv-row${c.id===activeConvId?' selected':''}" data-id="${c.id}">
+      <div class="conv-avatar" style="background:${c.color}">${c.avatar}</div>
+      <div class="conv-body">
+        <div class="conv-top">
+          <span class="conv-name">${c.name}</span>
+          <span class="conv-time">${c.time}</span>
+        </div>
+        <div class="conv-preview">${c.preview}</div>
+      </div>
+      ${c.unread?`<span class="conv-unread">${c.unread}</span>`:''}
+    </div>
+  `).join('');
 
-        function loadSettings() {
-            if (!currentSite) return;
-            
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/settings/${currentSite.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.settings) {
-                        document.getElementById('botName').value = data.settings.name || '';
-                        document.getElementById('welcomeMessage').value = data.settings.welcome_message || '';
-                        document.getElementById('primaryColor').value = data.settings.primary_color || '#3182ce';
-                        document.getElementById('position').value = data.settings.position || 'bottom-right';
-                    }
-                })
-                .catch(e => console.error('Error loading settings:', e));
-        }
+  el.querySelectorAll('.conv-row').forEach(row => {
+    row.addEventListener('click', () => selectConv(+row.dataset.id));
+  });
+}
 
-        function loadEmbedCode() {
-            if (!currentSite) return;
-            
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/embed/${currentSite.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('embedCode').innerHTML = `&lt;script src="https://norskbot.no/widget.js" data-site="${data.site_id}"&gt;&lt;/script&gt;`;
-                    document.getElementById('apiKey').value = data.api_key;
-                })
-                .catch(e => console.error('Error loading embed code:', e));
-        }
+function selectConv(id){
+  activeConvId = id;
+  const c = CONVERSATIONS.find(x=>x.id===id);
+  if(!c) return;
 
-        function switchPage(pageName) {
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            
-            // Show selected page
-            document.getElementById(pageName).classList.add('active');
+  // Mark read
+  c.unread = 0;
+  renderConvList();
 
-            // Update nav links
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            event.target.closest('.nav-link').classList.add('active');
-        }
+  // Header
+  document.getElementById('chatHeader').style.display='';
+  document.getElementById('chatAvatar').style.background = c.color;
+  document.getElementById('chatAvatar').textContent = c.avatar;
+  document.getElementById('chatName').textContent = c.name;
 
-        function addUrlSource() {
-            if (!currentSite) return;
-            
-            const url = document.getElementById('urlInput').value;
-            if (!url) {
-                alert('Vennligst skriv inn en URL');
-                return;
-            }
+  // Messages
+  const msgEl = document.getElementById('chatMessages');
+  let html = '<div class="msg-divider">I dag</div>';
+  c.messages.forEach(m => {
+    if(m.from==='system'){
+      html += `<div class="msg-system">${m.text}</div>`;
+    } else {
+      const cls = m.from==='user'?'user':'bot';
+      html += `<div class="msg-row ${cls}">
+        <div class="msg-bubble">${m.text.replace(/\n/g,'<br>')}</div>
+        ${m.ts?`<div class="msg-ts">${m.ts}</div>`:''}
+      </div>`;
+    }
+  });
+  msgEl.innerHTML = html;
+  msgEl.scrollTop = msgEl.scrollHeight;
 
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/sources/url`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ site_id: currentSite.id, url }),
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('urlInput').value = '';
-                        loadSourcesList();
-                        alert('Kilde lagt til! Den prosesseres nå.');
-                    }
-                })
-                .catch(e => alert('Feil: ' + e.message));
-        }
+  // Input bar
+  document.getElementById('chatInputBar').style.display='';
 
-        function addTextSource() {
-            if (!currentSite) return;
-            
-            const content = document.getElementById('textInput').value;
-            if (!content) {
-                alert('Vennligst skriv inn tekst');
-                return;
-            }
+  // Detail panel
+  const dp = document.getElementById('detailPanel');
+  dp.style.display='';
+  document.getElementById('detailSummary').textContent = c.summary;
+  document.getElementById('detailConvInfo').innerHTML = `
+    <div class="detail-row"><span class="label">Tone</span><span class="value">${c.tone}</span></div>
+    <div class="detail-row"><span class="label">Totale meldinger</span><span class="value">${c.totalMsg}</span></div>
+    <div class="detail-row"><span class="label">Positive</span><span class="value"><span class="thumb-up">👍</span> ${c.positive}</span></div>
+    <div class="detail-row"><span class="label">Negative</span><span class="value"><span class="thumb-down">👎</span> ${c.negative}</span></div>
+    <div class="detail-row"><span class="label">ID</span><span class="value">${c.convId}</span></div>
+    <div class="detail-row"><span class="label">Startet</span><span class="value">${c.started}</span></div>
+  `;
+  document.getElementById('detailUserInfo').innerHTML = `
+    <div class="detail-row"><span class="label">E-post</span><span class="value" style="font-size:12px">${c.email}</span></div>
+    <div class="detail-row"><span class="label">Telefon</span><span class="value">${c.phone}</span></div>
+  `;
+}
 
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/sources/text`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ site_id: currentSite.id, content }),
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('textInput').value = '';
-                        loadSourcesList();
-                        alert('Tekst lagret!');
-                    }
-                })
-                .catch(e => alert('Feil: ' + e.message));
-        }
+/* Send message */
+function sendMessage(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text || !activeConvId) return;
+  input.value = '';
 
-        function deleteSource(sourceId) {
-            if (!confirm('Er du sikker?')) return;
+  const c = CONVERSATIONS.find(x=>x.id===activeConvId);
+  const now = new Date();
+  const ts = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  c.messages.push({from:'bot', ts, text});
+  c.totalMsg++;
+  selectConv(activeConvId);
+}
 
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/sources/${sourceId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        loadSourcesList();
-                        alert('Kilde slettet');
-                    }
-                })
-                .catch(e => alert('Feil: ' + e.message));
-        }
+document.getElementById('chatSend').addEventListener('click', sendMessage);
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+});
 
-        function saveSettings() {
-            if (!currentSite) return;
-            
-            const settings = {
-                name: document.getElementById('botName').value,
-                welcome_message: document.getElementById('welcomeMessage').value,
-                primary_color: document.getElementById('primaryColor').value,
-                position: document.getElementById('position').value,
-            };
+/* Sidebar nav */
+document.querySelectorAll('.sb-item').forEach(item => {
+  item.addEventListener('click', function(){
+    const page = this.dataset.page;
+    if(page){
+      window.location.href = page;
+      return;
+    }
+    document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
 
-            const token = localStorage.getItem('authToken');
-            fetch(`${API_BASE}/dashboard/settings/${currentSite.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(settings),
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Innstillinger lagret!');
-                    }
-                })
-                .catch(e => alert('Feil: ' + e.message));
-        }
-
-        function copyEmbedCode() {
-            const code = document.getElementById('embedCode').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                alert('Embed-kode kopiert!');
-            });
-        }
-
-        function copyApiKey() {
-            const key = document.getElementById('apiKey').value;
-            navigator.clipboard.writeText(key).then(() => {
-                alert('API-nøkkel kopiert!');
-            });
-        }
-
-        function regenerateApiKey() {
-            alert('API-nøkkel regenerering kommer snart');
-        }
-
-        function logout() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            window.location.href = '/dashboard/auth.html';
-        }
-
-        // File upload handling
-        const dropzone = document.getElementById('dropzone');
-        const fileInput = document.getElementById('fileInput');
-
-        dropzone.addEventListener('click', () => fileInput.click());
-
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('active');
-        });
-
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('active');
-        });
-
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('active');
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFileUpload(files[0]);
-            }
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileUpload(e.target.files[0]);
-            }
-        });
-
-        function handleFileUpload(file) {
-            if (!currentSite) {
-                alert('Laster inn... prøv igjen om en sekund');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target.result;
-                const token = localStorage.getItem('authToken');
-
-                fetch(`${API_BASE}/dashboard/sources/upload`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        site_id: currentSite.id,
-                        file_name: file.name,
-                        file_content: content,
-                    }),
-                })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            loadSourcesList();
-                            alert('Fil lastet opp!');
-                        }
-                    })
-                    .catch(e => alert('Feil: ' + e.message));
-            };
-            reader.readAsText(file);
-        }
-    </script>
+/* Init */
+renderConvList();
+selectConv(1);
+</script>
 </body>
 </html>

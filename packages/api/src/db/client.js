@@ -4,7 +4,6 @@
  * Uses the built-in sqlite3 module
  */
 
-import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
@@ -15,8 +14,9 @@ const dbPath = process.env.DATABASE_URL || path.join(__dirname, '../../norsk-cha
 let dbInstance = null;
 
 /**
- * Simple in-memory SQLite implementation
- * Since better-sqlite3 requires compilation, we'll use a simpler approach
+ * Simple in-memory SQLite implementation (MVP mode - no persistence)
+ * All data is stored in memory and lost on server restart
+ * For production, replace with real database (PostgreSQL, MySQL, etc.)
  */
 class SimpleSQLiteDB {
   constructor() {
