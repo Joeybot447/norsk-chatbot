@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NorskBot Prising - Velg planen som passer din bedrift.">
+    <title>Prising - NorskBot</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            border-bottom: 1px solid #f0f0f0;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a365d;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #1a1a1a;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #3182ce;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(49, 130, 206, 0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header */
+        .pricing-header {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+            text-align: center;
+        }
+
+        .pricing-header h1 {
+            font-size: 2.5rem;
+            color: #1a365d;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-header p {
+            font-size: 1.2rem;
+            color: #4a5568;
+            margin-bottom: 2rem;
+        }
+
+        /* Price Toggle */
+        .billing-toggle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .toggle-label {
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #cbd5e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #3182ce;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            left: 32px;
+        }
+
+        .savings-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Pricing Grid */
+        .pricing-section {
+            padding: 4rem 2rem;
+            background: #ffffff;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: #ffffff;
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pricing-card:hover {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .pricing-card.featured {
+            border: 2px solid #3182ce;
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(49, 130, 206, 0.2);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3182ce;
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.4rem;
+            color: #1a365d;
+            margin-bottom: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .pricing-description {
+            color: #4a5568;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .pricing-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #3182ce;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-period {
+            color: #4a5568;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .pricing-features li {
+            padding: 1rem 0;
+            color: #4a5568;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .pricing-features li:before {
+            content: "✓";
+            color: #3182ce;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .pricing-features li.disabled {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .pricing-features li.disabled:before {
+            content: "✕";
+            color: #cbd5e0;
+        }
+
+        .pricing-cta {
+            width: 100%;
+            padding: 1rem;
+            background: #3182ce;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-cta:hover {
+            background: #2563eb;
+        }
+
+        /* Comparison Table */
+        .comparison-section {
+            padding: 4rem 2rem;
+            background: #f5f7fa;
+        }
+
+        .comparison-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .comparison-header h2 {
+            font-size: 2rem;
+            color: #1a365d;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-table {
+            overflow-x: auto;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th {
+            background: #f5f7fa;
+            padding: 1.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: #1a365d;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        table td {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #4a5568;
+        }
+
+        table tr:last-child td {
+            border-bottom: none;
+        }
+
+        table tr:hover {
+            background: #f9fafb;
+        }
+
+        .feature-name {
+            font-weight: 600;
+            color: #1a365d;
+        }
+
+        .checkmark {
+            color: #3182ce;
+            font-weight: bold;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 4rem 2rem;
+            background: #ffffff;
+        }
+
+        .faq-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .faq-header h2 {
+            font-size: 2rem;
+            color: #1a365d;
+            margin-bottom: 0.5rem;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            border-left: 3px solid #3182ce;
+            padding-left: 1.5rem;
+        }
+
+        .faq-item h3 {
+            color: #1a365d;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .faq-item p {
+            color: #4a5568;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #1a365d 0%, #2c5aa0 100%);
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .cta-content h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-content p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #ffffff;
+        }
+
+        .footer-bottom {
+            color: #4a5568;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .pricing-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .pricing-card.featured {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .pricing-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-card.featured {
+                grid-column: span 1;
+                transform: scale(1);
+            }
+
+            .faq-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-table {
+                overflow-x: auto;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            table th,
+            table td {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-container {
+                padding: 0 1rem;
+            }
+
+            .pricing-header {
+                padding: 2rem 1rem;
+            }
+
+            .pricing-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .pricing-price {
+                font-size: 2rem;
+            }
+
+            .billing-toggle {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">NorskBot</a>
+            <ul class="nav-links">
+                <li><a href="index.html#features">Funksjoner</a></li>
+                <li><a href="index.html#pricing">Priser</a></li>
+                <li><a href="index.html#demo">Demo</a></li>
+                <li><a href="index.html#contact">Kontakt</a></li>
+            </ul>
+            <button class="btn-primary">Prøv Gratis</button>
+        </div>
+    </nav>
+
+    <!-- Pricing Header -->
+    <section class="pricing-header">
+        <div class="container">
+            <h1>Enkel prising for alle bedrifter</h1>
+            <p>Velg planen som passer din bedrift og voks med oss</p>
+            <div class="billing-toggle">
+                <span class="toggle-label">Månedlig</span>
+                <div class="toggle-switch active" id="billingToggle"></div>
+                <span class="toggle-label">Årlig</span>
+                <span class="savings-badge">Spar 20%</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Cards -->
+    <section class="pricing-section">
+        <div class="container">
+            <div class="pricing-grid">
+                <!-- Starter Plan -->
+                <div class="pricing-card">
+                    <h3>Starter</h3>
+                    <p class="pricing-description">Perfekt for små bedrifter som ønsker å komme i gang</p>
+                    <div class="pricing-price" id="price-starter">399 <span style="font-size: 0.8em;">NOK</span></div>
+                    <div class="price-period">per måned</div>
+                    <ul class="pricing-features">
+                        <li>1 chatbot</li>
+                        <li>500 samtaler per måned</li>
+                        <li>E-post support</li>
+                        <li>Grunnleggende analyse</li>
+                        <li class="disabled">Custom integrasjoner</li>
+                        <li class="disabled">Prioritert support</li>
+                    </ul>
+                    <button class="pricing-cta">Start gratis prøveperiode</button>
+                </div>
+
+                <!-- Pro Plan (Featured) -->
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">Mest populær</div>
+                    <h3>Pro</h3>
+                    <p class="pricing-description">Ideell for voksende bedrifter som trenger mer</p>
+                    <div class="pricing-price" id="price-pro">999 <span style="font-size: 0.8em;">NOK</span></div>
+                    <div class="price-period">per måned</div>
+                    <ul class="pricing-features">
+                        <li>3 chatbots</li>
+                        <li>2500 samtaler per måned</li>
+                        <li>Prioritert e-post og chat support</li>
+                        <li>Detaljert analyse og innsikt</li>
+                        <li>Sømløs overføring til menneskelig support</li>
+                        <li class="disabled">Dedikert account manager</li>
+                    </ul>
+                    <button class="pricing-cta">Start gratis prøveperiode</button>
+                </div>
+
+                <!-- Business Plan -->
+                <div class="pricing-card">
+                    <h3>Business</h3>
+                    <p class="pricing-description">For store bedrifter som trenger full kontroll</p>
+                    <div class="pricing-price" id="price-business">2499 <span style="font-size: 0.8em;">NOK</span></div>
+                    <div class="price-period">per måned</div>
+                    <ul class="pricing-features">
+                        <li>Ubegrenset antall chatbots</li>
+                        <li>Ubegrenset samtaler</li>
+                        <li>Fullstendig API-tilgang</li>
+                        <li>Dedikert account manager</li>
+                        <li>Custom integrasjoner</li>
+                        <li>SLA-garanti (99.9% uptime)</li>
+                    </ul>
+                    <button class="pricing-cta">Ta kontakt for demo</button>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <p class="pricing-description">Skreddersydd løsning for store organisasjoner</p>
+                    <div class="pricing-price">Fra 4999 <span style="font-size: 0.8em;">NOK</span></div>
+                    <div class="price-period">per måned (tilpasset)</div>
+                    <ul class="pricing-features">
+                        <li>Alt fra Business planen</li>
+                        <li>On-premise deployment</li>
+                        <li>Dedikert support team</li>
+                        <li>Custom SLA-avtale</li>
+                        <li>Sikkerhetskontroller på tilfredsstillende nivå</li>
+                        <li>Årlig strategisk gjennomgang</li>
+                    </ul>
+                    <button class="pricing-cta">Ta kontakt med oss</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Table -->
+    <section class="comparison-section">
+        <div class="container">
+            <div class="comparison-header">
+                <h2>Detaljert sammenlikning</h2>
+                <p>Se nøyaktig hva som er inkludert i hver plan</p>
+            </div>
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Starter</th>
+                            <th>Pro</th>
+                            <th>Business</th>
+                            <th>Enterprise</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="feature-name">Antall chatbots</td>
+                            <td><span class="checkmark">1</span></td>
+                            <td><span class="checkmark">3</span></td>
+                            <td><span class="checkmark">Unlimited</span></td>
+                            <td><span class="checkmark">Unlimited</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">Samtaler per måned</td>
+                            <td><span class="checkmark">500</span></td>
+                            <td><span class="checkmark">2500</span></td>
+                            <td><span class="checkmark">Unlimited</span></td>
+                            <td><span class="checkmark">Unlimited</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">Support</td>
+                            <td>E-post</td>
+                            <td>Prioritert E-post + Chat</td>
+                            <td>24/7 Telefon</td>
+                            <td>24/7 Dedikert team</td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">Analyse</td>
+                            <td>Grunnleggende</td>
+                            <td><span class="checkmark">Detaljert</span></td>
+                            <td><span class="checkmark">Detaljert</span></td>
+                            <td><span class="checkmark">Custom</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">API-tilgang</td>
+                            <td>-</td>
+                            <td>REST API</td>
+                            <td><span class="checkmark">Full API</span></td>
+                            <td><span class="checkmark">Full API</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">Custom integrasjoner</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td><span class="checkmark">Ja</span></td>
+                            <td><span class="checkmark">Ja</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">On-premise</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td><span class="checkmark">Ja</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">SLA-garanti</td>
+                            <td>-</td>
+                            <td>99.5%</td>
+                            <td>99.9%</td>
+                            <td><span class="checkmark">Custom</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">GDPR-kompatibel</td>
+                            <td><span class="checkmark">Ja</span></td>
+                            <td><span class="checkmark">Ja</span></td>
+                            <td><span class="checkmark">Ja</span></td>
+                            <td><span class="checkmark">Ja</span></td>
+                        </tr>
+                        <tr>
+                            <td class="feature-name">Norsk data lagring</td>
+                            <td><span class="checkmark">Ja</span></td>
+                            <td><span class="checkmark">Ja</span></td>
+                            <td><span class="checkmark">Ja</span></td>
+                            <td><span class="checkmark">Ja</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <div class="faq-header">
+                <h2>Spørsmål om prising?</h2>
+                <p>Her er svarene på de vanligste spørsmålene våre mottar</p>
+            </div>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h3>Kan jeg oppgradere eller nedgradere planen min?</h3>
+                    <p>Ja, selvfølgelig! Du kan bytte plan når som helst. Eventuelle prisforskjeller blir reflektert på neste faktura.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Er det rabatt for årlig betaling?</h3>
+                    <p>Ja, du sparer 20% når du betaler årlig istedenfor månedlig. Du kan også kontakte oss for bulk-rabatter.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Hva skjer hvis jeg overskrider mitt samtale-limit?</h3>
+                    <p>Vi gir deg beskjed når du er nær grensen. Du kan oppgradere planen eller kjøpe tilleggspakker av samtaler.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Tilbyr dere rabatt for non-profits?</h3>
+                    <p>Ja! Organisasjoner innen utdanning og ideelle organisasjoner får spesiell prising. Kontakt oss for detaljer.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Kan jeg teste NorskBot før jeg betaler?</h3>
+                    <p>Ja, alle planer inkluderer en 14 dagers gratis prøveperiode. Ingen kredittkort påkrevd for å starte.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Hva er inkludert i "prioritert support"?</h3>
+                    <p>Prioritert support betyr at du har dedikert kontakt, snappere responstid (innen 1-2 timer) og chat-support på hverdager.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Klar til å starte?</h2>
+                <p>Velg planen din og få tilgang til NorskBot i dag. 14 dagers gratis prøveperiode, ingen kredittkort påkrevd.</p>
+                <button class="btn-primary">Start gratis prøveperiode</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="index.html">Hjem</a>
+                <a href="#about">Om oss</a>
+                <a href="#privacy">Personvern</a>
+                <a href="#terms">Vilkår</a>
+                <a href="#contact">Kontakt</a>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 NorskBot. Alle rettigheter forbeholdt. Bygget for norske bedrifter.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Billing toggle
+        const billingToggle = document.getElementById('billingToggle');
+        let isAnnual = true;
+
+        billingToggle.addEventListener('click', function() {
+            isAnnual = !isAnnual;
+            this.classList.toggle('active');
+
+            const multiplier = isAnnual ? 1 : 1; // Show annual savings
+            const yearlyMultiplier = isAnnual ? 0.8 : 1;
+
+            document.getElementById('price-starter').textContent = (Math.round(399 * yearlyMultiplier)) + ' NOK';
+            document.getElementById('price-pro').textContent = (Math.round(999 * yearlyMultiplier)) + ' NOK';
+            document.getElementById('price-business').textContent = (Math.round(2499 * yearlyMultiplier)) + ' NOK';
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const element = document.querySelector(href);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
