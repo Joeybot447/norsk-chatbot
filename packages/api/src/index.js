@@ -7,7 +7,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { logger } from './utils/logger.js';
-import { dbClient } from './db/client.js';
+import { initializeDb } from './db/client.js';
+import { initializeDatabase, seedDemoData } from './db/init.js';
 import { authMiddleware } from './middleware/auth.js';
 import { rateLimitMiddleware } from './middleware/rateLimit.js';
 import { tenantMiddleware } from './middleware/tenant.js';
@@ -33,6 +34,9 @@ app.use(cors({
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve static files from public directory
+app.use(express.static('public'));
 
 // Request logging
 app.use((req, res, next) => {
@@ -97,15 +101,20 @@ app.use((err, req, res, next) => {
 
 async function startServer() {
   try {
-    // Test database connection
-    await dbClient.query('SELECT 1');
-    logger.info('Database connection successful');
+    // Initialize database
+    logger.info('Initializing database...');
+    initializeDb();
+    await initializeDatabase();
+
+    // Seed demo data
+    logger.info('Seeding demo data...');
+    await seedDemoData();
 
     // Start server
     app.listen(PORT, () => {
       logger.info(`NorskBot API running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      logger.info(`Database: ${process.env.DATABASE_URL?.split('@')[1] || 'unknown'}`);
+      logger.info(`Visit demo: http://localhost:${PORT}/demo.html`);
     });
   } catch (err) {
     logger.error(`Failed to start server: ${err.message}`);

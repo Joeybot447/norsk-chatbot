@@ -3,11 +3,10 @@
  * Validates API key from Authorization header
  */
 
-import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
 
 /**
- * JWT authentication middleware
+ * JWT authentication middleware (simplified for MVP)
  */
 export function authMiddleware(req, res, next) {
   try {
@@ -16,9 +15,14 @@ export function authMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Missing or invalid authorization header' });
     }
 
+    // For MVP, we'll just check if the token exists
+    // In production, this would validate a JWT
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    if (!token) {
+      return res.status(401).json({ error: 'Invalid or empty token' });
+    }
+
+    req.user = { token };
     next();
   } catch (err) {
     logger.warn(`Authentication failed: ${err.message}`);

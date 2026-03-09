@@ -18,8 +18,8 @@ router.get('/:siteId', async (req, res) => {
   try {
     const { siteId } = req.params;
 
-    const site = await getOne(
-      `SELECT id, name, widget_config FROM sites WHERE id = $1`,
+    const site = getOne(
+      `SELECT id, name, widget_config FROM sites WHERE id = ?`,
       [siteId]
     );
 
@@ -27,10 +27,14 @@ router.get('/:siteId', async (req, res) => {
       return res.status(404).json({ error: 'Site not found' });
     }
 
+    const config = typeof site.widget_config === 'string'
+      ? JSON.parse(site.widget_config)
+      : site.widget_config || {};
+
     res.json({
       id: site.id,
       name: site.name,
-      config: site.widget_config,
+      config,
     });
   } catch (err) {
     logger.error(`Widget config error: ${err.message}`);
@@ -47,8 +51,8 @@ router.get('/script/:siteId', async (req, res) => {
     const { siteId } = req.params;
 
     // Verify site exists
-    const site = await getOne(
-      `SELECT id FROM sites WHERE id = $1`,
+    const site = getOne(
+      `SELECT id FROM sites WHERE id = ?`,
       [siteId]
     );
 
@@ -56,13 +60,13 @@ router.get('/script/:siteId', async (req, res) => {
       return res.status(404).json({ error: 'Site not found' });
     }
 
-    // For now, return widget.min.js placeholder
-    // In production, this would be the minified widget bundle
-    const scriptUrl = process.env.WIDGET_CDN_URL || 'http://localhost:5173/widget.min.js';
+    // Return widget script URL
+    const apiUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const scriptUrl = `${apiUrl}/widget.min.js`;
 
     res.json({
       scriptUrl,
-      installCode: `<script src="${scriptUrl}" data-site-id="${siteId}"></script>`,
+      installCode: `<script src="${scriptUrl}" data-site-id="${siteId}" data-api-url="${apiUrl}"></script>`,
     });
   } catch (err) {
     logger.error(`Widget script error: ${err.message}`);

@@ -44,7 +44,7 @@ export async function rateLimitMiddleware(req, res, next) {
     next();
   } catch (err) {
     logger.error(`Rate limit middleware error: ${err.message}`);
-    // On Redis error, allow request but log it
+    // On cache error, allow request but log it
     next();
   }
 }

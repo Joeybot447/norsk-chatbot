@@ -41,18 +41,18 @@ router.post('/message', async (req, res) => {
     const newSessionId = sessionId || uuid();
 
     // Get or create conversation
-    let conversation = await getOne(
-      `SELECT id FROM conversations WHERE site_id = $1 AND session_id = $2`,
+    let conversation = getOne(
+      `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
       [siteId, newSessionId]
     );
 
     if (!conversation) {
-      const result = await query(
+      const result = query(
         `INSERT INTO conversations 
-          (site_id, session_id, visitor_name, visitor_email, visitor_company, ip_address, user_agent)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
-          RETURNING id`,
+          (id, site_id, session_id, visitor_name, visitor_email, visitor_company, ip_address, user_agent)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
+          uuid(),
           siteId,
           newSessionId,
           visitorName || null,
@@ -62,14 +62,17 @@ router.post('/message', async (req, res) => {
           req.headers['user-agent'] || null,
         ]
       );
-      conversation = result.rows[0];
+      conversation = getOne(
+        `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
+        [siteId, newSessionId]
+      );
     }
 
     // Store user message
-    await query(
-      `INSERT INTO messages (conversation_id, site_id, role, content, tokens_used)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [conversation.id, siteId, 'user', message, Math.ceil(message.length / 4)]
+    query(
+      `INSERT INTO messages (id, conversation_id, site_id, role, content, tokens_used)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [uuid(), conversation.id, siteId, 'user', message, Math.ceil(message.length / 4)]
     );
 
     // Get AI response using ChatService
@@ -77,14 +80,15 @@ router.post('/message', async (req, res) => {
       siteId,
       conversationId: conversation.id,
       userMessage: message,
-      widgetConfig: req.site.widget_config,
+      widgetConfig: req.site.widget_config || {},
     });
 
     // Store assistant message
-    await query(
-      `INSERT INTO messages (conversation_id, site_id, role, content, confidence_score, sources, tokens_used)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    query(
+      `INSERT INTO messages (id, conversation_id, site_id, role, content, confidence_score, sources, tokens_used)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        uuid(),
         conversation.id,
         siteId,
         'assistant',
@@ -96,8 +100,8 @@ router.post('/message', async (req, res) => {
     );
 
     // Update conversation message count
-    await query(
-      `UPDATE conversations SET message_count = message_count + 2 WHERE id = $1`,
+    query(
+      `UPDATE conversations SET message_count = message_count + 2 WHERE id = ?`,
       [conversation.id]
     );
 
@@ -127,8 +131,8 @@ router.post('/feedback', async (req, res) => {
       return res.status(400).json({ error: 'Invalid feedback' });
     }
 
-    await query(
-      `UPDATE messages SET feedback = $1 WHERE id = $2 AND site_id = $3`,
+    query(
+      `UPDATE messages SET feedback = ? WHERE id = ? AND site_id = ?`,
       [rating, messageId, req.siteId]
     );
 

@@ -18,9 +18,9 @@ export async function tenantMiddleware(req, res, next) {
       return res.status(400).json({ error: 'Missing site ID' });
     }
 
-    // Validate site exists (can be done async or cached)
-    const site = await getOne(
-      'SELECT id, customer_id, widget_config FROM sites WHERE id = $1',
+    // Validate site exists
+    const site = getOne(
+      'SELECT id, customer_id, widget_config FROM sites WHERE id = ?',
       [siteId]
     );
 
@@ -28,9 +28,22 @@ export async function tenantMiddleware(req, res, next) {
       return res.status(404).json({ error: 'Site not found' });
     }
 
+    // Parse widget_config if it's a string
+    let widgetConfig = site.widget_config;
+    if (typeof widgetConfig === 'string') {
+      try {
+        widgetConfig = JSON.parse(widgetConfig);
+      } catch (e) {
+        widgetConfig = {};
+      }
+    }
+
     // Attach to request for use in handlers
     req.siteId = siteId;
-    req.site = site;
+    req.site = {
+      ...site,
+      widget_config: widgetConfig,
+    };
     req.customerId = site.customer_id;
 
     next();

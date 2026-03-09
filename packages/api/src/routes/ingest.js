@@ -1,6 +1,5 @@
 /**
  * Ingestion Routes
- * POST /v1/ingest/crawl - Trigger website crawl
  * POST /v1/ingest/document - Upload a document
  */
 
@@ -9,61 +8,16 @@ import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 import { query } from '../db/client.js';
 import { logger } from '../utils/logger.js';
+import { ragService } from '../services/ragService.js';
 
 const router = express.Router();
 
-// Validation schemas
-const crawlSchema = z.object({
-  url: z.string().url(),
-  siteId: z.string().uuid(),
-});
-
+// Validation schema
 const documentSchema = z.object({
-  siteId: z.string().uuid(),
+  siteId: z.string(),
   title: z.string().min(1),
-  type: z.enum(['pdf', 'docx', 'txt', 'faq']),
-});
-
-/**
- * POST /v1/ingest/crawl
- * Trigger a website crawl for a given URL
- */
-router.post('/crawl', async (req, res) => {
-  try {
-    const validation = crawlSchema.safeParse(req.body);
-    if (!validation.success) {
-      return res.status(400).json({
-        error: 'Validation error',
-        details: validation.error.errors,
-      });
-    }
-
-    const { url, siteId } = validation.data;
-
-    // Queue crawl job (would use Bull queue in production)
-    const jobId = uuid();
-    await query(
-      `INSERT INTO jobs (queue_name, job_id, data, state)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        'crawler',
-        jobId,
-        JSON.stringify({ url, siteId, startedAt: new Date().toISOString() }),
-        'pending',
-      ]
-    );
-
-    logger.info(`Crawl job queued: ${jobId} for URL: ${url}`);
-
-    res.json({
-      jobId,
-      status: 'queued',
-      message: 'Website crawl has been queued and will start shortly',
-    });
-  } catch (err) {
-    logger.error(`Crawl route error: ${err.message}`);
-    res.status(500).json({ error: 'Failed to queue crawl job' });
-  }
+  type: z.enum(['pdf', 'docx', 'txt', 'faq', 'webpage']),
+  content: z.string().min(1),
 });
 
 /**
@@ -76,6 +30,7 @@ router.post('/document', async (req, res) => {
       siteId: req.body.siteId,
       title: req.body.title,
       type: req.body.type,
+      content: req.body.content,
     });
 
     if (!validation.success) {
@@ -85,42 +40,49 @@ router.post('/document', async (req, res) => {
       });
     }
 
-    const { siteId, title, type } = validation.data;
-    const content = req.body.content || '';
-
-    if (!content) {
-      return res.status(400).json({ error: 'Document content is required' });
-    }
+    const { siteId, title, type, content } = validation.data;
+    const documentId = uuid();
 
     // Store document
-    const result = await query(
-      `INSERT INTO documents (site_id, type, title, content, status)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id`,
-      [siteId, type, title, content, 'active']
+    query(
+      `INSERT INTO documents (id, site_id, type, title, content, status)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [documentId, siteId, type, title, content, 'active']
     );
 
-    const documentId = result.rows[0].id;
+    // Chunk the content
+    const chunks = ragService.chunkContent(content, 500);
 
-    // Queue for chunking and embedding
-    const jobId = uuid();
-    await query(
-      `INSERT INTO jobs (queue_name, job_id, data, state)
-       VALUES ($1, $2, $3, $4)`,
-      [
-        'embedder',
-        jobId,
-        JSON.stringify({ documentId, siteId }),
-        'pending',
-      ]
+    // Store chunks
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkId = uuid();
+      query(
+        `INSERT INTO chunks (id, document_id, site_id, chunk_index, content, tokens)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          chunkId,
+          documentId,
+          siteId,
+          i,
+          chunks[i],
+          ragService.estimateTokens(chunks[i]),
+        ]
+      );
+    }
+
+    // Update document chunks_count
+    query(
+      `UPDATE documents SET chunks_count = ? WHERE id = ?`,
+      [chunks.length, documentId]
     );
 
-    logger.info(`Document uploaded and queued for processing: ${documentId}`);
+    logger.info(`Document uploaded and chunked: ${documentId}`);
 
     res.status(201).json({
       documentId,
-      status: 'processing',
-      message: 'Document uploaded and is being processed',
+      status: 'completed',
+      chunksCount: chunks.length,
+      message: 'Document uploaded and processed successfully',
     });
   } catch (err) {
     logger.error(`Document upload error: ${err.message}`);
@@ -136,17 +98,17 @@ router.get('/documents/:siteId', async (req, res) => {
   try {
     const { siteId } = req.params;
 
-    const result = await query(
+    const result = query(
       `SELECT id, title, type, status, created_at, chunks_count
        FROM documents
-       WHERE site_id = $1
+       WHERE site_id = ?
        ORDER BY created_at DESC`,
       [siteId]
     );
 
     res.json({
-      documents: result.rows,
-      total: result.rows.length,
+      documents: result.rows || [],
+      total: (result.rows || []).length,
     });
   } catch (err) {
     logger.error(`Documents list error: ${err.message}`);
