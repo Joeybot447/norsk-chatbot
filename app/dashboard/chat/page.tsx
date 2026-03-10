@@ -4,6 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../_lib/supabase/client';
 import { useAuth } from '../../_lib/supabase/hooks';
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
 interface Site {
   id: string;
   name: string;
@@ -14,52 +18,275 @@ interface Site {
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'error';
   content: string;
   sources?: { content: string; similarity?: number }[];
   timestamp: Date;
+  tokensUsed?: number;
+  retryPayload?: { siteId: string; message: string; conversationId?: string };
 }
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
 
 /**
  * Strip markdown formatting from text, returning clean readable plain text.
- * Handles: bold, italic, headers, links, images, code blocks, lists, blockquotes, hr.
  */
 function stripMarkdown(text: string): string {
   if (!text) return '';
   return text
-    // Remove code blocks (``` ... ```)
-    .replace(/```[\s\S]*?```/g, (match) => {
-      const inner = match.replace(/^```\w*\n?/, '').replace(/\n?```$/, '');
-      return inner;
-    })
-    // Remove inline code (` ... `)
+    .replace(/```[\s\S]*?```/g, (match) =>
+      match.replace(/^```\w*\n?/, '').replace(/\n?```$/, ''),
+    )
     .replace(/`([^`]+)`/g, '$1')
-    // Remove images ![alt](url)
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
-    // Convert links [text](url) to just text
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    // Remove headers (## Header)
     .replace(/^#{1,6}\s+/gm, '')
-    // Remove bold (**text** or __text__)
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/__(.+?)__/g, '$1')
-    // Remove italic (*text* or _text_)
     .replace(/\*(.+?)\*/g, '$1')
     .replace(/_(.+?)_/g, '$1')
-    // Remove strikethrough (~~text~~)
     .replace(/~~(.+?)~~/g, '$1')
-    // Remove blockquotes (> text)
     .replace(/^>\s+/gm, '')
-    // Remove horizontal rules
     .replace(/^[-*_]{3,}\s*$/gm, '')
-    // Remove unordered list markers (- item, * item)
     .replace(/^[\s]*[-*+]\s+/gm, '- ')
-    // Remove ordered list markers (1. item)
     .replace(/^[\s]*\d+\.\s+/gm, '')
-    // Collapse multiple blank lines
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+
+/**
+ * Strip HTML tags and CSS from source content for clean display.
+ */
+function stripHtmlCss(text: string): string {
+  if (!text) return '';
+  return text
+    // Remove <style> blocks
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    // Remove <script> blocks
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    // Remove all HTML tags
+    .replace(/<[^>]+>/g, ' ')
+    // Remove CSS-like content (selectors, properties)
+    .replace(/[.#]?[\w-]+\s*\{[^}]*\}/g, '')
+    .replace(/\{[^}]*\}/g, '')
+    // Remove CSS @rules
+    .replace(/@[\w-]+[^;{]*[;{]/g, '')
+    // Decode common HTML entities
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    // Collapse whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Format a timestamp as HH:MM
+ */
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+/** Animated typing indicator — three pulsing dots */
+function TypingIndicator({ botName }: { botName: string }) {
+  return (
+    <div className="flex justify-start animate-[fadeSlideUp_0.3s_ease-out]">
+      <div className="max-w-[80%]">
+        <div className="text-[11px] font-medium mb-1 text-[#64748b]">{botName}</div>
+        <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-[#f1f5f9] border border-slate-200/60 inline-flex items-center gap-1">
+          <span className="w-[6px] h-[6px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]" />
+          <span
+            className="w-[6px] h-[6px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]"
+            style={{ animationDelay: '0.2s' }}
+          />
+          <span
+            className="w-[6px] h-[6px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]"
+            style={{ animationDelay: '0.4s' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Collapsible source item */
+function SourceItem({ source, index }: { source: { content: string; similarity?: number }; index: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const cleanContent = stripHtmlCss(source.content);
+  const preview = cleanContent.slice(0, 100) + (cleanContent.length > 100 ? '...' : '');
+
+  return (
+    <button
+      onClick={() => setExpanded(!expanded)}
+      className="w-full text-left px-3 py-2 bg-white border border-slate-200/80 rounded-lg text-xs leading-relaxed transition-all duration-200 hover:border-slate-300 hover:shadow-sm cursor-pointer group"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <span className="text-[#94a3b8] font-mono text-[10px] mr-1.5">Kilde {index + 1}</span>
+          {source.similarity != null && (
+            <span className="text-[10px] text-[#94a3b8] tabular-nums">
+              {Math.round(source.similarity * 100)}% treff
+            </span>
+          )}
+          <p className="text-[#475569] mt-1 break-words">
+            {expanded ? cleanContent : preview}
+          </p>
+        </div>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#94a3b8"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`flex-shrink-0 mt-0.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+    </button>
+  );
+}
+
+/** Collapsible sources section under bot messages */
+function SourcesSection({ sources }: { sources: { content: string; similarity?: number }[] }) {
+  const [open, setOpen] = useState(false);
+
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#94a3b8] hover:text-[#64748b] transition-colors cursor-pointer bg-transparent border-none p-0"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+        {sources.length} {sources.length === 1 ? 'kilde' : 'kilder'}
+      </button>
+      {open && (
+        <div className="mt-1.5 space-y-1 animate-[fadeIn_0.2s_ease-out]">
+          {sources.map((source, idx) => (
+            <SourceItem key={idx} source={source} index={idx} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Single chat message bubble */
+function ChatBubble({
+  msg,
+  botName,
+  onRetry,
+}: {
+  msg: Message;
+  botName: string;
+  onRetry?: (payload: NonNullable<Message['retryPayload']>) => void;
+}) {
+  const isUser = msg.role === 'user';
+  const isError = msg.role === 'error';
+
+  return (
+    <div
+      className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-[fadeSlideUp_0.3s_ease-out]`}
+    >
+      <div className={`max-w-[75%] ${isUser ? '' : ''}`}>
+        {/* Sender label + timestamp */}
+        <div
+          className={`flex items-center gap-2 mb-1 ${
+            isUser ? 'justify-end' : 'justify-start'
+          }`}
+        >
+          <span className="text-[11px] font-medium text-[#94a3b8]">
+            {isUser ? 'Du' : isError ? 'System' : botName}
+          </span>
+          <span className="text-[10px] text-[#cbd5e1] tabular-nums">{formatTime(msg.timestamp)}</span>
+        </div>
+
+        {/* Bubble */}
+        {isError ? (
+          <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-red-50 border border-red-200/60 text-sm text-red-700 leading-relaxed">
+            <p>{msg.content}</p>
+            {msg.retryPayload && onRetry && (
+              <button
+                onClick={() => onRetry(msg.retryPayload!)}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-800 transition-colors cursor-pointer bg-transparent border-none p-0"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                Prov igjen
+              </button>
+            )}
+          </div>
+        ) : (
+          <div
+            className={`px-4 py-3 text-[14px] leading-[1.6] ${
+              isUser
+                ? 'bg-[#2563eb] text-white rounded-2xl rounded-br-[6px]'
+                : 'bg-[#f1f5f9] text-[#1e293b] rounded-2xl rounded-bl-[6px] border border-slate-200/60'
+            }`}
+          >
+            <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+          </div>
+        )}
+
+        {/* Token count (bot messages only) */}
+        {!isUser && !isError && msg.tokensUsed != null && (
+          <div className="mt-1 text-[10px] text-[#cbd5e1] tabular-nums">
+            {msg.tokensUsed.toLocaleString('nb-NO')} tokens
+          </div>
+        )}
+
+        {/* Sources (bot messages only) */}
+        {!isUser && !isError && msg.sources && msg.sources.length > 0 && (
+          <SourcesSection sources={msg.sources} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Page Component
+// ---------------------------------------------------------------------------
 
 export default function ChatPlaygroundPage() {
   const { user, loading: authLoading, getAccessToken } = useAuth();
@@ -71,26 +298,29 @@ export default function ChatPlaygroundPage() {
   const [sending, setSending] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loadingSites, setLoadingSites] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load user's sites
+  // ---------------------------------------------------------------------------
+  // Data loading
+  // ---------------------------------------------------------------------------
+
   useEffect(() => {
     if (!user) return;
     const loadSites = async () => {
       setLoadingSites(true);
       try {
-        const { data, error: err } = await supabase
+        const { data, error } = await supabase
           .from('sites')
           .select('id, name, domain, bot_name, is_active')
           .eq('user_id', (user as any).id)
           .eq('is_active', true)
           .order('created_at', { ascending: false });
-        if (err) throw err;
+        if (error) throw error;
         setSites((data || []) as Site[]);
-      } catch (err: any) {
-        setError(err.message || 'Kunne ikke laste nettsteder');
+      } catch {
+        // Sites load error handled by empty state
       } finally {
         setLoadingSites(false);
       }
@@ -98,7 +328,6 @@ export default function ChatPlaygroundPage() {
     loadSites();
   }, [user]);
 
-  // Update selected site when dropdown changes
   useEffect(() => {
     if (selectedSiteId) {
       const site = sites.find((s) => s.id === selectedSiteId) || null;
@@ -108,22 +337,28 @@ export default function ChatPlaygroundPage() {
     }
   }, [selectedSiteId, sites]);
 
-  // Auto-scroll to bottom on new messages
+  // ---------------------------------------------------------------------------
+  // Auto-scroll
+  // ---------------------------------------------------------------------------
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   }, [messages, sending]);
 
-  // Focus input when site is selected
+  // Focus input when site selected
   useEffect(() => {
-    if (selectedSite) {
-      inputRef.current?.focus();
-    }
+    if (selectedSite) inputRef.current?.focus();
   }, [selectedSite]);
+
+  // ---------------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------------
 
   const handleNewConversation = () => {
     setMessages([]);
     setConversationId(null);
-    setError(null);
     inputRef.current?.focus();
   };
 
@@ -131,90 +366,115 @@ export default function ChatPlaygroundPage() {
     setSelectedSiteId(siteId);
     setMessages([]);
     setConversationId(null);
-    setError(null);
   };
 
   /**
-   * Send a chat message with automatic 401 retry.
-   * If the first request returns 401, we refresh the token and retry once.
+   * Send a chat request with 401 retry logic.
    */
-  const sendChatRequest = useCallback(async (payload: { siteId: string; message: string; conversationId?: string }) => {
-    const attempt = async (isRetry: boolean) => {
-      const token = await getAccessToken();
-      if (!token) {
-        throw new Error('Ikke autentisert — prov a logge inn pa nytt');
-      }
+  const sendChatRequest = useCallback(
+    async (payload: { siteId: string; message: string; conversationId?: string }) => {
+      const attempt = async (isRetry: boolean): Promise<any> => {
+        const token = await getAccessToken();
+        if (!token) throw new Error('Ikke autentisert. Prov a laste siden pa nytt.');
 
-      const response = await fetch('/api/chat/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+        const response = await fetch('/api/chat/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
 
-      if (response.status === 401 && !isRetry) {
-        // Token was stale — force refresh and retry once
-        // getAccessToken already handles refresh, but force a new one
-        const { data: { session } } = await supabase.auth.refreshSession();
-        if (session?.access_token) {
-          return attempt(true);
+        if (response.status === 401 && !isRetry) {
+          const {
+            data: { session },
+          } = await supabase.auth.refreshSession();
+          if (session?.access_token) return attempt(true);
+          throw new Error('Ikke autentisert. Prov a laste siden pa nytt.');
         }
-        throw new Error('Ikke autentisert — prov a logge inn pa nytt');
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.error || `Feil ${response.status}`);
+        }
+
+        return response.json();
+      };
+      return attempt(false);
+    },
+    [getAccessToken],
+  );
+
+  const handleSend = async (overridePayload?: {
+    siteId: string;
+    message: string;
+    conversationId?: string;
+  }) => {
+    const msgText = overridePayload?.message ?? input.trim();
+    const siteId = overridePayload?.siteId ?? selectedSiteId;
+    if (!msgText || !siteId || sending) return;
+
+    // If this is a fresh send (not retry), add user message
+    if (!overridePayload) {
+      const userMessage: Message = {
+        id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
+        role: 'user',
+        content: msgText,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setInput('');
+
+      // Reset textarea height
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
       }
+    }
 
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || `Feil ${response.status}`);
-      }
-
-      return response.json();
-    };
-
-    return attempt(false);
-  }, [getAccessToken]);
-
-  const handleSend = async () => {
-    if (!input.trim() || !selectedSiteId || sending) return;
-
-    const userMessage: Message = {
-      id: Math.random().toString(36).slice(2) + Date.now().toString(36),
-      role: 'user',
-      content: input.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
     setSending(true);
-    setError(null);
+
+    const payload = {
+      siteId,
+      message: msgText,
+      conversationId: overridePayload?.conversationId ?? conversationId ?? undefined,
+    };
 
     try {
-      const data = await sendChatRequest({
-        siteId: selectedSiteId,
-        message: userMessage.content,
-        conversationId: conversationId || undefined,
-      });
+      const data = await sendChatRequest(payload);
 
-      if (data.conversationId) {
-        setConversationId(data.conversationId);
-      }
+      if (data.conversationId) setConversationId(data.conversationId);
 
       const assistantMessage: Message = {
-        id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+        id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
         role: 'assistant',
         content: stripMarkdown(data.response),
         sources: data.sources,
         timestamp: new Date(),
+        tokensUsed: data.tokensUsed,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      // Remove any existing error messages for this exchange, then add response
+      setMessages((prev) => {
+        const cleaned = overridePayload
+          ? prev.filter((m) => !(m.role === 'error' && m.retryPayload?.message === msgText))
+          : prev;
+        return [...cleaned, assistantMessage];
+      });
     } catch (err: any) {
-      setError(err.message || 'Kunne ikke sende melding');
+      const errorMessage: Message = {
+        id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
+        role: 'error',
+        content: err.message || 'Kunne ikke sende melding. Sjekk tilkoblingen og prov igjen.',
+        timestamp: new Date(),
+        retryPayload: payload as any,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setSending(false);
+      inputRef.current?.focus();
     }
+  };
+
+  const handleRetry = (payload: NonNullable<Message['retryPayload']>) => {
+    handleSend(payload);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -224,216 +484,267 @@ export default function ChatPlaygroundPage() {
     }
   };
 
+  const handleTextareaInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const target = e.target as HTMLTextAreaElement;
+    target.style.height = 'auto';
+    target.style.height = Math.min(target.scrollHeight, 140) + 'px';
+  };
+
+  // ---------------------------------------------------------------------------
+  // Loading state
+  // ---------------------------------------------------------------------------
+
   if (authLoading || loadingSites) {
     return (
-      <div className="flex flex-col items-center justify-center p-16">
-        <div className="w-10 h-10 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 text-sm">Laster...</p>
+      <div className="flex flex-col items-center justify-center h-screen bg-white">
+        <div className="w-8 h-8 border-2 border-slate-200 border-t-[#2563eb] rounded-full animate-spin" />
+        <p className="mt-4 text-sm text-[#94a3b8] font-medium">Laster...</p>
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col h-screen">
-      {/* Top Bar */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-[#0f172a] m-0">Testchat</h1>
-          <select
-            value={selectedSiteId}
-            onChange={(e) => handleSiteChange(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-[#0f172a] bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px]"
-          >
-            <option value="">Velg nettsted...</option>
-            {sites.map((site) => (
-              <option key={site.id} value={site.id}>
-                {site.name}{site.domain ? ` (${site.domain})` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-        {selectedSite && (
-          <button
-            onClick={handleNewConversation}
-            className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-[#0f172a] hover:bg-slate-50 transition-colors cursor-pointer"
-          >
-            Ny samtale
-          </button>
-        )}
-      </div>
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
-      {/* Main Content */}
-      {!selectedSite ? (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  const botName = selectedSite?.bot_name || 'NorskBot';
+
+  return (
+    <>
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes typingDot {
+          0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+          30%            { opacity: 1;   transform: scale(1); }
+        }
+      `}</style>
+
+      <div className="flex flex-col h-screen bg-white">
+        {/* ----------------------------------------------------------------- */}
+        {/* Top Bar                                                           */}
+        {/* ----------------------------------------------------------------- */}
+        <header className="bg-white border-b border-slate-100 px-6 py-3.5 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-[17px] font-semibold text-[#0f172a] tracking-[-0.01em] m-0">
+              Testchat
+            </h1>
+
+            {/* Site selector */}
+            <div className="relative">
+              <select
+                value={selectedSiteId}
+                onChange={(e) => handleSiteChange(e.target.value)}
+                className="appearance-none pl-3 pr-8 py-[7px] bg-[#f8fafc] border border-slate-200/80 rounded-lg text-[13px] text-[#334155] font-medium focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb]/40 transition-all min-w-[220px] cursor-pointer hover:border-slate-300"
+              >
+                <option value="">Velg nettsted...</option>
+                {sites.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
+                    {site.domain ? ` \u2014 ${site.domain}` : ''}
+                  </option>
+                ))}
+              </select>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#94a3b8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              >
+                <polyline points="6 9 12 15 18 9" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-[#0f172a] mb-2">Test chatboten din</h2>
-            <p className="text-sm text-[#64748b] leading-relaxed">
-              Velg et nettsted fra nedtrekkslisten for a starte en testsamtale med chatboten. 
-              Samtalen bruker kunnskapsbasen du har lastet opp.
-            </p>
-            {sites.length === 0 && (
-              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  Du har ingen aktive nettsteder. Opprett et nettsted forst for a teste chatboten.
-                </p>
-                <a
-                  href="/dashboard/sites/new"
-                  className="inline-block mt-3 px-4 py-2 bg-[#2563eb] text-white rounded-lg text-sm font-medium no-underline hover:bg-blue-700 transition-colors"
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Conversation ID badge */}
+            {conversationId && (
+              <span className="text-[10px] text-[#cbd5e1] font-mono tracking-wider select-all">
+                {conversationId.slice(0, 8)}
+              </span>
+            )}
+
+            {selectedSite && (
+              <button
+                onClick={handleNewConversation}
+                className="inline-flex items-center gap-1.5 px-3.5 py-[7px] bg-white border border-slate-200/80 rounded-lg text-[13px] font-medium text-[#475569] hover:bg-[#f8fafc] hover:border-slate-300 active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  Opprett nettsted
-                </a>
-              </div>
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Ny samtale
+              </button>
             )}
           </div>
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            {messages.length === 0 && !sending && (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-[#64748b] text-sm mb-1">
-                    Samtale med <span className="font-medium text-[#0f172a]">{selectedSite.bot_name || 'NorskBot'}</span> ({selectedSite.name})
-                  </p>
-                  <p className="text-[#94a3b8] text-xs">
-                    Skriv en melding for a starte samtalen
-                  </p>
-                </div>
-              </div>
-            )}
+        </header>
 
-            <div className="max-w-3xl mx-auto space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+        {/* ----------------------------------------------------------------- */}
+        {/* Empty state (no site selected)                                    */}
+        {/* ----------------------------------------------------------------- */}
+        {!selectedSite ? (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-sm">
+              <div className="w-14 h-14 bg-[#f1f5f9] rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#94a3b8"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-1' : ''}`}>
-                    {/* Sender label */}
-                    <div className={`text-[11px] font-medium mb-1 ${
-                      msg.role === 'user' ? 'text-right text-[#64748b]' : 'text-left text-[#64748b]'
-                    }`}>
-                      {msg.role === 'user' ? 'Du' : (selectedSite.bot_name || 'NorskBot')}
-                    </div>
-
-                    {/* Message bubble — plain text only, no markdown rendering */}
-                    <div
-                      className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                        msg.role === 'user'
-                          ? 'bg-[#2563eb] text-white rounded-br-md'
-                          : 'bg-slate-100 text-[#0f172a] rounded-bl-md border border-slate-200'
-                      }`}
-                    >
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
-                    </div>
-
-                    {/* Sources */}
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        <div className="text-[11px] font-medium text-[#64748b]">
-                          Kilder ({msg.sources.length})
-                        </div>
-                        {msg.sources.map((source, idx) => (
-                          <div
-                            key={idx}
-                            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-[#64748b] leading-relaxed"
-                          >
-                            <span className="text-[#94a3b8] font-mono mr-1">{idx + 1}.</span>
-                            {source.content}
-                            {source.similarity != null && (
-                              <span className="ml-2 text-[10px] text-[#94a3b8]">
-                                ({Math.round(source.similarity * 100)}% treff)
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <h2 className="text-[16px] font-semibold text-[#0f172a] mb-2">
+                Test chatboten din
+              </h2>
+              <p className="text-[13px] text-[#64748b] leading-relaxed">
+                Velg et nettsted fra nedtrekkslisten for a starte en testsamtale.
+                Samtalen bruker kunnskapsbasen du har lastet opp.
+              </p>
+              {sites.length === 0 && (
+                <div className="mt-6 p-4 bg-[#fffbeb] border border-amber-200/60 rounded-xl">
+                  <p className="text-[13px] text-amber-800">
+                    Du har ingen aktive nettsteder enna.
+                  </p>
+                  <a
+                    href="/dashboard/sites/new"
+                    className="inline-block mt-3 px-4 py-2 bg-[#0f172a] text-white rounded-lg text-[13px] font-medium no-underline hover:bg-[#1e293b] active:scale-[0.98] transition-all"
+                  >
+                    Opprett nettsted
+                  </a>
                 </div>
-              ))}
-
-              {/* Typing indicator */}
-              {sending && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%]">
-                    <div className="text-[11px] font-medium mb-1 text-[#64748b]">
-                      {selectedSite.bot_name || 'NorskBot'}
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* ------------------------------------------------------------- */}
+            {/* Messages area                                                  */}
+            {/* ------------------------------------------------------------- */}
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+              {/* Chat-start empty state */}
+              {messages.length === 0 && !sending && (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center animate-[fadeIn_0.5s_ease-out]">
+                    <div className="w-10 h-10 bg-[#f1f5f9] rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#94a3b8"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
                     </div>
-                    <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-slate-100 border border-slate-200 inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 bg-[#94a3b8] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-[#94a3b8] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-[#94a3b8] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
+                    <p className="text-[13px] text-[#64748b]">
+                      Samtale med{' '}
+                      <span className="font-medium text-[#334155]">{botName}</span>
+                    </p>
+                    <p className="text-[12px] text-[#cbd5e1] mt-1">
+                      Skriv en melding for a starte
+                    </p>
                   </div>
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
+              {/* Message list */}
+              <div className="max-w-2xl mx-auto space-y-4">
+                {messages.map((msg) => (
+                  <ChatBubble
+                    key={msg.id}
+                    msg={msg}
+                    botName={botName}
+                    onRetry={handleRetry}
+                  />
+                ))}
 
-          {/* Error */}
-          {error && (
-            <div className="px-6 pb-2 flex-shrink-0">
-              <div className="max-w-3xl mx-auto px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                {error}
+                {/* Typing indicator */}
+                {sending && <TypingIndicator botName={botName} />}
+
+                <div ref={messagesEndRef} className="h-1" />
               </div>
             </div>
-          )}
 
-          {/* Input Area */}
-          <div className="border-t border-slate-200 bg-white px-6 py-4 flex-shrink-0">
-            <div className="max-w-3xl mx-auto flex items-end gap-3">
-              <div className="flex-1 relative">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Skriv en melding..."
-                  rows={1}
-                  disabled={sending}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    minHeight: '44px',
-                    maxHeight: '120px',
-                    height: 'auto',
-                    overflow: 'auto',
-                  }}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                  }}
-                />
+            {/* ------------------------------------------------------------- */}
+            {/* Input area                                                     */}
+            {/* ------------------------------------------------------------- */}
+            <div className="border-t border-slate-100 bg-white px-4 sm:px-6 py-3.5 flex-shrink-0">
+              <div className="max-w-2xl mx-auto">
+                <div className="flex items-end gap-2.5">
+                  <div className="flex-1 relative">
+                    <textarea
+                      ref={inputRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onInput={handleTextareaInput}
+                      placeholder="Skriv en melding..."
+                      rows={1}
+                      disabled={sending}
+                      className="w-full px-4 py-2.5 bg-[#f8fafc] border border-slate-200/80 rounded-xl text-[14px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb]/40 focus:bg-white transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed leading-[1.5]"
+                      style={{ minHeight: '42px', maxHeight: '140px' }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || sending}
+                    className="flex-shrink-0 w-[42px] h-[42px] flex items-center justify-center bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] active:scale-[0.95] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#2563eb] cursor-pointer"
+                    aria-label="Send melding"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="none"
+                    >
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#cbd5e1] mt-2 pl-1">
+                  Enter for a sende &middot; Shift+Enter for ny linje
+                </p>
               </div>
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || sending}
-                className="px-4 py-3 bg-[#2563eb] text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex-shrink-0 flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-                Send
-              </button>
-            </div>
-            <div className="max-w-3xl mx-auto mt-2">
-              <p className="text-[11px] text-[#94a3b8]">
-                Trykk Enter for a sende, Shift+Enter for ny linje
-              </p>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
