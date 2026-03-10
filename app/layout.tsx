@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import CookieConsent from './components/CookieConsent';
 
 export const metadata: Metadata = {
   title: 'NorskBot - AI Chatbot for Norwegian Businesses',
@@ -12,7 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieConsent />
+      </body>
     </html>
   );
 }

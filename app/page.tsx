@@ -1232,11 +1232,16 @@ export default function HomePage() {
               >
                 Juridisk
               </h4>
-              {['Personvern', 'Vilkår', 'Informasjonskapsler', 'GDPR', 'Sikkerhet'].map(
-                (link) => (
+              {[
+                { label: 'Personvern', href: '/personvern' },
+                { label: 'Brukervilkår', href: '/brukervilkar' },
+                { label: 'Informasjonskapsler', href: '/cookies' },
+                { label: 'GDPR', href: '#' },
+                { label: 'Sikkerhet', href: '#' },
+              ].map((link) => (
                   <a
-                    key={link}
-                    href="#"
+                    key={link.label}
+                    href={link.href}
                     style={{
                       display: 'block',
                       fontFamily: FONT,
@@ -1247,7 +1252,7 @@ export default function HomePage() {
                       transition: 'color 0.15s',
                     }}
                   >
-                    {link}
+                    {link.label}
                   </a>
                 )
               )}
