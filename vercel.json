@@ -1,15 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:all",
   "env": {
-    "NODE_ENV": "production",
-    "PORT": "3000"
-  },
-  "functions": {
-    "packages/api/src/index.js": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 60
-    }
+    "NODE_ENV": "production"
   }
 }
