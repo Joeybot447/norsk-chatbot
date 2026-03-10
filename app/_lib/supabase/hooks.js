@@ -10,27 +10,60 @@ export function useAuth() {
   const accessTokenRef = useRef(null);
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      setUser(u);
-      setLoading(false);
-    });
+    // Use getSession first (reads from storage, fast) then enrich with profile
+    const init = async () => {
+      try {
+        const { data: { session } } = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+        ]);
+        if (session?.access_token) {
+          accessTokenRef.current = session.access_token;
+        }
+        if (session?.user) {
+          // Quick set with basic info first (stops "Laster..." immediately)
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            displayName: session.user.user_metadata?.display_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Bruker',
+            companyName: session.user.user_metadata?.company_name,
+            avatarUrl: session.user.user_metadata?.avatar_url,
+            plan: 'free',
+          });
+          setLoading(false);
+          // Then enrich with profile data in background
+          const full = await getCurrentUser();
+          if (full) setUser(full);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      } catch {
+        setUser(null);
+        setLoading(false);
+      }
+    };
+    init();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Store the access token from every auth state change
       accessTokenRef.current = session?.access_token || null;
       if (session?.user) {
-        const u = await getCurrentUser();
-        setUser(u);
+        setUser({
+          id: session.user.id,
+          email: session.user.email,
+          displayName: session.user.user_metadata?.display_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Bruker',
+          companyName: session.user.user_metadata?.company_name,
+          avatarUrl: session.user.user_metadata?.avatar_url,
+          plan: 'free',
+        });
+        setLoading(false);
+        const full = await getCurrentUser();
+        if (full) setUser(full);
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    // Also grab initial session token (non-blocking, no lock issues in Node)
-    supabase.auth.getSession().then(({ data }) => {
-      if (data?.session?.access_token) {
-        accessTokenRef.current = data.session.access_token;
-      }
-    }).catch(() => {});
     return () => subscription.unsubscribe();
   }, []);
 
