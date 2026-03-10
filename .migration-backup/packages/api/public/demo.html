@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fjordtech AS - AI Solutions</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0066cc 0%, #004a99 100%);
+      color: white;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      font-size: 1rem;
+      opacity: 0.95;
+    }
+
+    nav {
+      background: #f8f9fa;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #ddd;
+    }
+
+    nav a {
+      color: #0066cc;
+      text-decoration: none;
+      margin-right: 2rem;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #004a99;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    section {
+      margin: 3rem 0;
+      padding: 2rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    section h2 {
+      color: #0066cc;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    section h3 {
+      color: #004a99;
+      margin: 1.5rem 0 1rem 0;
+      font-size: 1.1rem;
+    }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .service-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .service-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .service-card h3 {
+      margin-top: 0;
+    }
+
+    .cta {
+      display: inline-block;
+      background: #0066cc;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-top: 1rem;
+      transition: background 0.3s;
+    }
+
+    .cta:hover {
+      background: #004a99;
+    }
+
+    footer {
+      background: #333;
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      margin-top: 3rem;
+    }
+
+    .chat-note {
+      background: #e3f2fd;
+      border-left: 4px solid #0066cc;
+      padding: 1rem;
+      margin: 2rem 0;
+      border-radius: 4px;
+    }
+
+    .chat-note strong {
+      color: #0066cc;
+    }
+
+    /* Chat Widget Styles */
+    #norsk-chatbot {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .norsk-chatbot-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .norsk-chatbot-button {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #0066cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(0, 102, 204, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .norsk-chatbot-button:hover {
+      background: #004a99;
+      box-shadow: 0 4px 16px rgba(0, 102, 204, 0.4);
+      transform: scale(1.1);
+    }
+
+    .norsk-chatbot-window {
+      position: absolute;
+      bottom: 70px;
+      right: 0;
+      width: 400px;
+      height: 500px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: opacity 0.3s ease;
+    }
+
+    .norsk-chatbot-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+    }
+
+    .norsk-chatbot-header {
+      background: #0066cc;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .norsk-chatbot-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .norsk-chatbot-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    .norsk-chatbot-close:hover {
+      transform: scale(1.2);
+    }
+
+    .norsk-chatbot-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: #f8f9fa;
+    }
+
+    .norsk-chatbot-message {
+      display: flex;
+      margin-bottom: 0.5rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .norsk-chatbot-message-user {
+      justify-content: flex-end;
+    }
+
+    .norsk-chatbot-message-assistant {
+      justify-content: flex-start;
+    }
+
+    .norsk-chatbot-message-text {
+      max-width: 70%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      word-wrap: break-word;
+    }
+
+    .norsk-chatbot-message-user .norsk-chatbot-message-text {
+      background: #0066cc;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .norsk-chatbot-message-assistant .norsk-chatbot-message-text {
+      background: white;
+      color: #333;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .norsk-chatbot-sources {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      max-width: 70%;
+    }
+
+    .norsk-chatbot-sources a {
+      color: #0066cc;
+      text-decoration: none;
+      margin-right: 0.5rem;
+      display: block;
+    }
+
+    .norsk-chatbot-sources a:hover {
+      text-decoration: underline;
+    }
+
+    .norsk-chatbot-input-area {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: white;
+      border-top: 1px solid #ddd;
+    }
+
+    .norsk-chatbot-input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 0.75rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+
+    .norsk-chatbot-input:focus {
+      outline: none;
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    .norsk-chatbot-send {
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s;
+    }
+
+    .norsk-chatbot-send:hover:not(:disabled) {
+      background: #004a99;
+    }
+
+    .norsk-chatbot-send:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 600px) {
+      .norsk-chatbot-window {
+        width: 90vw;
+        height: 70vh;
+        max-width: 100%;
+      }
+
+      main {
+        padding: 1rem;
+      }
+
+      section {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚀 Fjordtech AS</h1>
+    <p>Leading AI Solutions for Norwegian Businesses</p>
+  </header>
+
+  <nav>
+    <a href="#about">Om oss</a>
+    <a href="#services">Tjenester</a>
+    <a href="#pricing">Priser</a>
+    <a href="#contact">Kontakt</a>
+  </nav>
+
+  <main>
+    <div class="chat-note">
+      <strong>💬 Prøv chatboten:</strong> Klikk på chat-boblen i nedre høyre hjørne og still spørsmål om Fjordtech! Prøv f.eks. "Hva gjør Fjordtech?" eller "Hva er prisene?"
+    </div>
+
+    <section id="about">
+      <h2>Om Fjordtech AS</h2>
+      <p>Fjordtech AS er et norsk teknologiselskap spesialisert i kunstig intelligens og maskinlæring. Vi ble grunnlagt i 2015 og har kontorer i Oslo, Bergen og Stavanger.</p>
+      <p>Med et team på over 50 ingenører og eksperter innen AI, leverer vi løsninger som transformerer forretninger gjennom intelligent teknologi.</p>
+      <h3>Vår Misjon</h3>
+      <p>Vi er dedikert til å gjøre avansert AI tilgjengelig for bedrifter av alle størrelser, fra startups til store enterprises.</p>
+    </section>
+
+    <section id="services">
+      <h2>Våre Tjenester</h2>
+      <div class="services">
+        <div class="service-card">
+          <h3>🤖 AI Consulting</h3>
+          <p>Vi hjelper bedrifter med å identifisere og implementere AI-løsninger som passer deres behov og budsjett.</p>
+          <a href="#" class="cta">Lær mer</a>
+        </div>
+        <div class="service-card">
+          <h3>🧠 Machine Learning</h3>
+          <p>Utvikling av tilpassede ML-modeller for klassifikasjon, prediksjon, optimalisering og anomalideteksjon.</p>
+          <a href="#" class="cta">Lær mer</a>
+        </div>
+        <div class="service-card">
+          <h3>📊 Data Analytics</h3>
+          <p>Analyser dine data for å avdekke innsikter, trender og forbedringspotensial i virksomheten din.</p>
+          <a href="#" class="cta">Lær mer</a>
+        </div>
+        <div class="service-card">
+          <h3>💬 Chatbot Solutions</h3>
+          <p>Intelligente chatboter som håndterer kundeservice, salg og support 24/7 med naturlig språk.</p>
+          <a href="#" class="cta">Lær mer</a>
+        </div>
+        <div class="service-card">
+          <h3>☁️ Cloud Infrastructure</h3>
+          <p>Oppsett og administrasjon av cloud-løsninger på AWS, Google Cloud og Azure.</p>
+          <a href="#" class="cta">Lær mer</a>
+        </div>
+        <div class="service-card">
+          <h3>🔧 Custom Development</h3>
+          <p>Fullstendig custom utvikling av AI-løsninger tilpasset dine unike krav og arkitektur.</p>
+          <a href="#" class="cta">Lær mer</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <h2>Priser og Planer</h2>
+      <p>Fjordtech tilbyr fleksible priser basert på dine behov:</p>
+      
+      <h3>Starter Plan - 10,000 kr/måned</h3>
+      <ul>
+        <li>Opp til 10,000 API-kall per måned</li>
+        <li>1 integrasjon</li>
+        <li>Email-support</li>
+      </ul>
+
+      <h3>Professional Plan - 50,000 kr/måned</h3>
+      <ul>
+        <li>Opp til 1,000,000 API-kall per måned</li>
+        <li>Ubegrensede integrasjoner</li>
+        <li>Prioritert support</li>
+        <li>Custom features</li>
+      </ul>
+
+      <h3>Enterprise Plan - Kontakt oss</h3>
+      <ul>
+        <li>Ubegrensede API-kall</li>
+        <li>Dedikert account manager</li>
+        <li>Custom SLA</li>
+        <li>On-premise deployment</li>
+      </ul>
+
+      <p><strong>Alle planer inkluderer:</strong> 30 dagers gratis trial, dokumentasjon og SDK, monitorering og analytics.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Kontakt Oss</h2>
+      <p><strong>Adresse:</strong> Nedre Slottsgate 5, 0157 Oslo</p>
+      <p><strong>Telefon:</strong> +47 22 12 34 56</p>
+      <p><strong>Email:</strong> kontakt@fjordtech.no</p>
+      <p><strong>Nett:</strong> www.fjordtech.no</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Fjordtech AS. All rights reserved. | Demo page for norsk-chatbot</p>
+  </footer>
+
+  <!-- Embed the chat widget -->
+  <script>
+    (async function() {
+      const API_URL = window.location.origin;
+      let DEMO_SITE_ID = null;
+
+      try {
+        // Try to get demo site ID from API
+        let response = await fetch(API_URL + '/api/demo-info');
+        if (!response.ok) {
+          response = await fetch(API_URL + '/health/demo');
+        }
+        if (response.ok) {
+          const data = await response.json();
+          DEMO_SITE_ID = data.siteId;
+          console.log('Demo site ID from API:', DEMO_SITE_ID);
+        }
+      } catch (err) {
+        console.warn('Could not fetch demo site ID:', err);
+      }
+
+      // Fallback: try to get from URL query parameter
+      if (!DEMO_SITE_ID) {
+        const params = new URLSearchParams(window.location.search);
+        DEMO_SITE_ID = params.get('siteId');
+      }
+
+      if (!DEMO_SITE_ID) {
+        console.error('No demo site ID found. Please check that the API is running.');
+        return;
+      }
+
+      // Load widget script dynamically
+      const script = document.createElement('script');
+      script.src = API_URL + '/widget.min.js';
+      script.setAttribute('data-site-id', DEMO_SITE_ID);
+      script.setAttribute('data-api-url', API_URL);
+      document.head.appendChild(script);
+
+      console.log('Chat widget configured for site ID:', DEMO_SITE_ID);
+      console.log('API URL:', API_URL);
+    })();
+  </script>
+
+  <script id="widget-loader">
+    // Fallback: Inline chat widget for demo (will be replaced by actual widget)
+    // This ensures the page works even if widget.min.js doesn't load
+    (function() {
+      // Check if widget is already loaded (to avoid duplication)
+      if (document.getElementById('norsk-chatbot-widget-loaded')) {
+        return;
+      }
+
+      // We'll wait a moment for the actual widget to load
+      // If it doesn't load, we'll load a fallback
+      setTimeout(() => {
+        if (document.getElementById('norsk-chatbot')) {
+          // Widget is already loaded
+          return;
+        }
+
+        // Load fallback widget
+        const fallbackWidget = `
+          <div class="norsk-chatbot-container">
+            <button class="norsk-chatbot-button" onclick="document.querySelector('.norsk-chatbot-window').classList.toggle('norsk-chatbot-hidden')">💬</button>
+            <div class="norsk-chatbot-window norsk-chatbot-hidden">
+              <div class="norsk-chatbot-header" style="background-color: #0066cc">
+                <h3>Fjordtech Chat</h3>
+                <button class="norsk-chatbot-close" onclick="document.querySelector('.norsk-chatbot-window').classList.add('norsk-chatbot-hidden')">✕</button>
+              </div>
+              <div class="norsk-chatbot-messages">
+                <div class="norsk-chatbot-message norsk-chatbot-message-assistant">
+                  <div class="norsk-chatbot-message-text">
+                    Hej! Jeg er chatbot for Fjordtech AS. Hva kan jeg hjelpe deg med?
+                  </div>
+                </div>
+              </div>
+              <div class="norsk-chatbot-input-area">
+                <input type="text" placeholder="Skriv ditt spørsmål..." class="norsk-chatbot-input">
+                <button class="norsk-chatbot-send">Send</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const container = document.createElement('div');
+        container.id = 'norsk-chatbot-widget-loaded';
+        container.innerHTML = fallbackWidget;
+        document.body.appendChild(container);
+      }, 2000);
+    })();
+  </script>
+</body>
+</html>

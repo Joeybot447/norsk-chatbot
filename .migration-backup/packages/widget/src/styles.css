@@ -1,0 +1,252 @@
+/* ===== NorskBot Widget Styles ===== */
+
+.norsk-chatbot-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  z-index: 999999;
+}
+
+/* Chat Button */
+.norsk-chatbot-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 28px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.norsk-chatbot-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.norsk-chatbot-button:active {
+  transform: scale(0.95);
+}
+
+/* Chat Window */
+.norsk-chatbot-window {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: 380px;
+  height: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+.norsk-chatbot-window.norsk-chatbot-hidden {
+  display: none;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.norsk-chatbot-header {
+  padding: 16px;
+  color: white;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.norsk-chatbot-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.norsk-chatbot-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.norsk-chatbot-close:hover {
+  opacity: 0.8;
+}
+
+/* Messages */
+.norsk-chatbot-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.norsk-chatbot-message {
+  display: flex;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.norsk-chatbot-message-user {
+  justify-content: flex-end;
+}
+
+.norsk-chatbot-message-user .norsk-chatbot-message-text {
+  background: #007bff;
+  color: white;
+}
+
+.norsk-chatbot-message-assistant {
+  justify-content: flex-start;
+}
+
+.norsk-chatbot-message-assistant .norsk-chatbot-message-text {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.norsk-chatbot-message-text {
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 70%;
+  word-wrap: break-word;
+  line-height: 1.4;
+  font-size: 14px;
+}
+
+/* Sources */
+.norsk-chatbot-sources {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.norsk-chatbot-sources a {
+  font-size: 12px;
+  color: #007bff;
+  text-decoration: none;
+  padding: 2px 4px;
+}
+
+.norsk-chatbot-sources a:hover {
+  text-decoration: underline;
+}
+
+/* Input Area */
+.norsk-chatbot-input-area {
+  padding: 12px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 8px;
+}
+
+.norsk-chatbot-input {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.norsk-chatbot-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.norsk-chatbot-send {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.norsk-chatbot-send:hover {
+  background: #0056b3;
+}
+
+.norsk-chatbot-send:active {
+  transform: scale(0.98);
+}
+
+.norsk-chatbot-send:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Scrollbar */
+.norsk-chatbot-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.norsk-chatbot-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.norsk-chatbot-messages::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.norsk-chatbot-messages::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .norsk-chatbot-window {
+    width: 100vw;
+    height: 100vh;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+    max-width: 100%;
+  }
+
+  .norsk-chatbot-message-text {
+    max-width: 85%;
+  }
+}
