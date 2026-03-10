@@ -1,123 +1,34 @@
 /**
- * SQLite Database Client for Next.js
- * Uses sql.js for serverless/Vercel compatibility (pure JavaScript SQLite)
+ * Database Client for Next.js
+ * Uses Vercel Postgres (managed PostgreSQL)
+ * Serverless-compatible, no file persistence needed
  */
 
-import fs from 'fs';
-import path from 'path';
-import initSqlJs from 'sql.js';
-import { config } from '../config';
-
-let dbInstance: any = null;
-let SQL: any = null;
-
-/**
- * Initialize SQL.js library
- */
-async function initializeSqlJs() {
-  if (SQL) return SQL;
-  SQL = await initSqlJs();
-  return SQL;
-}
-
-/**
- * Load or create database
- */
-export async function initializeDb() {
-  if (dbInstance) return dbInstance;
-
-  try {
-    // Initialize SQL.js
-    const SqlJsLib = await initializeSqlJs();
-
-    // Ensure data directory exists
-    if (!fs.existsSync(config.dataDir)) {
-      fs.mkdirSync(config.dataDir, { recursive: true });
-    }
-
-    const dbPath = config.databaseUrl;
-
-    // Load existing database or create new one
-    let db;
-    if (fs.existsSync(dbPath)) {
-      const fileBuffer = fs.readFileSync(dbPath);
-      db = new SqlJsLib.Database(fileBuffer);
-    } else {
-      db = new SqlJsLib.Database();
-    }
-
-    // Enable foreign keys
-    db.run('PRAGMA foreign_keys = ON');
-
-    dbInstance = db;
-    console.log(`Database initialized at: ${dbPath}`);
-    return dbInstance;
-  } catch (err) {
-    console.error(`Failed to initialize database: ${err}`);
-    throw err;
-  }
-}
-
-/**
- * Save database to disk (call after mutations)
- */
-function saveDb() {
-  try {
-    if (!dbInstance) return;
-    const data = dbInstance.export();
-    const buffer = Buffer.from(data);
-    fs.writeFileSync(config.databaseUrl, buffer);
-  } catch (err) {
-    console.error(`Failed to save database: ${err}`);
-  }
-}
-
-/**
- * Get database instance
- */
-export async function getDb() {
-  if (!dbInstance) {
-    await initializeDb();
-  }
-  return dbInstance;
-}
+import { sql } from '@vercel/postgres';
 
 /**
  * Execute a query
  */
-export async function query(sql: string, params: any[] = []) {
+export async function query(sqlText: string, params: any[] = []) {
   try {
-    const db = await getDb();
-    const trimmed = sql.trim().toUpperCase();
+    const trimmed = sqlText.trim().toUpperCase();
 
     if (trimmed.startsWith('SELECT') || trimmed.startsWith('WITH')) {
-      const stmt = db.prepare(sql);
-      stmt.bind(params);
-      const rows = [];
-      while (stmt.step()) {
-        rows.push(stmt.getAsObject());
-      }
-      stmt.free();
+      const result = await sql.query(sqlText, params);
       return {
-        rows,
-        rowCount: rows.length,
+        rows: result.rows || [],
+        rowCount: result.rows?.length || 0,
       };
     } else {
-      db.run(sql, params);
-      saveDb();
-      
-      // Get lastInsertRowid
-      const result = db.exec('SELECT last_insert_rowid() as id');
-      const lastId = result[0]?.values[0]?.[0] || null;
-
+      const result = await sql.query(sqlText, params);
       return {
-        rows: [{ id: lastId }],
-        rowCount: 1,
-        lastId,
+        rows: result.rows || [{ id: null }],
+        rowCount: result.rowCount || 1,
+        lastId: result.rows?.[0]?.id || null,
       };
     }
-  } catch (err) {
-    console.error(`Database query error: ${err}`);
+  } catch (err: any) {
+    console.error(`Database query error: ${err.message}`);
     throw err;
   }
 }
@@ -125,22 +36,12 @@ export async function query(sql: string, params: any[] = []) {
 /**
  * Get a single row
  */
-export async function getOne<T = any>(sql: string, params: any[] = []): Promise<T | null> {
+export async function getOne<T = any>(sqlText: string, params: any[] = []): Promise<T | null> {
   try {
-    const db = await getDb();
-    const stmt = db.prepare(sql);
-    stmt.bind(params);
-    
-    if (stmt.step()) {
-      const row = stmt.getAsObject();
-      stmt.free();
-      return row as T;
-    }
-    
-    stmt.free();
-    return null;
-  } catch (err) {
-    console.error(`Database getOne error: ${err}`);
+    const result = await sql.query(sqlText, params);
+    return (result.rows?.[0] as T) || null;
+  } catch (err: any) {
+    console.error(`Database getOne error: ${err.message}`);
     throw err;
   }
 }
@@ -148,21 +49,27 @@ export async function getOne<T = any>(sql: string, params: any[] = []): Promise<
 /**
  * Get multiple rows
  */
-export async function getMany<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+export async function getMany<T = any>(sqlText: string, params: any[] = []): Promise<T[]> {
   try {
-    const db = await getDb();
-    const stmt = db.prepare(sql);
-    stmt.bind(params);
-    
-    const rows: T[] = [];
-    while (stmt.step()) {
-      rows.push(stmt.getAsObject() as T);
-    }
-    
-    stmt.free();
-    return rows;
-  } catch (err) {
-    console.error(`Database getMany error: ${err}`);
+    const result = await sql.query(sqlText, params);
+    return (result.rows as T[]) || [];
+  } catch (err: any) {
+    console.error(`Database getMany error: ${err.message}`);
     throw err;
   }
+}
+
+/**
+ * Initialize database (no-op for Vercel Postgres, connection is automatic)
+ */
+export async function initializeDb() {
+  console.log('Using Vercel Postgres (serverless-ready)');
+  return sql;
+}
+
+/**
+ * Get database instance
+ */
+export async function getDb() {
+  return sql;
 }
