@@ -1,165 +1,203 @@
 /**
- * Chat Routes
- * POST /v1/chat/message - Handle incoming messages
- * POST /v1/chat/feedback - Submit feedback
- * GET  /v1/chat/history  - Get conversation history
+ * Chat API Route
+ * POST /api/chat — Send message, get AI response (API key auth)
+ * GET  /api/chat — Fetch conversation history (API key auth)
+ * OPTIONS /api/chat — CORS preflight
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { v4 as uuid } from 'uuid';
+import Anthropic from '@anthropic-ai/sdk';
 import { createServiceClient } from '../../../lib/supabase/client';
-import { logger } from '../../../lib/utils/logger.js';
+import { extractApiKey, validateApiKey } from '../../../lib/api/middleware';
 
-// Validation schema
-const chatMessageSchema = z.object({
-  message: z.string().min(1, 'Message cannot be empty').max(2000, 'Message too long (max 2000 chars)'),
-  sessionId: z.string().optional(),
-  visitorName: z.string().max(100).optional(),
-  visitorEmail: z.string().email().optional(),
-  visitorCompany: z.string().max(200).optional(),
-});
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+};
+
+function corsJson(data: any, init?: ResponseInit) {
+  const res = NextResponse.json(data, init);
+  Object.entries(CORS_HEADERS).forEach(([k, v]) => res.headers.set(k, v));
+  return res;
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
 
 /**
- * POST /api/chat/message
- * Send a message and get an AI response
+ * POST /api/chat
+ * Body: { message, conversationId?, visitorId? }
  */
 export async function POST(request: NextRequest) {
   try {
-    const pathname = request.nextUrl.pathname;
-
-    // POST /api/chat/message
-    if (pathname.endsWith('/message')) {
-      const body = await request.json();
-
-      // Validate request
-      const validation = chatMessageSchema.safeParse(body);
-      if (!validation.success) {
-        return NextResponse.json(
-          {
-            error: 'Ugyldig forespørsel',
-            details: validation.error.errors.map(e => e.message),
-          },
-          { status: 400 }
-        );
-      }
-
-      const { message, sessionId, visitorName, visitorEmail, visitorCompany } = validation.data;
-      const siteId = (request as any).siteId;
-      const newSessionId = sessionId || uuid();
-
-      // Get or create conversation
-      let conversation = await getOne(
-        `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
-        [siteId, newSessionId]
-      );
-
-      if (!conversation) {
-        await query(
-          `INSERT INTO conversations 
-            (id, site_id, session_id, visitor_name, visitor_email, visitor_company, ip_address, user_agent)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            uuid(),
-            siteId,
-            newSessionId,
-            visitorName || null,
-            visitorEmail || null,
-            visitorCompany || null,
-            request.ip || null,
-            request.headers.get('user-agent') || null,
-          ]
-        );
-        conversation = await getOne(
-          `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
-          [siteId, newSessionId]
-        );
-      }
-
-      // Store user message
-      await query(
-        `INSERT INTO messages (id, conversation_id, site_id, role, content, tokens_used)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [uuid(), conversation.id, siteId, 'user', message, Math.ceil(message.length / 4)]
-      );
-
-      // Get AI response using ChatService (now includes conversation history)
-      const response = await chatService.getResponse({
-        siteId,
-        conversationId: conversation.id,
-        userMessage: message,
-        widgetConfig: (request as any).site?.widget_config || {},
-      });
-
-      // Store assistant message
-      const assistantMessageId = uuid();
-      await query(
-        `INSERT INTO messages (id, conversation_id, site_id, role, content, confidence_score, sources, tokens_used)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          assistantMessageId,
-          conversation.id,
-          siteId,
-          'assistant',
-          response.content,
-          response.confidence,
-          JSON.stringify(response.sources),
-          response.tokensUsed,
-        ]
-      );
-
-      // Update conversation message count
-      await query(
-        `UPDATE conversations SET message_count = message_count + 2 WHERE id = ?`,
-        [conversation.id]
-      );
-
-      // Return response
-      return NextResponse.json({
-        message: response.content,
-        messageId: assistantMessageId,
-        confidence: response.confidence,
-        sources: response.sources,
-        sessionId: newSessionId,
-        conversationId: conversation.id,
-      });
+    // 1. Authenticate via API key
+    const apiKey = extractApiKey(request);
+    if (!apiKey) {
+      return corsJson({ error: 'API-nøkkel mangler' }, { status: 401 });
     }
 
-    // POST /api/chat/feedback
-    if (pathname.endsWith('/feedback')) {
-      const body = await request.json();
-      const { messageId, rating } = body;
-
-      if (!messageId || typeof messageId !== 'string') {
-        return NextResponse.json(
-          { error: 'Meldings-ID er påkrevd' },
-          { status: 400 }
-        );
-      }
-
-      if (![-1, 1].includes(rating)) {
-        return NextResponse.json(
-          { error: 'Vurdering må være -1 eller 1' },
-          { status: 400 }
-        );
-      }
-
-      await query(
-        `UPDATE messages SET feedback = ? WHERE id = ? AND site_id = ?`,
-        [rating, messageId, (request as any).siteId]
-      );
-
-      return NextResponse.json({ success: true });
+    const auth = await validateApiKey(apiKey);
+    if (!auth) {
+      return corsJson({ error: 'Ugyldig API-nøkkel' }, { status: 401 });
     }
 
-    return NextResponse.json(
-      { error: 'Not found' },
-      { status: 404 }
-    );
+    const { siteId, siteName } = auth;
+
+    // 2. Parse body
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return corsJson({ error: 'Ugyldig JSON i forespørsel' }, { status: 400 });
+    }
+
+    const { message, conversationId, visitorId } = body;
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return corsJson({ error: 'Melding er påkrevd' }, { status: 400 });
+    }
+    if (message.length > 4000) {
+      return corsJson({ error: 'Meldingen er for lang (maks 4000 tegn)' }, { status: 400 });
+    }
+
+    const supabase = createServiceClient();
+
+    // 3. Get or create conversation
+    let convId = conversationId;
+    if (convId) {
+      // Verify conversation belongs to this site
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('id', convId)
+        .eq('site_id', siteId)
+        .single();
+      if (!existing) {
+        convId = null; // will create new
+      }
+    }
+
+    if (!convId) {
+      const vid = visitorId || crypto.randomUUID();
+      const { data: newConv, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          site_id: siteId,
+          visitor_id: vid,
+          status: 'active',
+          started_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (convError || !newConv) {
+        console.error('Conversation create error:', convError);
+        return corsJson({ error: 'Kunne ikke opprette samtale' }, { status: 500 });
+      }
+      convId = newConv.id;
+    }
+
+    // 4. Store user message
+    const userTokens = Math.ceil(message.length / 4);
+    await supabase.from('messages').insert({
+      conversation_id: convId,
+      role: 'user',
+      content: message.trim(),
+      tokens_used: userTokens,
+    });
+
+    // 5. Load conversation history (last 20 messages)
+    const { data: historyRows } = await supabase
+      .from('messages')
+      .select('role, content')
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: true })
+      .limit(20);
+
+    const history = (historyRows || []).map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
+    // 6. RAG — search knowledge_chunks for relevant context
+    let ragContext = '';
+    const { data: chunks } = await supabase
+      .from('knowledge_chunks')
+      .select('content')
+      .eq('site_id', siteId)
+      .limit(5);
+
+    if (chunks && chunks.length > 0) {
+      ragContext = chunks.map((c) => c.content).join('\n\n---\n\n');
+    }
+
+    // 7. Get site config for system prompt
+    const { data: siteConfig } = await supabase
+      .from('sites')
+      .select('welcome_message, bot_name, theme_config')
+      .eq('id', siteId)
+      .single();
+
+    const botName = siteConfig?.bot_name || 'NorskBot';
+
+    // 8. Build system prompt
+    let systemPrompt = `Du er ${botName}, en hjelpsom AI-assistent for ${siteName}. Svar alltid på norsk med mindre brukeren skriver på et annet språk. Vær vennlig, presis og hjelpsom.`;
+
+    if (siteConfig?.welcome_message) {
+      systemPrompt += `\n\nVelkomstmelding for denne nettsiden: ${siteConfig.welcome_message}`;
+    }
+
+    if (ragContext) {
+      systemPrompt += `\n\nHer er relevant informasjon fra kunnskapsbasen som du kan bruke til å svare:\n\n${ragContext}`;
+    }
+
+    // 9. Call Claude
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const claudeResponse = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: history,
+    });
+
+    const assistantContent =
+      claudeResponse.content[0].type === 'text'
+        ? claudeResponse.content[0].text
+        : '';
+    const assistantTokens = claudeResponse.usage?.output_tokens || Math.ceil(assistantContent.length / 4);
+    const totalTokens = (claudeResponse.usage?.input_tokens || 0) + assistantTokens;
+
+    // 10. Store assistant message
+    await supabase.from('messages').insert({
+      conversation_id: convId,
+      role: 'assistant',
+      content: assistantContent,
+      tokens_used: assistantTokens,
+    });
+
+    // 11. Log usage
+    await supabase.from('usage_logs').insert({
+      site_id: siteId,
+      action_type: 'chat_message',
+      tokens_used: totalTokens,
+      metadata: {
+        model: 'claude-sonnet-4-20250514',
+        conversation_id: convId,
+      },
+    });
+
+    // 12. Return response
+    return corsJson({
+      message: assistantContent,
+      conversationId: convId,
+      tokensUsed: totalTokens,
+    });
   } catch (err) {
     const error = err as Error;
-    logger.error(`Chat route error: ${error.message}`);
-    return NextResponse.json(
+    console.error(`Chat POST error: ${error.message}`);
+    return corsJson(
       { error: 'Beklager, noe gikk galt. Vennligst prøv igjen.' },
       { status: 500 }
     );
@@ -167,57 +205,55 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/chat/history?sessionId=xxx
- * Get conversation history for a session
+ * GET /api/chat?conversationId=xxx
+ * Fetch conversation history
  */
 export async function GET(request: NextRequest) {
   try {
-    const sessionId = request.nextUrl.searchParams.get('sessionId');
-    if (!sessionId || typeof sessionId !== 'string') {
-      return NextResponse.json(
-        { error: 'sessionId query parameter is required' },
-        { status: 400 }
-      );
+    const apiKey = extractApiKey(request);
+    if (!apiKey) {
+      return corsJson({ error: 'API-nøkkel mangler' }, { status: 401 });
     }
 
-    const siteId = (request as any).siteId;
-
-    const conversation = await getOne(
-      `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
-      [siteId, sessionId]
-    );
-
-    if (!conversation) {
-      return NextResponse.json({
-        messages: [],
-        sessionId,
-      });
+    const auth = await validateApiKey(apiKey);
+    if (!auth) {
+      return corsJson({ error: 'Ugyldig API-nøkkel' }, { status: 401 });
     }
 
-    const messages = getMany(
-      `SELECT id, role, content, confidence_score, sources, feedback, created_at
-       FROM messages
-       WHERE conversation_id = ?
-       ORDER BY created_at ASC`,
-      [conversation.id]
-    );
+    const conversationId = request.nextUrl.searchParams.get('conversationId');
+    if (!conversationId) {
+      return corsJson({ error: 'conversationId er påkrevd' }, { status: 400 });
+    }
 
-    // Parse sources JSON
-    const parsed = messages.map(m => ({
-      ...m,
-      sources: m.sources ? JSON.parse(m.sources) : [],
-    }));
+    const supabase = createServiceClient();
 
-    return NextResponse.json({
-      messages: parsed,
-      sessionId,
-      conversationId: conversation.id,
+    // Verify conversation belongs to this site
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('id', conversationId)
+      .eq('site_id', auth.siteId)
+      .single();
+
+    if (!conv) {
+      return corsJson({ error: 'Samtale ikke funnet' }, { status: 404 });
+    }
+
+    const { data: messages } = await supabase
+      .from('messages')
+      .select('id, role, content, tokens_used, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    return corsJson({
+      conversationId,
+      messages: messages || [],
     });
   } catch (err) {
     const error = err as Error;
-    logger.error(`Chat history error: ${error.message}`);
-    return NextResponse.json(
-      { error: 'Failed to load conversation history' },
+    console.error(`Chat GET error: ${error.message}`);
+    return corsJson(
+      { error: 'Kunne ikke hente samtalehistorikk' },
       { status: 500 }
     );
   }
