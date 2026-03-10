@@ -97,7 +97,7 @@ export default function ChatPlaygroundPage() {
     if (!input.trim() || !selectedSiteId || sending) return;
 
     const userMessage: Message = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).slice(2) + Date.now().toString(36),
       role: 'user',
       content: input.trim(),
       timestamp: new Date(),
@@ -139,7 +139,7 @@ export default function ChatPlaygroundPage() {
       }
 
       const assistantMessage: Message = {
-        id: crypto.randomUUID(),
+        id: Math.random().toString(36).slice(2) + Date.now().toString(36),
         role: 'assistant',
         content: data.response,
         sources: data.sources,
