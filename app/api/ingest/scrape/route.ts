@@ -302,118 +302,138 @@ export async function POST(request: NextRequest) {
 
     const sourceId = source.id;
 
-    // --- Begin crawling ---
-    const visited = new Set<string>();
-    const normalizedStart = normalizeUrl(url, url);
-    if (!normalizedStart) {
-      await supabase
-        .from('knowledge_sources')
-        .update({ status: 'error', content: `${url} — Ugyldig start-URL` })
-        .eq('id', sourceId);
-      return NextResponse.json({ error: 'Ugyldig start-URL' }, { status: 400 });
-    }
-
-    const queue: string[] = [normalizedStart];
-    visited.add(normalizedStart);
-
-    let pagesCrawled = 0;
-    let chunksCreated = 0;
-    let pagesFound = 1;
-    const effectiveMaxPages = Math.min(Math.max(1, maxPages), 50); // Cap at 50 to protect credits
-
-    while (queue.length > 0 && pagesCrawled < effectiveMaxPages) {
-      const currentUrl = queue.shift()!;
-
-      // Fetch page via ScrapingBee
-      const result = await fetchPageViaScrapingBee(currentUrl, scrapingBeeKey);
-      if (!result || !result.text.trim()) {
-        continue;
-      }
-
-      pagesCrawled++;
-
-      // Extract same-domain links and add to queue
-      const newLinks = extractSameDomainLinks(result.links, currentUrl, hostname);
-      for (const link of newLinks) {
-        if (!visited.has(link)) {
-          visited.add(link);
-          queue.push(link);
-          pagesFound++;
+    // --- Fire-and-forget: crawl in background ---
+    // We return the sourceId immediately so the UI can poll for progress
+    const crawlInBackground = async () => {
+      const bgSupabase = createServiceClient();
+      try {
+        const normalizedStart = normalizeUrl(url, url);
+        if (!normalizedStart) {
+          await bgSupabase
+            .from('knowledge_sources')
+            .update({ status: 'error', content: `${url} — Ugyldig start-URL` })
+            .eq('id', sourceId);
+          return;
         }
-      }
 
-      // Clean the text
-      const cleanedText = cleanHtmlText(result.text);
-      if (cleanedText.length < 50) continue; // Skip pages with very little content
+        const visited = new Set<string>();
+        const queue: string[] = [normalizedStart];
+        visited.add(normalizedStart);
 
-      // Chunk the text
-      const textChunks = chunkText(cleanedText);
+        let pagesCrawled = 0;
+        let chunksCreated = 0;
+        let pagesFound = 1;
+        const effectiveMaxPages = Math.min(Math.max(1, maxPages), 50);
 
-      // Generate embeddings and store chunks
-      for (const chunkContent of textChunks) {
-        try {
-          const embedding = await generateEmbedding(chunkContent);
+        while (queue.length > 0 && pagesCrawled < effectiveMaxPages) {
+          const currentUrl = queue.shift()!;
 
-          const insertData: Record<string, any> = {
-            source_id: sourceId,
-            site_id: siteId,
-            content: chunkContent,
-            metadata: {
-              chunk_index: chunksCreated,
-              char_count: chunkContent.length,
-              source_url: currentUrl,
-            },
-          };
+          // Update progress so frontend can show it
+          await bgSupabase
+            .from('knowledge_sources')
+            .update({
+              chunk_count: chunksCreated,
+              content: `Skanner side ${pagesCrawled + 1}... (${pagesFound} sider funnet)`,
+            })
+            .eq('id', sourceId);
 
-          if (embedding) {
-            insertData.embedding = JSON.stringify(embedding);
-          }
-
-          const { error: chunkError } = await supabase
-            .from('knowledge_chunks')
-            .insert(insertData);
-
-          if (chunkError) {
-            console.error(`Chunk insert error:`, chunkError);
+          const result = await fetchPageViaScrapingBee(currentUrl, scrapingBeeKey);
+          if (!result || !result.text.trim()) {
             continue;
           }
 
-          chunksCreated++;
-        } catch (err) {
-          console.error(`Chunk processing error:`, err);
+          pagesCrawled++;
+
+          const newLinks = extractSameDomainLinks(result.links, currentUrl, hostname);
+          for (const link of newLinks) {
+            if (!visited.has(link)) {
+              visited.add(link);
+              queue.push(link);
+              pagesFound++;
+            }
+          }
+
+          const cleanedText = cleanHtmlText(result.text);
+          if (cleanedText.length < 50) continue;
+
+          const textChunks = chunkText(cleanedText);
+
+          for (const chunkContent of textChunks) {
+            try {
+              const embedding = await generateEmbedding(chunkContent);
+
+              const insertData: Record<string, any> = {
+                source_id: sourceId,
+                site_id: siteId,
+                content: chunkContent,
+                metadata: {
+                  chunk_index: chunksCreated,
+                  char_count: chunkContent.length,
+                  source_url: currentUrl,
+                },
+              };
+
+              if (embedding) {
+                insertData.embedding = JSON.stringify(embedding);
+              }
+
+              const { error: chunkError } = await bgSupabase
+                .from('knowledge_chunks')
+                .insert(insertData);
+
+              if (chunkError) {
+                console.error(`Chunk insert error:`, chunkError);
+                continue;
+              }
+
+              chunksCreated++;
+            } catch (err) {
+              console.error(`Chunk processing error:`, err);
+            }
+          }
+
+          // Update progress after each page
+          await bgSupabase
+            .from('knowledge_sources')
+            .update({
+              chunk_count: chunksCreated,
+              content: `${pagesCrawled}/${pagesFound} sider skannet, ${chunksCreated} deler opprettet`,
+            })
+            .eq('id', sourceId);
         }
+
+        // Final status
+        const finalStatus = chunksCreated > 0 ? 'ready' : 'error';
+        await bgSupabase
+          .from('knowledge_sources')
+          .update({
+            status: finalStatus,
+            chunk_count: chunksCreated,
+            content: `${url} — ${pagesCrawled} sider, ${chunksCreated} deler`,
+          })
+          .eq('id', sourceId);
+
+        console.log(`Scrape complete: ${domain} — ${pagesCrawled} pages, ${chunksCreated} chunks`);
+      } catch (err) {
+        console.error(`Background scrape error for ${domain}:`, err);
+        await bgSupabase
+          .from('knowledge_sources')
+          .update({ status: 'error', content: `${url} — Feil under skanning` })
+          .eq('id', sourceId);
       }
+    };
 
-      // Update progress
-      await supabase
-        .from('knowledge_sources')
-        .update({
-          chunk_count: chunksCreated,
-          content: `${url} — ${pagesCrawled}/${pagesFound} sider skannet`,
-        })
-        .eq('id', sourceId);
-    }
+    // Start crawl in background — don't await
+    crawlInBackground().catch(console.error);
 
-    // Final status update
-    const finalStatus = chunksCreated > 0 ? 'ready' : 'error';
-    await supabase
-      .from('knowledge_sources')
-      .update({
-        status: finalStatus,
-        chunk_count: chunksCreated,
-        content: `${url} — ${pagesCrawled} sider, ${chunksCreated} deler`,
-      })
-      .eq('id', sourceId);
-
+    // Return immediately so frontend can start polling
     return NextResponse.json(
       {
         sourceId,
-        pagesFound,
-        pagesCrawled,
-        chunksCreated,
-        status: finalStatus,
+        status: 'processing',
+        message: 'Skanning startet. Bruk GET /api/ingest/scrape?sourceId=' + sourceId + ' for status.',
       },
-      { status: 201 }
+      { status: 202 }
     );
   } catch (err) {
     const error = err as Error;
@@ -470,6 +490,7 @@ export async function GET(request: NextRequest) {
       status: source.status,
       title: source.title,
       chunksCreated: source.chunk_count || 0,
+      progressText: source.status === 'processing' ? (source.content || 'Skanner...') : undefined,
     });
   } catch (err) {
     const error = err as Error;

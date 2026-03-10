@@ -467,6 +467,8 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
+
+      // Start scrape — returns immediately with sourceId
       const res = await fetch('/api/ingest/scrape', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -477,10 +479,45 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
         throw new Error(body.error || 'Skanning feilet');
       }
       const data = await res.json();
-      setScrapeResult({ pagesCrawled: data.pagesCrawled, chunksCreated: data.chunksCreated });
-      setScrapeStatus(null);
-      setScrapeUrl('');
-      await fetchSources();
+      const sourceId = data.sourceId;
+      if (!sourceId) throw new Error('Ingen kilde-ID mottatt');
+
+      // Poll for progress every 3 seconds
+      setScrapeStatus('Kobler til nettside...');
+      let done = false;
+      let attempts = 0;
+      const maxAttempts = 120; // 6 minutes max (120 * 3s)
+      while (!done && attempts < maxAttempts) {
+        await new Promise(r => setTimeout(r, 3000));
+        attempts++;
+        try {
+          const pollRes = await fetch('/api/ingest/scrape?sourceId=' + sourceId, {
+            headers: { Authorization: 'Bearer ' + token },
+          });
+          if (!pollRes.ok) continue;
+          const poll = await pollRes.json();
+
+          if (poll.status === 'processing') {
+            // Show the progress text from the backend content field
+            const chunks = poll.chunksCreated || 0;
+            setScrapeStatus(poll.progressText || `Skanner... (${chunks} deler opprettet)`);
+          } else if (poll.status === 'ready') {
+            setScrapeResult({ pagesCrawled: 0, chunksCreated: poll.chunksCreated || 0 });
+            setScrapeStatus(null);
+            setScrapeUrl('');
+            await fetchSources();
+            done = true;
+          } else if (poll.status === 'error') {
+            throw new Error('Skanning feilet. Sjekk at nettadressen er korrekt.');
+          }
+        } catch (pollErr: any) {
+          if (pollErr.message.includes('feilet')) throw pollErr;
+          // Network error during poll — keep trying
+        }
+      }
+      if (!done) {
+        throw new Error('Skanning tok for lang tid. Sjekk status i kunnskapsbasen.');
+      }
     } catch (err: any) {
       setScrapeError(err.message);
       setScrapeStatus(null);
