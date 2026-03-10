@@ -76,7 +76,6 @@ export default function CookieConsent() {
               minWidth: 0,
             }}
           >
-            <span style={{ fontSize: 28, flexShrink: 0 }}>🍪</span>
             <p
               style={{
                 fontFamily: FONT,

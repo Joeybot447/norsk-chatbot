@@ -102,6 +102,54 @@ function Button({
   );
 }
 
+// ─── SVG Icons ──────────────────────────────────────────────────────────────
+const icons: Record<string, React.ReactNode> = {
+  brain: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2a5 5 0 0 1 5 5c0 1.5-.5 2.5-1.5 3.5L12 14l-3.5-3.5C7.5 9.5 7 8.5 7 7a5 5 0 0 1 5-5z" />
+      <path d="M12 14v8" />
+      <path d="M9 18h6" />
+      <path d="M7 7C4.8 7 3 8.8 3 11c0 1.5.8 2.8 2 3.5" />
+      <path d="M17 7c2.2 0 4 1.8 4 4 0 1.5-.8 2.8-2 3.5" />
+    </svg>
+  ),
+  book: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      <path d="M8 7h8" />
+      <path d="M8 11h6" />
+    </svg>
+  ),
+  building: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <path d="M9 22v-4h6v4" />
+      <path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
+    </svg>
+  ),
+  lightning: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  ),
+  lock: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      <circle cx="12" cy="16" r="1" />
+    </svg>
+  ),
+  rocket: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+      <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </svg>
+  ),
+};
+
 // ─── Feature Card ───────────────────────────────────────────────────────────
 function FeatureCard({
   icon,
@@ -138,11 +186,10 @@ function FeatureCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 24,
           marginBottom: 20,
         }}
       >
-        {icon}
+        {icons[icon] || <div style={{ width: 4, height: 24, borderRadius: 2, background: BLUE }} />}
       </div>
       <h3
         style={{
@@ -715,32 +762,32 @@ export default function HomePage() {
             }}
           >
             <FeatureCard
-              icon="🧠"
+              icon="brain"
               title="Claude AI-motor"
               description="Drevet av Anthropic Claude — verdens sikreste og mest kapable AI-modell. Forstår norsk kontekst og nyanser."
             />
             <FeatureCard
-              icon="📚"
+              icon="book"
               title="RAG Kunnskapsbase"
               description="Last opp dokumenter, PDF-er og nettsider. AI-en svarer basert på din egen kunnskapsbase med kildehenvisninger."
             />
             <FeatureCard
-              icon="🏢"
+              icon="building"
               title="Flertenant-arkitektur"
               description="Administrer flere chatbots fra ett kontrollpanel. Perfekt for byråer og bedrifter med flere merkevarer."
             />
             <FeatureCard
-              icon="⚡"
+              icon="lightning"
               title="Sanntidschat"
               description="Lynrask responstid under 200ms. Streaming-svar gir en naturlig samtaleopplevelse for brukerne."
             />
             <FeatureCard
-              icon="🔒"
+              icon="lock"
               title="Sikkerhet & GDPR"
               description="Data lagres i Norge. Fullstendig GDPR-kompatibel med kryptering, tilgangskontroll og dataminimering."
             />
             <FeatureCard
-              icon="🚀"
+              icon="rocket"
               title="Produksjonsklar"
               description="Enterprise-grade infrastruktur med 99.9% oppetid, automatisk skalering, og profesjonell support."
             />

@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import CookieConsent from './components/CookieConsent';
 
 export const metadata: Metadata = {
-  title: 'NorskBot - AI Chatbot for Norwegian Businesses',
-  description: 'Embeddable AI-powered customer service chatbot with RAG knowledge base',
+  title: 'NorskBot AI — KI-drevet chatbot for norske bedrifter',
+  description: 'Embeddbar AI-drevet kundeservice-chatbot med RAG-kunnskapsbase',
 };
 
 export default function RootLayout({
@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="no">
+      <body style={{ margin: 0, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         {children}
         <CookieConsent />
       </body>
