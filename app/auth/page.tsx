@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, signUp, signInWithGitHub } from '../_lib/supabase/auth';
 
-const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -13,7 +13,7 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: 8,
   fontSize: 14,
-  fontFamily,
+
   backgroundColor: '#f8fafc',
   outline: 'none',
   boxSizing: 'border-box',
@@ -26,7 +26,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
   color: '#64748b',
   marginBottom: 6,
-  fontFamily,
+
 };
 
 const primaryBtnStyle: React.CSSProperties = {
@@ -38,7 +38,7 @@ const primaryBtnStyle: React.CSSProperties = {
   color: '#fff',
   fontSize: 15,
   fontWeight: 600,
-  fontFamily,
+
   cursor: 'pointer',
   transition: 'background-color 0.2s',
 };
@@ -52,7 +52,7 @@ const socialBtnStyle: React.CSSProperties = {
   color: '#0f172a',
   fontSize: 14,
   fontWeight: 600,
-  fontFamily,
+
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -147,7 +147,7 @@ export default function AuthPage() {
     padding: '12px 0',
     fontSize: 14,
     fontWeight: 600,
-    fontFamily,
+  
     cursor: 'pointer',
     border: 'none',
     backgroundColor: 'transparent',
@@ -164,7 +164,7 @@ export default function AuthPage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
-      fontFamily,
+    
     }}>
       <div style={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
@@ -178,7 +178,7 @@ export default function AuthPage() {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <span style={{ fontSize: 24, fontWeight: 700, color: '#2563eb', fontFamily }}>NorskBot</span>
+            <span style={{ fontSize: 24, fontWeight: 700, color: '#2563eb' }}>NorskBot</span>
           </a>
         </div>
 
@@ -205,7 +205,7 @@ export default function AuthPage() {
             <div style={{
               padding: '12px 16px', borderRadius: 8, backgroundColor: '#fef2f2',
               border: '1px solid #fecaca', color: '#dc2626', fontSize: 13, fontWeight: 500,
-              marginBottom: 20, fontFamily,
+              marginBottom: 20,
             }}>
               {error}
             </div>
@@ -214,7 +214,7 @@ export default function AuthPage() {
             <div style={{
               padding: '12px 16px', borderRadius: 8, backgroundColor: '#f0fdf4',
               border: '1px solid #bbf7d0', color: '#16a34a', fontSize: 13, fontWeight: 500,
-              marginBottom: 20, fontFamily,
+              marginBottom: 20,
             }}>
               {success}
             </div>
@@ -250,7 +250,7 @@ export default function AuthPage() {
                 />
               </div>
               <div style={{ textAlign: 'right', marginBottom: 24 }}>
-                <a href="/auth/forgot-password" style={{ fontSize: 13, color: '#2563eb', textDecoration: 'none', fontFamily }}>
+                <a href="/auth/forgot-password" style={{ fontSize: 13, color: '#2563eb', textDecoration: 'none' }}>
                   Glemt passord?
                 </a>
               </div>
@@ -274,7 +274,7 @@ export default function AuthPage() {
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', gap: 12 }}>
                 <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
-                <span style={{ fontSize: 12, color: '#94a3b8', fontFamily }}>eller</span>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>eller</span>
                 <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
               </div>
 
@@ -375,7 +375,7 @@ export default function AuthPage() {
                   onChange={(e) => setTermsAccepted(e.target.checked)}
                   style={{ marginTop: 3, accentColor: '#2563eb' }}
                 />
-                <label htmlFor="terms" style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, fontFamily, cursor: 'pointer' }}>
+                <label htmlFor="terms" style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, cursor: 'pointer' }}>
                   Jeg godtar{' '}
                   <a href="/brukervilkar" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
                     brukervilkårene
@@ -406,7 +406,7 @@ export default function AuthPage() {
               {/* Divider */}
               <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', gap: 12 }}>
                 <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
-                <span style={{ fontSize: 12, color: '#94a3b8', fontFamily }}>eller</span>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>eller</span>
                 <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
               </div>
 
@@ -432,7 +432,7 @@ export default function AuthPage() {
         </div>
 
         {/* Footer */}
-        <div style={{ textAlign: 'center', marginTop: 28, fontSize: 12, color: '#64748b', fontFamily }}>
+        <div style={{ textAlign: 'center', marginTop: 28, fontSize: 12, color: '#64748b' }}>
           <a href="/" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}>← Tilbake til forsiden</a>
           <div style={{ marginTop: 12 }}>
             © 2026 NorskBot —{' '}

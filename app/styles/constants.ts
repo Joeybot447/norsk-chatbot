@@ -1,4 +1,4 @@
-export const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 
 export const colors = {
   primary: '#2563eb',

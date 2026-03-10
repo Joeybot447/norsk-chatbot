@@ -171,7 +171,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`${collapsed ? 'w-[68px]' : 'w-[272px]'} bg-[#0f172a] flex flex-col flex-shrink-0 h-screen transition-all duration-200 ease-in-out relative`}
+      className={`${collapsed ? 'w-[68px]' : 'w-[272px]'} bg-[#0f172a] flex flex-col flex-shrink-0 h-screen sticky top-0 transition-all duration-200 ease-in-out relative`}
     >
       {/* Header */}
       <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b border-white/[0.06]`}>
@@ -215,7 +215,7 @@ export default function Sidebar() {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-thin">
         {/* Platform section */}
         <SectionLabel label="Plattform" collapsed={collapsed} />
         <div className="space-y-0.5">

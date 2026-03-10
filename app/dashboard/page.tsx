@@ -323,7 +323,7 @@ export default function DashboardPage() {
 
   /* ─── Main Layout ─── */
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-slate-50" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div className="flex flex-col h-full overflow-hidden bg-slate-50">
 
       {/* ─── Stats Row ─── */}
       <div className="flex-shrink-0 px-6 pt-6 pb-2">

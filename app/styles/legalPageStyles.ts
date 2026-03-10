@@ -3,7 +3,7 @@
  * Single source of truth - no duplication across pages
  */
 
-const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 
 export const navStyle: React.CSSProperties = {
   backgroundColor: '#ffffff',
@@ -12,7 +12,7 @@ export const navStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  fontFamily,
+
 };
 
 export const logoStyle: React.CSSProperties = {
@@ -38,7 +38,7 @@ export const containerStyle: React.CSSProperties = {
   maxWidth: '800px',
   margin: '0 auto',
   padding: '48px 24px 64px',
-  fontFamily,
+
   color: '#334155',
   fontSize: '16px',
   lineHeight: 1.7,
@@ -104,7 +104,7 @@ export const footerStyle: React.CSSProperties = {
   backgroundColor: '#f8fafc',
   borderTop: '1px solid #e2e8f0',
   padding: '32px 24px',
-  fontFamily,
+
 };
 
 export const footerInnerStyle: React.CSSProperties = {

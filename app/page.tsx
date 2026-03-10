@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ─── Style Constants ────────────────────────────────────────────────────────
-const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
 const BLUE = '#2563eb';
 const BLUE_DARK = '#1d4ed8';
 const BLUE_LIGHT = '#dbeafe';
@@ -51,7 +51,7 @@ function Button({
   };
 
   const base: React.CSSProperties = {
-    fontFamily: FONT,
+    
     fontWeight: 600,
     borderRadius: 8,
     border: 'none',
@@ -193,7 +193,7 @@ function FeatureCard({
       </div>
       <h3
         style={{
-          fontFamily: FONT,
+          
           fontSize: 20,
           fontWeight: 700,
           color: DARK,
@@ -205,7 +205,7 @@ function FeatureCard({
       </h3>
       <p
         style={{
-          fontFamily: FONT,
+          
           fontSize: 15,
           color: GRAY_600,
           margin: 0,
@@ -243,14 +243,14 @@ function StepCard({
           fontSize: 24,
           fontWeight: 800,
           margin: '0 auto 20px',
-          fontFamily: FONT,
+          
         }}
       >
         {number}
       </div>
       <h3
         style={{
-          fontFamily: FONT,
+          
           fontSize: 22,
           fontWeight: 700,
           color: DARK,
@@ -261,7 +261,7 @@ function StepCard({
       </h3>
       <p
         style={{
-          fontFamily: FONT,
+          
           fontSize: 16,
           color: GRAY_500,
           margin: 0,
@@ -338,7 +338,7 @@ function EndpointBadge({
         style={{
           fontSize: 14,
           color: GRAY_500,
-          fontFamily: FONT,
+          
           marginLeft: 'auto',
         }}
       >
@@ -357,7 +357,7 @@ function NavLink({ children, href }: { children: React.ReactNode; href: string }
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        fontFamily: FONT,
+        
         fontSize: 15,
         fontWeight: 500,
         color: hovered ? BLUE : GRAY_700,
@@ -390,7 +390,7 @@ export default function HomePage() {
   };
 
   return (
-    <div style={{ fontFamily: FONT, color: DARK, background: WHITE, overflowX: 'hidden' as const }}>
+    <div style={{  color: DARK, background: WHITE, overflowX: 'hidden' as const }}>
       {/* ═══ NAV ═══ */}
       <nav
         style={{
@@ -439,14 +439,14 @@ export default function HomePage() {
                 color: WHITE,
                 fontSize: 18,
                 fontWeight: 800,
-                fontFamily: FONT,
+                
               }}
             >
               N
             </div>
             <span
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 20,
                 fontWeight: 700,
                 color: DARK,
@@ -541,7 +541,7 @@ export default function HomePage() {
 
           <h1
             style={{
-              fontFamily: FONT,
+              
               fontSize: 56,
               fontWeight: 800,
               color: DARK,
@@ -565,7 +565,7 @@ export default function HomePage() {
 
           <p
             style={{
-              fontFamily: FONT,
+              
               fontSize: 20,
               color: GRAY_500,
               lineHeight: 1.6,
@@ -691,13 +691,13 @@ export default function HomePage() {
                   fontSize: 28,
                   fontWeight: 800,
                   color: BLUE,
-                  fontFamily: FONT,
+                  
                   letterSpacing: -0.5,
                 }}
               >
                 {stat.number}
               </div>
-              <div style={{ fontSize: 14, color: GRAY_500, fontFamily: FONT, marginTop: 4 }}>
+              <div style={{ fontSize: 14, color: GRAY_500,  marginTop: 4 }}>
                 {stat.label}
               </div>
             </div>
@@ -711,7 +711,7 @@ export default function HomePage() {
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
             <p
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 14,
                 fontWeight: 600,
                 color: BLUE,
@@ -724,7 +724,7 @@ export default function HomePage() {
             </p>
             <h2
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 40,
                 fontWeight: 800,
                 color: DARK,
@@ -739,7 +739,7 @@ export default function HomePage() {
             </h2>
             <p
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 18,
                 color: GRAY_500,
                 margin: 0,
@@ -801,7 +801,7 @@ export default function HomePage() {
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
             <p
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 14,
                 fontWeight: 600,
                 color: BLUE,
@@ -814,7 +814,7 @@ export default function HomePage() {
             </p>
             <h2
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 40,
                 fontWeight: 800,
                 color: DARK,
@@ -869,7 +869,7 @@ export default function HomePage() {
             <div>
               <p
                 style={{
-                  fontFamily: FONT,
+                  
                   fontSize: 14,
                   fontWeight: 600,
                   color: BLUE,
@@ -882,7 +882,7 @@ export default function HomePage() {
               </p>
               <h2
                 style={{
-                  fontFamily: FONT,
+                  
                   fontSize: 36,
                   fontWeight: 800,
                   color: DARK,
@@ -895,7 +895,7 @@ export default function HomePage() {
               </h2>
               <p
                 style={{
-                  fontFamily: FONT,
+                  
                   fontSize: 17,
                   color: GRAY_500,
                   margin: '0 0 32px 0',
@@ -958,7 +958,7 @@ export default function HomePage() {
         >
           <p
             style={{
-              fontFamily: FONT,
+              
               fontSize: 14,
               fontWeight: 600,
               color: BLUE,
@@ -971,7 +971,7 @@ export default function HomePage() {
           </p>
           <h2
             style={{
-              fontFamily: FONT,
+              
               fontSize: 44,
               fontWeight: 800,
               color: WHITE,
@@ -986,7 +986,7 @@ export default function HomePage() {
           </h2>
           <p
             style={{
-              fontFamily: FONT,
+              
               fontSize: 18,
               color: GRAY_400,
               margin: '0 0 48px 0',
@@ -1020,14 +1020,14 @@ export default function HomePage() {
                 textAlign: 'left',
               }}
             >
-              <p style={{ fontFamily: FONT, fontSize: 14, color: GRAY_400, margin: '0 0 8px 0', fontWeight: 500 }}>
+              <p style={{  fontSize: 14, color: GRAY_400, margin: '0 0 8px 0', fontWeight: 500 }}>
                 Gratis
               </p>
-              <p style={{ fontFamily: FONT, fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
+              <p style={{  fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
                 0 kr
                 <span style={{ fontSize: 16, fontWeight: 400, color: GRAY_500 }}> /mnd</span>
               </p>
-              <p style={{ fontFamily: FONT, fontSize: 14, color: GRAY_500, margin: '0 0 24px 0' }}>
+              <p style={{  fontSize: 14, color: GRAY_500, margin: '0 0 24px 0' }}>
                 Perfekt for testing
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
@@ -1035,7 +1035,7 @@ export default function HomePage() {
                   (f) => (
                     <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <span style={{ color: GREEN, fontSize: 16 }}>✓</span>
-                      <span style={{ fontFamily: FONT, fontSize: 14, color: GRAY_300 }}>{f}</span>
+                      <span style={{  fontSize: 14, color: GRAY_300 }}>{f}</span>
                     </div>
                   )
                 )}
@@ -1068,20 +1068,20 @@ export default function HomePage() {
                   fontWeight: 700,
                   padding: '4px 14px',
                   borderRadius: 100,
-                  fontFamily: FONT,
+                  
                   letterSpacing: 0.5,
                 }}
               >
                 POPULÆR
               </div>
-              <p style={{ fontFamily: FONT, fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: '0 0 8px 0', fontWeight: 500 }}>
+              <p style={{  fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: '0 0 8px 0', fontWeight: 500 }}>
                 Pro
               </p>
-              <p style={{ fontFamily: FONT, fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
+              <p style={{  fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
                 990 kr
                 <span style={{ fontSize: 16, fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}> /mnd</span>
               </p>
-              <p style={{ fontFamily: FONT, fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: '0 0 24px 0' }}>
+              <p style={{  fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: '0 0 24px 0' }}>
                 For voksende bedrifter
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
@@ -1094,7 +1094,7 @@ export default function HomePage() {
                 ].map((f) => (
                   <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span style={{ color: WHITE, fontSize: 16 }}>✓</span>
-                    <span style={{ fontFamily: FONT, fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>{f}</span>
+                    <span style={{  fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -1117,13 +1117,13 @@ export default function HomePage() {
                 textAlign: 'left',
               }}
             >
-              <p style={{ fontFamily: FONT, fontSize: 14, color: GRAY_400, margin: '0 0 8px 0', fontWeight: 500 }}>
+              <p style={{  fontSize: 14, color: GRAY_400, margin: '0 0 8px 0', fontWeight: 500 }}>
                 Enterprise
               </p>
-              <p style={{ fontFamily: FONT, fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
+              <p style={{  fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
                 Tilpasset
               </p>
-              <p style={{ fontFamily: FONT, fontSize: 14, color: GRAY_500, margin: '0 0 24px 0' }}>
+              <p style={{  fontSize: 14, color: GRAY_500, margin: '0 0 24px 0' }}>
                 For store organisasjoner
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
@@ -1136,7 +1136,7 @@ export default function HomePage() {
                 ].map((f) => (
                   <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span style={{ color: GREEN, fontSize: 16 }}>✓</span>
-                    <span style={{ fontFamily: FONT, fontSize: 14, color: GRAY_300 }}>{f}</span>
+                    <span style={{  fontSize: 14, color: GRAY_300 }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -1180,16 +1180,16 @@ export default function HomePage() {
                     color: WHITE,
                     fontSize: 16,
                     fontWeight: 800,
-                    fontFamily: FONT,
+                    
                   }}
                 >
                   N
                 </div>
-                <span style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: WHITE }}>
+                <span style={{  fontSize: 18, fontWeight: 700, color: WHITE }}>
                   NorskBot
                 </span>
               </div>
-              <p style={{ fontFamily: FONT, fontSize: 14, color: GRAY_500, lineHeight: 1.6, margin: 0 }}>
+              <p style={{  fontSize: 14, color: GRAY_500, lineHeight: 1.6, margin: 0 }}>
                 AI-drevet kundeservice for norske bedrifter. Bygget med sikkerhet og personvern i fokus.
               </p>
             </div>
@@ -1198,7 +1198,7 @@ export default function HomePage() {
             <div>
               <h4
                 style={{
-                  fontFamily: FONT,
+                  
                   fontSize: 13,
                   fontWeight: 600,
                   color: GRAY_400,
@@ -1216,7 +1216,7 @@ export default function HomePage() {
                     href="#"
                     style={{
                       display: 'block',
-                      fontFamily: FONT,
+                      
                       fontSize: 14,
                       color: GRAY_500,
                       textDecoration: 'none',
@@ -1234,7 +1234,7 @@ export default function HomePage() {
             <div>
               <h4
                 style={{
-                  fontFamily: FONT,
+                  
                   fontSize: 13,
                   fontWeight: 600,
                   color: GRAY_400,
@@ -1251,7 +1251,7 @@ export default function HomePage() {
                   href="#"
                   style={{
                     display: 'block',
-                    fontFamily: FONT,
+                    
                     fontSize: 14,
                     color: GRAY_500,
                     textDecoration: 'none',
@@ -1268,7 +1268,7 @@ export default function HomePage() {
             <div>
               <h4
                 style={{
-                  fontFamily: FONT,
+                  
                   fontSize: 13,
                   fontWeight: 600,
                   color: GRAY_400,
@@ -1291,7 +1291,7 @@ export default function HomePage() {
                     href={link.href}
                     style={{
                       display: 'block',
-                      fontFamily: FONT,
+                      
                       fontSize: 14,
                       color: GRAY_500,
                       textDecoration: 'none',
@@ -1318,7 +1318,7 @@ export default function HomePage() {
               gap: 16,
             }}
           >
-            <p style={{ fontFamily: FONT, fontSize: 13, color: GRAY_600, margin: 0 }}>
+            <p style={{  fontSize: 13, color: GRAY_600, margin: 0 }}>
               © {new Date().getFullYear()} NorskBot AI. Alle rettigheter reservert.
             </p>
             <div style={{ display: 'flex', gap: 20 }}>
@@ -1327,7 +1327,7 @@ export default function HomePage() {
                   key={s}
                   href="#"
                   style={{
-                    fontFamily: FONT,
+                    
                     fontSize: 13,
                     color: GRAY_600,
                     textDecoration: 'none',

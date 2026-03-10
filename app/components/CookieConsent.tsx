@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 
-const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -78,7 +78,7 @@ export default function CookieConsent() {
           >
             <p
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 14,
                 color: '#cbd5e1',
                 margin: 0,
@@ -113,7 +113,7 @@ export default function CookieConsent() {
             <a
               href="/cookies"
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 13,
                 color: '#94a3b8',
                 textDecoration: 'none',
@@ -126,7 +126,7 @@ export default function CookieConsent() {
             <button
               onClick={handleEssentialOnly}
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 14,
                 fontWeight: 600,
                 color: '#e2e8f0',
@@ -144,7 +144,7 @@ export default function CookieConsent() {
             <button
               onClick={handleAcceptAll}
               style={{
-                fontFamily: FONT,
+                
                 fontSize: 14,
                 fontWeight: 600,
                 color: '#ffffff',

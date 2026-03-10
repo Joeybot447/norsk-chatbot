@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 bg-slate-50 overflow-y-auto">
+      <main className="flex-1 bg-slate-50 min-h-screen overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full min-h-[400px]">
             <div className="text-center">

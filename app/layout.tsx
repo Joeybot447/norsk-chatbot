@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import CookieConsent from './components/CookieConsent';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'NorskBot AI — KI-drevet chatbot for norske bedrifter',
@@ -13,8 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="no">
-      <body style={{ margin: 0, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <html lang="no" className={inter.variable}>
+      <head>
+        <meta charSet="utf-8" />
+      </head>
+      <body className={`${inter.className} antialiased selection:bg-blue-100 selection:text-blue-900`}>
         {children}
         <CookieConsent />
       </body>

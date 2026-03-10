@@ -7,7 +7,7 @@ import { useAuth } from '../../_lib/supabase/hooks';
 /* ─────────────────────────────────────────────
    Design tokens
    ───────────────────────────────────────────── */
-const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
 const BLUE = '#2563eb';
 const DARK = '#0f172a';
 const SECONDARY = '#64748b';
@@ -93,7 +93,7 @@ function WidgetAvatar({ type, botName, color, size = 36 }: { type: string; botNa
       width: size, height: size, borderRadius: '50%',
       backgroundColor: type === 'initials' ? color : `${color}cc`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.4, fontWeight: 700, color: 'white', fontFamily: FONT,
+      fontSize: size * 0.4, fontWeight: 700, color: 'white',
       flexShrink: 0,
     }}>
       {type === 'initials' ? initial : <AvatarIcon type={type} color={color} size={size * 0.5} />}
@@ -107,7 +107,7 @@ function WidgetAvatar({ type, botName, color, size = 36 }: { type: string; botNa
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px',
   border: `1px solid ${BORDER}`, borderRadius: '8px',
-  fontSize: '14px', fontFamily: FONT, outline: 'none',
+  fontSize: '14px', outline: 'none',
   boxSizing: 'border-box', color: DARK,
   transition: 'border-color 0.15s, box-shadow 0.15s',
 };
@@ -283,7 +283,7 @@ export default function WidgetPage() {
   /* ── Loading / empty states ────────────── */
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: FONT, backgroundColor: BG_PAGE }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: BG_PAGE }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: '36px', height: '36px', border: `3px solid ${BORDER}`,
@@ -299,7 +299,7 @@ export default function WidgetPage() {
 
   if (sites.length === 0) {
     return (
-      <div style={{ fontFamily: FONT, backgroundColor: BG_PAGE, minHeight: '100vh' }}>
+      <div style={{ backgroundColor: BG_PAGE, minHeight: '100vh' }}>
         <div style={{ borderBottom: `1px solid ${BORDER}`, backgroundColor: BG_CARD, padding: '20px 32px' }}>
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: DARK, margin: 0 }}>Widget</h1>
         </div>
@@ -327,7 +327,7 @@ export default function WidgetPage() {
 
   /* ── Main render ───────────────────────── */
   return (
-    <div style={{ fontFamily: FONT, backgroundColor: BG_PAGE, minHeight: '100vh' }}>
+    <div style={{ backgroundColor: BG_PAGE, minHeight: '100vh' }}>
       {/* Header */}
       <div style={{
         borderBottom: `1px solid ${BORDER}`, backgroundColor: BG_CARD,
@@ -351,7 +351,7 @@ export default function WidgetPage() {
           <button onClick={handleSave} disabled={saving} style={{
             padding: '9px 20px', backgroundColor: saving ? '#93b4f4' : BLUE, color: 'white',
             border: 'none', borderRadius: '8px', cursor: saving ? 'default' : 'pointer',
-            fontSize: '13px', fontWeight: 600, fontFamily: FONT,
+            fontSize: '13px', fontWeight: 600,
             transition: 'background-color 0.15s',
           }}>
             {saving ? 'Lagrer...' : 'Lagre endringer'}
@@ -466,7 +466,7 @@ export default function WidgetPage() {
                       padding: '12px 16px', borderRadius: '10px', cursor: 'pointer',
                       border: avatarType === opt.id ? `2px solid ${BLUE}` : `1px solid ${BORDER}`,
                       backgroundColor: avatarType === opt.id ? `${BLUE}08` : BG_CARD,
-                      fontFamily: FONT, fontSize: '11px', fontWeight: 500,
+                      fontSize: '11px', fontWeight: 500,
                       color: avatarType === opt.id ? BLUE : SECONDARY,
                       transition: 'all 0.15s',
                       minWidth: '72px',
@@ -494,7 +494,7 @@ export default function WidgetPage() {
                       flex: 1, padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
                       border: position === pos.value ? `2px solid ${BLUE}` : `1px solid ${BORDER}`,
                       backgroundColor: position === pos.value ? `${BLUE}08` : BG_CARD,
-                      fontSize: '13px', fontWeight: 500, fontFamily: FONT,
+                      fontSize: '13px', fontWeight: 500,
                       color: position === pos.value ? BLUE : SECONDARY,
                       transition: 'all 0.15s',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -557,7 +557,7 @@ export default function WidgetPage() {
                   backgroundColor: copied ? '#16a34a' : DARK,
                   color: 'white', border: 'none', borderRadius: '6px',
                   cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-                  fontFamily: FONT, transition: 'background-color 0.2s',
+                  transition: 'background-color 0.2s',
                   display: 'flex', alignItems: 'center', gap: '5px',
                 }}
               >
@@ -632,7 +632,7 @@ export default function WidgetPage() {
             onClick={handleTestWidget}
             style={{
               padding: '14px 24px', borderRadius: '10px', cursor: 'pointer',
-              fontSize: '14px', fontWeight: 600, fontFamily: FONT,
+              fontSize: '14px', fontWeight: 600,
               border: testOpen ? `2px solid ${SECONDARY}` : `2px solid ${DARK}`,
               backgroundColor: testOpen ? BG_CARD : DARK,
               color: testOpen ? SECONDARY : 'white',
@@ -668,7 +668,7 @@ export default function WidgetPage() {
                   style={{
                     padding: '5px 10px', border: `1px solid ${BORDER}`, borderRadius: '6px',
                     backgroundColor: BG_CARD, cursor: 'pointer', fontSize: '11px',
-                    fontWeight: 500, color: SECONDARY, fontFamily: FONT,
+                    fontWeight: 500, color: SECONDARY,
                     transition: 'background-color 0.15s',
                   }}
                 >
@@ -743,7 +743,7 @@ export default function WidgetPage() {
                         }}>
                           <WidgetAvatar type={avatarType} botName={botName} color="rgba(255,255,255,0.2)" size={30} />
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '13px', fontFamily: FONT }}>{botName || 'NorskBot'}</div>
+                            <div style={{ fontWeight: 600, fontSize: '13px' }}>{botName || 'NorskBot'}</div>
                             <div style={{ fontSize: '10px', opacity: 0.8 }}>Tilgjengelig na</div>
                           </div>
                           <button onClick={() => setPreviewOpen(false)} style={{
@@ -763,7 +763,7 @@ export default function WidgetPage() {
                               backgroundColor: 'white', border: `1px solid ${BORDER}`,
                               borderRadius: '10px', borderTopLeftRadius: '3px',
                               padding: '7px 10px', fontSize: '11.5px', color: DARK,
-                              maxWidth: '200px', lineHeight: '1.4', fontFamily: FONT,
+                              maxWidth: '200px', lineHeight: '1.4',
                             }}>
                               {welcomeMessage || 'Hei!'}
                             </div>
@@ -774,7 +774,7 @@ export default function WidgetPage() {
                               backgroundColor: themeColor, color: 'white',
                               borderRadius: '10px', borderTopRightRadius: '3px',
                               padding: '7px 10px', fontSize: '11.5px',
-                              maxWidth: '200px', lineHeight: '1.4', fontFamily: FONT,
+                              maxWidth: '200px', lineHeight: '1.4',
                             }}>
                               Hei, kan du hjelpe meg?
                             </div>
@@ -789,7 +789,7 @@ export default function WidgetPage() {
                           <div style={{
                             flex: 1, padding: '6px 10px', backgroundColor: '#f8fafc',
                             borderRadius: '6px', border: `1px solid ${BORDER}`,
-                            fontSize: '11px', color: '#94a3b8', fontFamily: FONT,
+                            fontSize: '11px', color: '#94a3b8',
                           }}>
                             Skriv en melding...
                           </div>
@@ -859,7 +859,7 @@ export default function WidgetPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <WidgetAvatar type={avatarType} botName={botName} color="rgba(255,255,255,0.2)" size={38} />
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '15px', fontFamily: FONT }}>{botName}</div>
+                  <div style={{ fontWeight: 600, fontSize: '15px' }}>{botName}</div>
                   <div style={{ fontSize: '12px', opacity: 0.8 }}>Tilgjengelig na</div>
                 </div>
               </div>
@@ -869,7 +869,7 @@ export default function WidgetPage() {
                   background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white',
                   width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '16px', fontFamily: FONT,
+                  fontSize: '16px',
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -884,7 +884,7 @@ export default function WidgetPage() {
                   backgroundColor: 'white', border: `1px solid ${BORDER}`,
                   borderRadius: '14px', borderTopLeftRadius: '4px',
                   padding: '10px 14px', fontSize: '14px', color: DARK,
-                  maxWidth: '260px', lineHeight: '1.5', fontFamily: FONT,
+                  maxWidth: '260px', lineHeight: '1.5',
                 }}>
                   {welcomeMessage}
                 </div>
@@ -909,7 +909,7 @@ export default function WidgetPage() {
                 placeholder="Skriv en melding..."
                 style={{
                   flex: 1, padding: '10px 14px', border: `1px solid ${BORDER}`,
-                  borderRadius: '10px', fontSize: '14px', outline: 'none', fontFamily: FONT,
+                  borderRadius: '10px', fontSize: '14px', outline: 'none',
                 }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = themeColor; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = BORDER; }}

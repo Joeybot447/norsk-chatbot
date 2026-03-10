@@ -16,7 +16,7 @@ export default function ProfilePage() {
       alignItems: 'center',
       justifyContent: 'center',
       height: 400,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      
     }}>
       <p style={{ color: '#64748b', fontSize: 14 }}>Viderekobler til innstillinger...</p>
     </div>

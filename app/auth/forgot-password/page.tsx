@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { resetPassword } from '../../_lib/supabase/auth';
 
-const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: 24,
-      fontFamily,
+     
     }}>
       <div style={{ width: '100%', maxWidth: 440 }}>
         {/* Logo */}
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <span style={{ fontSize: 24, fontWeight: 700, color: '#2563eb', fontFamily }}>NorskBot</span>
+            <span style={{ fontSize: 24, fontWeight: 700, color: '#2563eb', }}>NorskBot</span>
           </a>
         </div>
 
@@ -62,10 +62,10 @@ export default function ForgotPasswordPage() {
         }}>
           {!sent ? (
             <>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 8px', fontFamily }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 8px', }}>
                 Glemt passord?
               </h1>
-              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 28px', lineHeight: 1.5, fontFamily }}>
+              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 28px', lineHeight: 1.5, }}>
                 Skriv inn e-postadressen din, så sender vi deg en lenke for å tilbakestille passordet.
               </p>
 
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                 <div style={{
                   padding: '12px 16px', borderRadius: 8, backgroundColor: '#fef2f2',
                   border: '1px solid #fecaca', color: '#dc2626', fontSize: 13, fontWeight: 500,
-                  marginBottom: 20, fontFamily,
+                  marginBottom: 20,
                 }}>
                   {error}
                 </div>
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                 <div style={{ marginBottom: 24 }}>
                   <label style={{
                     display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b',
-                    marginBottom: 6, fontFamily,
+                    marginBottom: 6,
                   }}>
                     E-postadresse
                   </label>
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
                     style={{
                       width: '100%', height: 48, padding: '0 14px',
                       border: `1px solid ${focused ? '#2563eb' : '#e2e8f0'}`,
-                      borderRadius: 8, fontSize: 14, fontFamily,
+                      borderRadius: 8, fontSize: 14,
                       backgroundColor: focused ? '#fff' : '#f8fafc',
                       outline: 'none', boxSizing: 'border-box',
                       transition: 'border-color 0.2s',
@@ -111,7 +111,7 @@ export default function ForgotPasswordPage() {
                   style={{
                     width: '100%', height: 48, borderRadius: 8, border: 'none',
                     backgroundColor: '#2563eb', color: '#fff', fontSize: 15,
-                    fontWeight: 600, fontFamily, cursor: 'pointer',
+                    fontWeight: 600, cursor: 'pointer',
                     opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s',
                   }}
                 >
@@ -139,20 +139,20 @@ export default function ForgotPasswordPage() {
                   <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
                 </svg>
               </div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: '0 0 8px', fontFamily }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: '0 0 8px', }}>
                 Sjekk e-posten din
               </h2>
-              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 4px', lineHeight: 1.5, fontFamily }}>
+              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 4px', lineHeight: 1.5, }}>
                 Vi har sendt deg en e-post med instruksjoner
               </p>
-              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 24px', lineHeight: 1.5, fontFamily }}>
+              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 24px', lineHeight: 1.5, }}>
                 for å tilbakestille passordet ditt til <strong style={{ color: '#0f172a' }}>{email}</strong>.
               </p>
               <button
                 onClick={() => { setSent(false); setEmail(''); }}
                 style={{
                   background: 'none', border: 'none', color: '#2563eb',
-                  fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily,
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 Prøv en annen e-postadresse
@@ -164,14 +164,14 @@ export default function ForgotPasswordPage() {
         {/* Back link */}
         <div style={{ textAlign: 'center', marginTop: 24 }}>
           <a href="/auth" style={{
-            fontSize: 14, color: '#2563eb', textDecoration: 'none', fontWeight: 500, fontFamily,
+            fontSize: 14, color: '#2563eb', textDecoration: 'none', fontWeight: 500,
           }}>
             ← Tilbake til innlogging
           </a>
         </div>
 
         {/* Footer */}
-        <div style={{ textAlign: 'center', marginTop: 28, fontSize: 12, color: '#64748b', fontFamily }}>
+        <div style={{ textAlign: 'center', marginTop: 28, fontSize: 12, color: '#64748b', }}>
           {'© 2026 NorskBot \u2014 '}
           <a href="/personvern" style={{ color: '#2563eb', textDecoration: 'none' }}>Personvern</a>
           {' \u00B7 '}

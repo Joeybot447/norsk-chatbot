@@ -8,7 +8,7 @@ import { useAuth } from '../../_lib/supabase/hooks';
 // ---------------------------------------------------------------------------
 // Design tokens
 // ---------------------------------------------------------------------------
-const font = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'inherit';
 const blue = '#2563eb';
 const dark = '#0f172a';
 const secondary = '#64748b';

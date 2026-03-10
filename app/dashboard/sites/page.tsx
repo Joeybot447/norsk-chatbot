@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../_lib/supabase/client';
 import { useAuth } from '../../_lib/supabase/hooks';
 
-const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 
 const colors = {
   blue: '#2563eb',
@@ -132,7 +132,7 @@ export default function SitesPage() {
 
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', fontFamily, alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
         <div style={{
           width: 32, height: 32, borderRadius: '50%',
           border: `3px solid ${colors.border}`, borderTopColor: colors.blue,
@@ -146,14 +146,14 @@ export default function SitesPage() {
 
   if (error) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', fontFamily, alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
         <div style={{ color: colors.danger, fontSize: 15, fontWeight: 500, marginBottom: 16 }}>{error}</div>
         <button
           onClick={loadSites}
           style={{
             padding: '10px 20px', backgroundColor: colors.white, color: colors.text,
             border: `1px solid ${colors.border}`, borderRadius: 8, cursor: 'pointer',
-            fontSize: 14, fontWeight: 500, fontFamily,
+            fontSize: 14, fontWeight: 500,
           }}
         >
           Prov igjen
@@ -163,7 +163,7 @@ export default function SitesPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', fontFamily, minHeight: '100vh', backgroundColor: colors.bg }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: colors.bg }}>
       {/* Header */}
       <div style={{
         backgroundColor: colors.white, borderBottom: `1px solid ${colors.border}`,
@@ -180,7 +180,7 @@ export default function SitesPage() {
           style={{
             padding: '10px 20px', backgroundColor: colors.blue, color: colors.white,
             border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600,
-            fontSize: 14, fontFamily, transition: 'all 0.15s', display: 'flex',
+            fontSize: 14, transition: 'all 0.15s', display: 'flex',
             alignItems: 'center', gap: 6,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1d4ed8'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
@@ -215,7 +215,7 @@ export default function SitesPage() {
               onClick={() => router.push('/dashboard/sites/new')}
               style={{
                 padding: '12px 24px', backgroundColor: colors.blue, color: colors.white,
-                border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily,
+                border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600,
               }}
             >
               Opprett nettsted
@@ -301,7 +301,7 @@ export default function SitesPage() {
                       style={{
                         padding: '5px 14px', backgroundColor: 'transparent', color: colors.blue,
                         border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
-                        fontSize: 12, fontWeight: 500, fontFamily, transition: 'all 0.15s',
+                        fontSize: 12, fontWeight: 500, transition: 'all 0.15s',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.blueBg; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -316,7 +316,7 @@ export default function SitesPage() {
                           style={{
                             padding: '5px 10px', backgroundColor: colors.danger, color: colors.white,
                             border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12,
-                            fontWeight: 500, fontFamily, opacity: deleting === site.id ? 0.6 : 1,
+                            fontWeight: 500, opacity: deleting === site.id ? 0.6 : 1,
                           }}
                         >
                           {deleting === site.id ? '...' : 'Bekreft'}
@@ -326,7 +326,7 @@ export default function SitesPage() {
                           style={{
                             padding: '5px 10px', backgroundColor: 'transparent', color: colors.textMuted,
                             border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
-                            fontSize: 12, fontFamily,
+                            fontSize: 12,
                           }}
                         >
                           Avbryt
@@ -338,7 +338,7 @@ export default function SitesPage() {
                         style={{
                           padding: '5px 14px', backgroundColor: 'transparent', color: colors.danger,
                           border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
-                          fontSize: 12, fontWeight: 500, fontFamily, transition: 'all 0.15s',
+                          fontSize: 12, fontWeight: 500, transition: 'all 0.15s',
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.dangerBg; }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
