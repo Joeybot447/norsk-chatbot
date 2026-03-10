@@ -44,6 +44,17 @@ export async function getCurrentUser() {
   };
 }
 
+export async function signInWithGitHub() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: window.location.origin + '/auth/callback',
+    },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function resetPassword(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + '/auth/reset-password',
