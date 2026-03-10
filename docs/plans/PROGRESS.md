@@ -1,10 +1,10 @@
 # NorskBot Commercial Product — Progress Tracker
 
-## Phase A: URL Scraping (Day 1) — IN PROGRESS
-- [ ] A1: `POST /api/ingest/scrape` endpoint (ScrapingBee + cheerio + OpenAI embeddings)
-- [ ] A2: `GET /api/ingest/scrape/status` endpoint
-- [ ] A3: UI in site editor Knowledge tab (URL input + progress)
-- [ ] A4: End-to-end test (scrape → widget answers from content)
+## Phase A: URL Scraping (Day 1) — BUILT, TESTING
+- [x] A1: `POST /api/ingest/scrape` endpoint (ScrapingBee + cheerio + OpenAI embeddings)
+- [x] A2: `GET /api/ingest/scrape/status` endpoint
+- [x] A3: UI in site editor Knowledge tab (URL input + progress)
+- [ ] A4: End-to-end test (scrape → widget answers from content) — FIXED schema bugs (fd487ab), ready to test
 
 ## Phase B: Lead Capture & Quick Prompts (Day 2) — NOT STARTED
 - [ ] B1: Lead capture form in widget (name/email/company)
@@ -31,4 +31,5 @@
 - [ ] E6: Performance audit
 
 ---
-*Last updated: March 10, 2026 17:28 UTC*
+*Last updated: March 10, 2026 17:47 UTC*
+*Status: Phase A endpoints built + deployed, schema bugs fixed, UI wired. Ready for Ghost to test scan.*
