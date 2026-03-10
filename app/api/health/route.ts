@@ -1,15 +1,16 @@
 /**
  * Health Check Routes
+ * Supports: /api/health (basic), /api/health/ready (db check), /api/health/detailed (stats)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import { getDb, getOne } from '../../../lib/db/client';
+import { getOne, getMany, query } from '../../../lib/db/client';
 import { logger } from '../../../lib/utils/logger.js';
 import config from '../../../lib/config.js';
 
 /**
  * GET /api/health
+ * Basic health check - always returns 200
  */
 export async function GET(request: NextRequest) {
   try {
@@ -17,23 +18,30 @@ export async function GET(request: NextRequest) {
 
     // GET /api/health (root)
     if (pathname === '/api/health' || pathname.endsWith('/health')) {
-      return NextResponse.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: Math.floor(process.uptime()),
-      });
+      return NextResponse.json(
+        {
+          status: 'ok',
+          timestamp: new Date().toISOString(),
+          uptime: Math.floor(process.uptime()),
+        },
+        { status: 200 }
+      );
     }
 
-    // GET /api/health/ready
+    // GET /api/health/ready - checks database connectivity
     if (pathname.endsWith('/ready')) {
       try {
-        const db = getDb();
-        const result = db.prepare('SELECT 1 as ok').get() as { ok: number } | undefined;
-        if (result && result.ok === 1) {
-          return NextResponse.json({
-            status: 'ready',
-            checks: { database: 'ok' },
-          });
+        // Test database connectivity with a simple query
+        const result = await getOne('SELECT 1 as ok');
+        if (result && (result.ok === 1 || result.ok === '1')) {
+          return NextResponse.json(
+            {
+              status: 'ready',
+              checks: { database: 'ok' },
+              timestamp: new Date().toISOString(),
+            },
+            { status: 200 }
+          );
         }
         return NextResponse.json(
           { status: 'not ready', checks: { database: 'failed' } },
@@ -43,60 +51,97 @@ export async function GET(request: NextRequest) {
         const error = err as Error;
         logger.error(`Health check error: ${error.message}`);
         return NextResponse.json(
-          { status: 'error', error: error.message },
+          { status: 'error', error: error.message, checks: { database: 'error' } },
           { status: 503 }
         );
       }
     }
 
-    // GET /api/health/detailed
+    // GET /api/health/detailed - comprehensive stats
     if (pathname.endsWith('/detailed')) {
       try {
-        const db = getDb();
+        // Test database connectivity
+        await getOne('SELECT 1 as ok');
 
-        // DB file size
-        let dbSizeBytes = 0;
+        // Get counts safely
+        let sitesCount = 0;
+        let knowledgeChunksCount = 0;
+        let legacyChunksCount = 0;
+        let conversationsCount = 0;
+        let messagesCount = 0;
+        let sourcesCount = 0;
+
         try {
-          const dbPath = config.databaseUrl;
-          const stats = fs.statSync(dbPath);
-          dbSizeBytes = stats.size;
-        } catch (_) {}
+          const result1 = await getOne('SELECT COUNT(*) as count FROM sites');
+          sitesCount = result1?.count || 0;
+        } catch (_) {
+          logger.warn('Failed to count sites');
+        }
 
-        // Counts
-        const sitesCount = (db.prepare('SELECT COUNT(*) as count FROM sites').get() as { count: number })?.count || 0;
-        const knowledgeChunksCount = (db.prepare('SELECT COUNT(*) as count FROM knowledge_chunks').get() as { count: number })?.count || 0;
-        const legacyChunksCount = (db.prepare('SELECT COUNT(*) as count FROM chunks').get() as { count: number })?.count || 0;
-        const conversationsCount = (db.prepare('SELECT COUNT(*) as count FROM conversations').get() as { count: number })?.count || 0;
-        const messagesCount = (db.prepare('SELECT COUNT(*) as count FROM messages').get() as { count: number })?.count || 0;
-        const sourcesCount = (db.prepare('SELECT COUNT(*) as count FROM knowledge_sources').get() as { count: number })?.count || 0;
+        try {
+          const result2 = await getOne('SELECT COUNT(*) as count FROM knowledge_chunks');
+          knowledgeChunksCount = result2?.count || 0;
+        } catch (_) {
+          logger.warn('Failed to count knowledge_chunks');
+        }
+
+        try {
+          const result3 = await getOne('SELECT COUNT(*) as count FROM chunks');
+          legacyChunksCount = result3?.count || 0;
+        } catch (_) {
+          logger.warn('Failed to count legacy chunks');
+        }
+
+        try {
+          const result4 = await getOne('SELECT COUNT(*) as count FROM conversations');
+          conversationsCount = result4?.count || 0;
+        } catch (_) {
+          logger.warn('Failed to count conversations');
+        }
+
+        try {
+          const result5 = await getOne('SELECT COUNT(*) as count FROM messages');
+          messagesCount = result5?.count || 0;
+        } catch (_) {
+          logger.warn('Failed to count messages');
+        }
+
+        try {
+          const result6 = await getOne('SELECT COUNT(*) as count FROM knowledge_sources');
+          sourcesCount = result6?.count || 0;
+        } catch (_) {
+          logger.warn('Failed to count knowledge_sources');
+        }
 
         const memUsage = process.memoryUsage();
 
-        return NextResponse.json({
-          status: 'ok',
-          uptime: Math.floor(process.uptime()),
-          startedAt: new Date(config.startedAt).toISOString(),
-          database: {
-            sizeBytes: dbSizeBytes,
-            sizeMB: (dbSizeBytes / (1024 * 1024)).toFixed(2),
-            journalMode: db.pragma('journal_mode', { simple: true }),
+        return NextResponse.json(
+          {
+            status: 'ok',
+            uptime: Math.floor(process.uptime()),
+            timestamp: new Date().toISOString(),
+            database: {
+              type: 'Vercel Postgres',
+              status: 'connected',
+            },
+            counts: {
+              sites: sitesCount,
+              knowledgeSources: sourcesCount,
+              knowledgeChunks: knowledgeChunksCount,
+              legacyChunks: legacyChunksCount,
+              totalChunks: knowledgeChunksCount + legacyChunksCount,
+              conversations: conversationsCount,
+              messages: messagesCount,
+            },
+            memory: {
+              rss: `${(memUsage.rss / 1024 / 1024).toFixed(1)}MB`,
+              heapUsed: `${(memUsage.heapUsed / 1024 / 1024).toFixed(1)}MB`,
+              heapTotal: `${(memUsage.heapTotal / 1024 / 1024).toFixed(1)}MB`,
+            },
+            node: process.version,
           },
-          counts: {
-            sites: sitesCount,
-            knowledgeSources: sourcesCount,
-            knowledgeChunks: knowledgeChunksCount,
-            legacyChunks: legacyChunksCount,
-            totalChunks: knowledgeChunksCount + legacyChunksCount,
-            conversations: conversationsCount,
-            messages: messagesCount,
-          },
-          memory: {
-            rss: `${(memUsage.rss / 1024 / 1024).toFixed(1)}MB`,
-            heapUsed: `${(memUsage.heapUsed / 1024 / 1024).toFixed(1)}MB`,
-            heapTotal: `${(memUsage.heapTotal / 1024 / 1024).toFixed(1)}MB`,
-          },
-          node: process.version,
-        });
+          { status: 200 }
+        );
       } catch (err) {
         const error = err as Error;
         logger.error(`Detailed health check error: ${error.message}`);
@@ -107,7 +152,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // GET /api/health/demo
+    // GET /api/health/demo - get demo site info
     if (pathname.endsWith('/demo')) {
       try {
         const customer = await getOne('SELECT id FROM customers WHERE email = ?', ['fjordtech@demo.no']);
@@ -127,7 +172,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           siteId: site.id,
           siteName: site.name,
-          demoUrl: `http://${request.headers.get('host')}/demo.html?siteId=${site.id}`,
+          demoUrl: `${request.nextUrl.protocol}//${request.headers.get('host')}/demo.html?siteId=${site.id}`,
         });
       } catch (err) {
         const error = err as Error;

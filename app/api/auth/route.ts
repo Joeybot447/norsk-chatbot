@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       const userId = uuid();
       const api_key = 'sk_' + uuid().replace(/-/g, '').substring(0, 20);
 
-      query(
+      await query(
         `INSERT INTO users (id, email, password_hash, company_name, api_key, plan, status)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [userId, email.toLowerCase().trim(), password_hash, company.trim(), api_key, 'starter', 'active']
@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
 
       const token = jwt.sign(
         { userId, email: email.toLowerCase().trim(), company_name: company.trim() },
-        config.jwtSecret as any,
-        { expiresIn: config.jwtExpiry }
+        config.jwtSecret as string,
+        { expiresIn: '7d' }
       );
 
       logger.info(`User registered: ${email}`);
@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
 
       const token = jwt.sign(
         { userId: user.id, email: user.email, company_name: user.company_name },
-        config.jwtSecret as any,
-        { expiresIn: config.jwtExpiry }
+        config.jwtSecret as string,
+        { expiresIn: '7d' }
       );
 
       logger.info(`User logged in: ${email}`);

@@ -85,7 +85,7 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-function storeSourceAndChunks({
+async function storeSourceAndChunks({
   siteId,
   type,
   name,
@@ -97,20 +97,20 @@ function storeSourceAndChunks({
   name: string;
   text: string;
   metadata?: Record<string, any>;
-}): { sourceId: string; chunks: number; status: string } {
+}): Promise<{ sourceId: string; chunks: number; status: string }> {
   const sourceId = uuid();
   const sanitized = sanitizeText(text);
   const chunks = chunkText(sanitized);
 
   try {
-    query(
+    await query(
       `INSERT INTO knowledge_sources (id, site_id, type, name, status, metadata)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [sourceId, siteId, type, name, 'ready', metadata ? JSON.stringify(metadata) : null]
     );
 
     for (let i = 0; i < chunks.length; i++) {
-      query(
+      await query(
         `INSERT INTO knowledge_chunks (id, source_id, site_id, content, chunk_index, token_count)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [uuid(), sourceId, siteId, chunks[i], i, estimateTokens(chunks[i])]
@@ -120,7 +120,7 @@ function storeSourceAndChunks({
     return { sourceId, chunks: chunks.length, status: 'ready' };
   } catch (err) {
     try {
-      query(`UPDATE knowledge_sources SET status = 'error' WHERE id = ?`, [sourceId]);
+      await query(`UPDATE knowledge_sources SET status = 'error' WHERE id = ?`, [sourceId]);
     } catch (_) {}
     throw err;
   }
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = storeSourceAndChunks({
+      const result = await storeSourceAndChunks({
         siteId,
         type: 'url',
         name: url,
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
 
       const sourceName = name || 'Text snippet';
 
-      const result = storeSourceAndChunks({
+      const result = await storeSourceAndChunks({
         siteId,
         type: 'text',
         name: sourceName,
@@ -355,7 +355,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = storeSourceAndChunks({
+      const result = await storeSourceAndChunks({
         siteId,
         type: 'file',
         name: file.name,
@@ -460,8 +460,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    query('DELETE FROM knowledge_chunks WHERE source_id = ?', [id]);
-    query('DELETE FROM knowledge_sources WHERE id = ?', [id]);
+    await query('DELETE FROM knowledge_chunks WHERE source_id = ?', [id]);
+    await query('DELETE FROM knowledge_sources WHERE id = ?', [id]);
 
     logger.info(`Source deleted: ${id}`);
     return NextResponse.json({ deleted: true });

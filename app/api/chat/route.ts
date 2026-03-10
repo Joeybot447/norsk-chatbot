@@ -10,7 +10,6 @@ import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 import { getOne, getMany, query } from '../../../lib/db/client';
 import { logger } from '../../../lib/utils/logger.js';
-import { chatService } from '../../../lib/services/chatService.js';
 
 // Validation schema
 const chatMessageSchema = z.object({
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
 
       if (!conversation) {
-        query(
+        await query(
           `INSERT INTO conversations 
             (id, site_id, session_id, visitor_name, visitor_email, visitor_company, ip_address, user_agent)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -78,7 +77,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Store user message
-      query(
+      await query(
         `INSERT INTO messages (id, conversation_id, site_id, role, content, tokens_used)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [uuid(), conversation.id, siteId, 'user', message, Math.ceil(message.length / 4)]
@@ -94,7 +93,7 @@ export async function POST(request: NextRequest) {
 
       // Store assistant message
       const assistantMessageId = uuid();
-      query(
+      await query(
         `INSERT INTO messages (id, conversation_id, site_id, role, content, confidence_score, sources, tokens_used)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -110,7 +109,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Update conversation message count
-      query(
+      await query(
         `UPDATE conversations SET message_count = message_count + 2 WHERE id = ?`,
         [conversation.id]
       );
@@ -145,7 +144,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      query(
+      await query(
         `UPDATE messages SET feedback = ? WHERE id = ? AND site_id = ?`,
         [rating, messageId, (request as any).siteId]
       );
