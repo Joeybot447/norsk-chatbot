@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
 
       const token = jwt.sign(
         { userId, email: email.toLowerCase().trim(), company_name: company.trim() },
-        config.jwtSecret as string,
-        { expiresIn: config.jwtExpiry }
+        String(config.jwtSecret),
+        { expiresIn: String(config.jwtExpiry) }
       );
 
       logger.info(`User registered: ${email}`);
@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
 
       const token = jwt.sign(
         { userId: user.id, email: user.email, company_name: user.company_name },
-        config.jwtSecret as string,
-        { expiresIn: config.jwtExpiry }
+        String(config.jwtSecret),
+        { expiresIn: String(config.jwtExpiry) }
       );
 
       logger.info(`User logged in: ${email}`);
