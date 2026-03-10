@@ -31,5 +31,5 @@
 - [ ] E6: Performance audit
 
 ---
-*Last updated: March 10, 2026 17:47 UTC*
-*Status: Phase A endpoints built + deployed, schema bugs fixed, UI wired. Ready for Ghost to test scan.*
+*Last updated: March 10, 2026 17:52 UTC*
+*Status: Phase A LIVE (commit ba5343a) — async scraping with live progress polling. UX fixed after user feedback.*

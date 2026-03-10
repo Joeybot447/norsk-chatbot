@@ -38,13 +38,13 @@ export default function KnowledgePage() {
     setLoading(true);
     (async () => {
       try {
-        const { data, error: err } = await supabase
-          .from('sites')
-          .select('id, name')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        if (err) throw err;
-        const siteList = (data || []) as Site[];
+        const token = await getAccessToken();
+        const res = await fetch('/api/sites', {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        if (!res.ok) throw new Error('Kunne ikke laste nettsteder');
+        const data = await res.json();
+        const siteList = (data.sites || data || []) as Site[];
         setSites(siteList);
         if (siteList.length > 0 && !selectedSiteId) {
           setSelectedSiteId(siteList[0].id);
