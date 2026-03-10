@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
-import { getOne, getMany, query } from '../../../packages/api/src/db/client.js';
+import { getOne, getMany, query } from '../../../lib/db/client';
 import { logger } from '../../../packages/api/src/utils/logger.js';
 import { chatService } from '../../../packages/api/src/services/chatService.js';
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       const newSessionId = sessionId || uuid();
 
       // Get or create conversation
-      let conversation = getOne(
+      let conversation = await getOne(
         `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
         [siteId, newSessionId]
       );
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
             request.headers.get('user-agent') || null,
           ]
         );
-        conversation = getOne(
+        conversation = await getOne(
           `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
           [siteId, newSessionId]
         );
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
 
     const siteId = (request as any).siteId;
 
-    const conversation = getOne(
+    const conversation = await getOne(
       `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
       [siteId, sessionId]
     );

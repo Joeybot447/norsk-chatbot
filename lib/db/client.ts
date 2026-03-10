@@ -1,32 +1,56 @@
 /**
  * SQLite Database Client for Next.js
- * Uses better-sqlite3 for file-based persistence
+ * Uses sql.js for serverless/Vercel compatibility (pure JavaScript SQLite)
  */
 
 import fs from 'fs';
 import path from 'path';
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
 import { config } from '../config';
 
-let dbInstance: Database.Database | null = null;
+let dbInstance: any = null;
+let SQL: any = null;
 
 /**
- * Initialize database
+ * Initialize SQL.js
  */
-export function initializeDb(): Database.Database {
+async function initSqlJs() {
+  if (SQL) return SQL;
+  SQL = await initSqlJs();
+  return SQL;
+}
+
+/**
+ * Load or create database
+ */
+export async function initializeDb() {
   if (dbInstance) return dbInstance;
 
   try {
+    // Initialize SQL.js
+    const SqlJsLib = await initSqlJs();
+
     // Ensure data directory exists
     if (!fs.existsSync(config.dataDir)) {
       fs.mkdirSync(config.dataDir, { recursive: true });
     }
 
-    dbInstance = new Database(config.databaseUrl);
-    dbInstance.pragma('journal_mode = WAL');
-    dbInstance.pragma('foreign_keys = ON');
+    const dbPath = config.databaseUrl;
 
-    console.log(`Database initialized at: ${config.databaseUrl}`);
+    // Load existing database or create new one
+    let db;
+    if (fs.existsSync(dbPath)) {
+      const fileBuffer = fs.readFileSync(dbPath);
+      db = new SqlJsLib.Database(fileBuffer);
+    } else {
+      db = new SqlJsLib.Database();
+    }
+
+    // Enable foreign keys
+    db.run('PRAGMA foreign_keys = ON');
+
+    dbInstance = db;
+    console.log(`Database initialized at: ${dbPath}`);
     return dbInstance;
   } catch (err) {
     console.error(`Failed to initialize database: ${err}`);
@@ -35,37 +59,61 @@ export function initializeDb(): Database.Database {
 }
 
 /**
+ * Save database to disk (call after mutations)
+ */
+function saveDb() {
+  try {
+    if (!dbInstance) return;
+    const data = dbInstance.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(config.databaseUrl, buffer);
+  } catch (err) {
+    console.error(`Failed to save database: ${err}`);
+  }
+}
+
+/**
  * Get database instance
  */
-export function getDb(): Database.Database {
+export async function getDb() {
   if (!dbInstance) {
-    initializeDb();
+    await initializeDb();
   }
-  return dbInstance!;
+  return dbInstance;
 }
 
 /**
  * Execute a query
  */
-export function query(sql: string, params: any[] = []) {
+export async function query(sql: string, params: any[] = []) {
   try {
-    const db = getDb();
+    const db = await getDb();
     const trimmed = sql.trim().toUpperCase();
 
     if (trimmed.startsWith('SELECT') || trimmed.startsWith('WITH')) {
       const stmt = db.prepare(sql);
-      const rows = stmt.all(...params);
+      stmt.bind(params);
+      const rows = [];
+      while (stmt.step()) {
+        rows.push(stmt.getAsObject());
+      }
+      stmt.free();
       return {
         rows,
         rowCount: rows.length,
       };
     } else {
-      const stmt = db.prepare(sql);
-      const info = stmt.run(...params);
+      db.run(sql, params);
+      saveDb();
+      
+      // Get lastInsertRowid
+      const result = db.exec('SELECT last_insert_rowid() as id');
+      const lastId = result[0]?.values[0]?.[0] || null;
+
       return {
-        rows: [{ id: info.lastInsertRowid }],
-        rowCount: info.changes,
-        lastId: info.lastInsertRowid,
+        rows: [{ id: lastId }],
+        rowCount: 1,
+        lastId,
       };
     }
   } catch (err) {
@@ -77,11 +125,20 @@ export function query(sql: string, params: any[] = []) {
 /**
  * Get a single row
  */
-export function getOne<T = any>(sql: string, params: any[] = []): T | null {
+export async function getOne<T = any>(sql: string, params: any[] = []): Promise<T | null> {
   try {
-    const db = getDb();
+    const db = await getDb();
     const stmt = db.prepare(sql);
-    return (stmt.get(...params) as T) || null;
+    stmt.bind(params);
+    
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      stmt.free();
+      return row as T;
+    }
+    
+    stmt.free();
+    return null;
   } catch (err) {
     console.error(`Database getOne error: ${err}`);
     throw err;
@@ -91,24 +148,21 @@ export function getOne<T = any>(sql: string, params: any[] = []): T | null {
 /**
  * Get multiple rows
  */
-export function getMany<T = any>(sql: string, params: any[] = []): T[] {
+export async function getMany<T = any>(sql: string, params: any[] = []): Promise<T[]> {
   try {
-    const db = getDb();
+    const db = await getDb();
     const stmt = db.prepare(sql);
-    return stmt.all(...params) as T[];
+    stmt.bind(params);
+    
+    const rows: T[] = [];
+    while (stmt.step()) {
+      rows.push(stmt.getAsObject() as T);
+    }
+    
+    stmt.free();
+    return rows;
   } catch (err) {
     console.error(`Database getMany error: ${err}`);
     throw err;
   }
 }
-
-/**
- * Execute a transaction
- */
-export function transaction<T>(callback: (db: Database.Database) => T): T {
-  const db = getDb();
-  const tx = db.transaction(() => callback(db));
-  return tx();
-}
-
-export default getDb;

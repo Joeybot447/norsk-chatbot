@@ -13,7 +13,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v4 as uuid } from 'uuid';
-import { query, getOne, getMany } from '../../../packages/api/src/db/client.js';
+import { query, getOne, getMany } from '../../../lib/db/client';
 import { logger } from '../../../packages/api/src/utils/logger.js';
 import config from '../../../packages/api/src/config.js';
 
@@ -452,7 +452,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const source = getOne('SELECT id FROM knowledge_sources WHERE id = ?', [id]);
+    const source = await getOne('SELECT id FROM knowledge_sources WHERE id = ?', [id]);
     if (!source) {
       return NextResponse.json(
         { error: 'Source not found' },

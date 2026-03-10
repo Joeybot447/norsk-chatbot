@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
-import { getDb, getOne } from '../../../packages/api/src/db/client.js';
+import { getDb, getOne } from '../../../lib/db/client';
 import { logger } from '../../../packages/api/src/utils/logger.js';
 import config from '../../../packages/api/src/config.js';
 
@@ -110,14 +110,14 @@ export function GET(request: NextRequest) {
     // GET /api/health/demo
     if (pathname.endsWith('/demo')) {
       try {
-        const customer = getOne('SELECT id FROM customers WHERE email = ?', ['fjordtech@demo.no']);
+        const customer = await getOne('SELECT id FROM customers WHERE email = ?', ['fjordtech@demo.no']);
         if (!customer) {
           return NextResponse.json(
             { error: 'Demo site not found' },
             { status: 404 }
           );
         }
-        const site = getOne('SELECT id, name FROM sites WHERE customer_id = ?', [customer.id]);
+        const site = await getOne('SELECT id, name FROM sites WHERE customer_id = ?', [customer.id]);
         if (!site) {
           return NextResponse.json(
             { error: 'Demo site not found' },

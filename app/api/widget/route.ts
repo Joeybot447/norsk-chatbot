@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOne } from '../../../packages/api/src/db/client.js';
+import { getOne } from '../../../lib/db/client';
 import { logger } from '../../../packages/api/src/utils/logger.js';
 import config from '../../../packages/api/src/config.js';
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // GET /api/widget/script/:siteId
     if (pathname.includes('/script/') && pathParts[pathParts.length - 2] === 'script') {
-      const site = getOne(
+      const site = await getOne(
         `SELECT id FROM sites WHERE id = ?`,
         [siteId]
       );
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    const site = getOne(
+    const site = await getOne(
       `SELECT id, name, widget_config FROM sites WHERE id = ?`,
       [siteId]
     );

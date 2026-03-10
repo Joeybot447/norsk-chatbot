@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query, getOne } from '../../../packages/api/src/db/client.js';
+import { query, getOne } from '../../../lib/db/client';
 import { logger } from '../../../packages/api/src/utils/logger.js';
 import config from '../../../packages/api/src/config.js';
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const existingUser = getOne('SELECT id FROM users WHERE email = ?', [email.toLowerCase().trim()]);
+      const existingUser = await getOne('SELECT id FROM users WHERE email = ?', [email.toLowerCase().trim()]);
       if (existingUser) {
         return NextResponse.json(
           { error: 'Email already registered' },
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
       const token = jwt.sign(
         { userId, email: email.toLowerCase().trim(), company_name: company.trim() },
-        config.jwtSecret,
+        config.jwtSecret as string,
         { expiresIn: config.jwtExpiry }
       );
 
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const user = getOne('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
+      const user = await getOne('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
       if (!user) {
         return NextResponse.json(
           { error: 'Invalid email or password' },
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
 
       const token = jwt.sign(
         { userId: user.id, email: user.email, company_name: user.company_name },
-        config.jwtSecret,
+        config.jwtSecret as string,
         { expiresIn: config.jwtExpiry }
       );
 
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const decoded = jwt.verify(token, config.jwtSecret, {
+        const decoded = jwt.verify(token, config.jwtSecret as string, {
           algorithms: ['HS256'],
           clockTolerance: 30,
         });
