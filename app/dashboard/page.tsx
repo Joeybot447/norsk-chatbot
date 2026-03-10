@@ -1,129 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/supabase/hooks';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-const conversations = [
-  {
-    id: 1,
-    name: 'Floyd Miles',
-    initials: 'F',
-    color: '#3b82f6',
-    time: '11:42',
-    preview: 'Du: Takk for at du bruker var tjeneste! Vi hjelper deg gjerne...',
-    unread: 3,
-    status: 'open' as const,
-    email: 'floyd.miles@gmail.com',
-    phone: '(208) 555-0112',
-  },
-  {
-    id: 2,
-    name: 'Marvin Johansen',
-    initials: 'M',
-    color: '#8b5cf6',
-    time: '10:15',
-    preview: 'Hvordan kan jeg integrere chatboten pa min nettside?',
-    unread: 0,
-    status: 'open' as const,
-    email: 'marvin.johansen@outlook.no',
-    phone: '(47) 912 34 567',
-  },
-  {
-    id: 3,
-    name: 'Astrid Nilsen',
-    initials: 'A',
-    color: '#f59e0b',
-    time: '09:30',
-    preview: 'Du: Vi har oppdatert prisplanen din. Sjekk...',
-    unread: 1,
-    status: 'open' as const,
-    email: 'astrid.nilsen@bedrift.no',
-    phone: '(47) 922 55 891',
-  },
-  {
-    id: 4,
-    name: 'Erik Svendsen',
-    initials: 'E',
-    color: '#ef4444',
-    time: 'I gar',
-    preview: 'Kan dere hjelpe meg med a sette opp en kunnskapsbase?',
-    unread: 0,
-    status: 'open' as const,
-    email: 'erik.svendsen@firma.no',
-    phone: '(47) 933 44 221',
-  },
-  {
-    id: 5,
-    name: 'Ingrid Haugen',
-    initials: 'I',
-    color: '#10b981',
-    time: 'I gar',
-    preview: 'Du: Hei! Velkommen til NorskBot. Hvordan kan vi...',
-    unread: 0,
-    status: 'open' as const,
-    email: 'ingrid.haugen@skole.no',
-    phone: '(47) 955 66 778',
-  },
-];
+interface Conversation {
+  id: string;
+  visitor_id: string;
+  status: string;
+  started_at: string;
+  metadata: Record<string, unknown> | null;
+  site_name: string;
+  last_message: string;
+  last_role: string;
+  message_count: number;
+}
 
-const messages = [
-  { id: 1, sender: 'system', text: 'VENNLIG TONE VALGT', time: '' },
-  {
-    id: 2,
-    sender: 'bot',
-    text: 'Hei Floyd! Velkommen til NorskBot. Jeg er her for a hjelpe deg med alt du lurer pa. Hva kan jeg gjore for deg i dag?',
-    time: 'Torsdag 11:30',
-  },
-  {
-    id: 3,
-    sender: 'user',
-    text: 'Hei! Jeg vil gjerne vite mer om hvordan chatboten fungerer pa nettsiden min.',
-    time: 'Torsdag 11:31',
-  },
-  {
-    id: 4,
-    sender: 'bot',
-    text: 'Selvfolgelig! NorskBot er enkel a sette opp. Du legger til en liten kodebit pa nettsiden din, og chatboten dukker opp automatisk. Den laerer fra innholdet ditt og kan svare kunders sporsmal 24/7.',
-    time: 'Torsdag 11:32',
-  },
-  {
-    id: 5,
-    sender: 'user',
-    text: 'Kan den handtere sporsmal pa norsk?',
-    time: 'Torsdag 11:33',
-  },
-  {
-    id: 6,
-    sender: 'bot',
-    text: 'Absolutt! NorskBot er spesialisert for norsk sprak. Den forstar bokmal og nynorsk, og kan til og med handtere dialektuttrykk. AI-modellen er trent pa norsk innhold for best mulig forstaelse.',
-    time: 'Torsdag 11:35',
-  },
-  {
-    id: 7,
-    sender: 'user',
-    text: 'Flott! Hva med priser?',
-    time: 'Torsdag 11:37',
-  },
-  {
-    id: 8,
-    sender: 'bot',
-    text: 'Vi har tre planer:\n\n- Starter: 499 kr/mnd -- 1 chatbot, 1000 meldinger\n- Pro: 999 kr/mnd -- 5 chatboter, ubegrenset meldinger\n- Enterprise: Tilpasset -- Alle funksjoner + dedikert support\n\nVil du prove gratis i 14 dager?',
-    time: 'Torsdag 11:38',
-  },
-  {
-    id: 9,
-    sender: 'user',
-    text: 'Ja, det hores bra ut! Kan du sende meg en lenke?',
-    time: 'Torsdag 11:40',
-  },
-  {
-    id: 10,
-    sender: 'bot',
-    text: 'Takk for at du bruker var tjeneste! Vi hjelper deg gjerne videre. Du kan registrere deg her: norskbot.no/registrer',
-    time: 'Torsdag 11:41',
-  },
-];
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+}
 
 const Icon = ({ d, size = 18 }: { d: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -148,10 +48,47 @@ const icons = {
   msg: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
 };
 
+function truncateVisitorId(id: string): string {
+  if (id.length <= 12) return id;
+  return id.substring(0, 6) + '…' + id.substring(id.length - 4);
+}
+
+function formatTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) {
+    return date.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
+  } else if (diffDays === 1) {
+    return 'I går';
+  } else if (diffDays < 7) {
+    return date.toLocaleDateString('nb-NO', { weekday: 'long' });
+  }
+  return date.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' });
+}
+
+function getVisitorColor(id: string): string {
+  const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#10b981', '#ec4899', '#06b6d4', '#f97316'];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function getVisitorInitial(id: string): string {
+  return id.charAt(0).toUpperCase();
+}
+
 export default function DashboardPage() {
-  const [selectedConvo, setSelectedConvo] = useState(1);
-  const [hoveredConvo, setHoveredConvo] = useState<number | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
+  const [hoveredConvo, setHoveredConvo] = useState<string | null>(null);
   const [windowWidth, setWindowWidth] = useState(1400);
+  const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setWindowWidth(window.innerWidth);
@@ -160,8 +97,134 @@ export default function DashboardPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Load conversations
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+
+    (async () => {
+      try {
+        // Get user's sites
+        const { data: sites, error: sitesErr } = await supabase
+          .from('sites')
+          .select('id')
+          .eq('user_id', user.id);
+        if (sitesErr) throw sitesErr;
+        if (!sites || sites.length === 0) {
+          setConversations([]);
+          setLoading(false);
+          return;
+        }
+
+        const siteIds = sites.map((s: { id: string }) => s.id);
+
+        // Get conversations with latest messages
+        const { data: convos, error: convosErr } = await supabase
+          .from('conversations')
+          .select('id, visitor_id, status, started_at, metadata, sites(name), messages(content, role, created_at)')
+          .in('site_id', siteIds)
+          .order('started_at', { ascending: false })
+          .limit(50);
+        if (convosErr) throw convosErr;
+
+        const mapped: Conversation[] = (convos || []).map((c: any) => {
+          const msgs = c.messages || [];
+          // Sort messages by created_at descending to get latest
+          const sorted = [...msgs].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          const lastMsg = sorted[0];
+          return {
+            id: c.id,
+            visitor_id: c.visitor_id || 'ukjent',
+            status: c.status || 'active',
+            started_at: c.started_at,
+            metadata: c.metadata,
+            site_name: c.sites?.name || 'Ukjent nettsted',
+            last_message: lastMsg?.content || '',
+            last_role: lastMsg?.role || '',
+            message_count: msgs.length,
+          };
+        });
+
+        setConversations(mapped);
+        if (mapped.length > 0 && !selectedConvo) {
+          setSelectedConvo(mapped[0].id);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Kunne ikke laste samtaler');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  // Load messages when conversation is selected
+  useEffect(() => {
+    if (!selectedConvo) {
+      setMessages([]);
+      return;
+    }
+    setMessagesLoading(true);
+
+    (async () => {
+      try {
+        const { data, error: msgErr } = await supabase
+          .from('messages')
+          .select('id, role, content, created_at')
+          .eq('conversation_id', selectedConvo)
+          .order('created_at', { ascending: true });
+        if (msgErr) throw msgErr;
+        setMessages((data || []) as Message[]);
+      } catch (err: any) {
+        console.error('Failed to load messages:', err);
+      } finally {
+        setMessagesLoading(false);
+      }
+    })();
+  }, [selectedConvo]);
+
   const showRightPanel = windowWidth > 1100;
-  const selectedConversation = conversations.find((c) => c.id === selectedConvo) || conversations[0];
+  const selectedConversation = conversations.find((c) => c.id === selectedConvo) || null;
+
+  if (authLoading || loading) {
+    return (
+      <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center', color: '#64748b' }}>
+          <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Laster...</div>
+          <div style={{ fontSize: 13 }}>Henter samtaler</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center', color: '#ef4444', maxWidth: 400, padding: 24 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Feil</div>
+          <div style={{ fontSize: 14, color: '#64748b' }}>{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (conversations.length === 0) {
+    return (
+      <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center', maxWidth: 420, padding: 24 }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
+          <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8, color: '#0f172a' }}>Ingen samtaler ennå</div>
+          <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+            Installer widget-koden på nettstedet ditt for å begynne.
+          </div>
+          <a href="/dashboard/sites" style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: '#2563eb', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
+            Gå til nettsteder
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', overflow: 'hidden', background: '#f8fafc' }}>
@@ -171,7 +234,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#0f172a', background: '#ffffff' }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-            <span>Apen</span>
+            <span>Åpen</span>
             <Icon d={icons.chevronDown} size={14} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', cursor: 'pointer', fontSize: 13, color: '#64748b', background: '#ffffff' }}>
@@ -188,6 +251,11 @@ export default function DashboardPage() {
           {conversations.map((convo) => {
             const isSelected = selectedConvo === convo.id;
             const isHovered = hoveredConvo === convo.id;
+            const color = getVisitorColor(convo.visitor_id);
+            const initial = getVisitorInitial(convo.visitor_id);
+            const preview = convo.last_role === 'assistant'
+              ? 'Bot: ' + (convo.last_message || '').substring(0, 60)
+              : (convo.last_message || '').substring(0, 60);
 
             return (
               <div
@@ -206,24 +274,20 @@ export default function DashboardPage() {
                   transition: 'all 0.15s',
                 }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: convo.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 15, flexShrink: 0 }}>
-                  {convo.initials}
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 15, flexShrink: 0 }}>
+                  {initial}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{convo.name}</span>
-                    <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>{convo.time}</span>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{truncateVisitorId(convo.visitor_id)}</span>
+                    <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>{formatTime(convo.started_at)}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 13, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flex: 1, marginRight: 8 }}>
-                      {convo.preview}
+                      {preview || 'Ingen meldinger'}
                     </span>
-                    {convo.unread > 0 && (
-                      <span style={{ background: '#22c55e', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 10, minWidth: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px', flexShrink: 0 }}>
-                        {convo.unread}
-                      </span>
-                    )}
                   </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{convo.site_name}</div>
                 </div>
               </div>
             );
@@ -231,112 +295,127 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Chat-omrade */}
+      {/* Chat-område */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Chat header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: '50%', background: selectedConversation.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 15 }}>
-              {selectedConversation.initials}
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontWeight: 600, fontSize: 16, color: '#0f172a' }}>{selectedConversation.name}</span>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-                <span style={{ fontSize: 12, fontWeight: 500, color: '#22c55e', background: '#f0fdf4', padding: '2px 10px', borderRadius: 12 }}>Apen</span>
+        {selectedConversation && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: '50%', background: getVisitorColor(selectedConversation.visitor_id), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 15 }}>
+                {getVisitorInitial(selectedConversation.visitor_id)}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 600, fontSize: 16, color: '#0f172a' }}>{truncateVisitorId(selectedConversation.visitor_id)}</span>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedConversation.status === 'active' ? '#22c55e' : '#94a3b8' }} />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: selectedConversation.status === 'active' ? '#22c55e' : '#94a3b8', background: selectedConversation.status === 'active' ? '#f0fdf4' : '#f1f5f9', padding: '2px 10px', borderRadius: 12 }}>
+                    {selectedConversation.status === 'active' ? 'Åpen' : 'Lukket'}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: '#94a3b8' }}>{selectedConversation.site_name}</div>
               </div>
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {[icons.star, icons.check, icons.dots].map((iconPath, i) => (
+                <div
+                  key={i}
+                  style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', transition: 'all 0.15s' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#f1f5f9'; (e.currentTarget as HTMLDivElement).style.color = '#0f172a'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; (e.currentTarget as HTMLDivElement).style.color = '#64748b'; }}
+                >
+                  <Icon d={iconPath} size={18} />
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {[icons.star, icons.check, icons.dots].map((iconPath, i) => (
-              <div
-                key={i}
-                style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', transition: 'all 0.15s' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#f1f5f9'; (e.currentTarget as HTMLDivElement).style.color = '#0f172a'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; (e.currentTarget as HTMLDivElement).style.color = '#64748b'; }}
-              >
-                <Icon d={iconPath} size={18} />
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Chat messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', background: '#f9fafb', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Date separator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 16px' }}>
-            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>I dag</span>
-            <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-          </div>
+          {messagesLoading ? (
+            <div style={{ textAlign: 'center', padding: 40, color: '#64748b', fontSize: 14 }}>Laster meldinger...</div>
+          ) : messages.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40, color: '#64748b', fontSize: 14 }}>Ingen meldinger i denne samtalen</div>
+          ) : (
+            <>
+              {/* Date separator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 16px' }}>
+                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
+                  {messages.length > 0 ? new Date(messages[0].created_at).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+                </span>
+                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              </div>
 
-          {messages.map((msg) => {
-            if (msg.sender === 'system') {
-              return (
-                <div key={msg.id} style={{ textAlign: 'center' as const, padding: '8px 0' }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.03em', textTransform: 'uppercase' as const }}>
-                    {msg.text}
-                  </span>
-                </div>
-              );
-            }
+              {messages.map((msg) => {
+                if (msg.role === 'system') {
+                  return (
+                    <div key={msg.id} style={{ textAlign: 'center' as const, padding: '8px 0' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.03em', textTransform: 'uppercase' as const }}>
+                        {msg.content}
+                      </span>
+                    </div>
+                  );
+                }
 
-            const isBot = msg.sender === 'bot';
+                const isBot = msg.role === 'assistant';
 
-            return (
-              <div
-                key={msg.id}
-                style={{
-                  display: 'flex',
-                  flexDirection: isBot ? 'row-reverse' : 'row',
-                  alignItems: 'flex-start',
-                  gap: 10,
-                  maxWidth: '85%',
-                  alignSelf: isBot ? 'flex-end' : 'flex-start',
-                }}
-              >
-                {!isBot && (
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: selectedConversation.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>
-                    {selectedConversation.initials}
-                  </div>
-                )}
-
-                {isBot && (
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                    N
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: isBot ? 'flex-end' : 'flex-start' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4, paddingLeft: isBot ? 0 : 2, paddingRight: isBot ? 2 : 0 }}>
-                    {isBot ? 'Bot' : selectedConversation.name}
-                  </span>
+                return (
                   <div
+                    key={msg.id}
                     style={{
-                      padding: '12px 16px',
-                      borderRadius: isBot ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                      background: isBot ? '#1e293b' : '#ffffff',
-                      color: isBot ? '#ffffff' : '#0f172a',
-                      border: isBot ? 'none' : '1px solid #e2e8f0',
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      whiteSpace: 'pre-line' as const,
-                      boxShadow: isBot ? 'none' : '0 1px 2px rgba(0,0,0,0.04)',
-                      maxWidth: '100%',
+                      display: 'flex',
+                      flexDirection: isBot ? 'row-reverse' : 'row',
+                      alignItems: 'flex-start',
+                      gap: 10,
+                      maxWidth: '85%',
+                      alignSelf: isBot ? 'flex-end' : 'flex-start',
                     }}
                   >
-                    {msg.text}
+                    {!isBot && selectedConversation && (
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: getVisitorColor(selectedConversation.visitor_id), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>
+                        {getVisitorInitial(selectedConversation.visitor_id)}
+                      </div>
+                    )}
+
+                    {isBot && (
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                        N
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isBot ? 'flex-end' : 'flex-start' }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4, paddingLeft: isBot ? 0 : 2, paddingRight: isBot ? 2 : 0 }}>
+                        {isBot ? 'Bot' : (selectedConversation ? truncateVisitorId(selectedConversation.visitor_id) : 'Besøkende')}
+                      </span>
+                      <div
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: isBot ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                          background: isBot ? '#1e293b' : '#ffffff',
+                          color: isBot ? '#ffffff' : '#0f172a',
+                          border: isBot ? 'none' : '1px solid #e2e8f0',
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                          whiteSpace: 'pre-line' as const,
+                          boxShadow: isBot ? 'none' : '0 1px 2px rgba(0,0,0,0.04)',
+                          maxWidth: '100%',
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+                      <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, paddingLeft: isBot ? 0 : 2, paddingRight: isBot ? 2 : 0 }}>
+                        {new Date(msg.created_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
-                  <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, paddingLeft: isBot ? 0 : 2, paddingRight: isBot ? 2 : 0 }}>
-                    {msg.time}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </>
+          )}
         </div>
 
-        {/* Message input */}
+        {/* Message input (read-only view for now) */}
         <div style={{ padding: '16px 24px', background: '#ffffff', borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', padding: '10px 16px' }}>
             <input
@@ -354,7 +433,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Detaljpanel */}
-      {showRightPanel && (
+      {showRightPanel && selectedConversation && (
         <div style={{ width: 300, background: '#ffffff', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', flexShrink: 0 }}>
           <div style={{ padding: 24 }}>
             {/* Tags section */}
@@ -364,27 +443,13 @@ export default function DashboardPage() {
                 Tagger
               </h3>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 10 }}>
-                {['Kundeservice', 'Ny bruker'].map((tag) => (
-                  <span key={tag} style={{ fontSize: 12, background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: 6, fontWeight: 500 }}>
-                    {tag}
-                  </span>
-                ))}
+                <span style={{ fontSize: 12, background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: 6, fontWeight: 500 }}>
+                  {selectedConversation.site_name}
+                </span>
               </div>
               <button style={{ fontSize: 12, color: '#2563eb', background: 'none', border: '1px dashed #cbd5e1', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 500, width: '100%', fontFamily }}>
                 + Legg til tagger
               </button>
-            </div>
-
-            {/* Summary */}
-            <div style={{ marginBottom: 28 }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>Sammendrag</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-                <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 500 }}>AI-generert</span>
-              </div>
-              <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: 0 }}>
-                Brukeren spurte om chatbot-funksjonalitet, norsk sprakstotte og priser. Boten ga detaljert informasjon om oppsettet, sprakhhandtering og tre prisplaner. Brukeren viste interesse for en gratis proveperiode.
-              </p>
             </div>
 
             {/* Conversation details */}
@@ -392,35 +457,32 @@ export default function DashboardPage() {
               <h3 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>Samtaledetaljer</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { icon: icons.smile, label: 'Tone', value: 'Vennlig' },
-                  { icon: icons.msg, label: 'Totale meldinger', value: '19' },
-                  { icon: icons.smile, label: 'Positive', value: '11 (~57%)', color: '#22c55e' },
-                  { icon: icons.frown, label: 'Negative', value: '8 (~43%)', color: '#ef4444' },
-                  { icon: icons.hash, label: 'ID', value: '#12345' },
-                  { icon: icons.calendar, label: 'Startet', value: '23. mai 2023' },
+                  { icon: icons.msg, label: 'Totale meldinger', value: String(messages.length) },
+                  { icon: icons.hash, label: 'ID', value: '#' + selectedConversation.id.substring(0, 8) },
+                  { icon: icons.calendar, label: 'Startet', value: new Date(selectedConversation.started_at).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' }) },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
                       <Icon d={item.icon} size={15} />
                       <span style={{ fontSize: 13 }}>{item.label}</span>
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: (item as any).color || '#0f172a' }}>{item.value}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{item.value}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* User details */}
+            {/* Visitor details */}
             <div>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>Brukerdetaljer</h3>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>Besøkende</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#64748b' }}><Icon d={icons.mail} size={15} /></span>
-                  <span style={{ fontSize: 13, color: '#475569' }}>{selectedConversation.email}</span>
+                  <span style={{ color: '#64748b' }}><Icon d={icons.hash} size={15} /></span>
+                  <span style={{ fontSize: 13, color: '#475569' }}>{selectedConversation.visitor_id}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#64748b' }}><Icon d={icons.phone} size={15} /></span>
-                  <span style={{ fontSize: 13, color: '#475569' }}>{selectedConversation.phone}</span>
+                  <span style={{ color: '#64748b' }}><Icon d={icons.msg} size={15} /></span>
+                  <span style={{ fontSize: 13, color: '#475569' }}>{selectedConversation.status === 'active' ? 'Aktiv samtale' : 'Avsluttet'}</span>
                 </div>
               </div>
             </div>

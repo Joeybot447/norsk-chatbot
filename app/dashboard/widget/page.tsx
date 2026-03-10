@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/supabase/hooks';
 
 const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -15,7 +17,21 @@ const themeColors = [
   { name: 'Indigo', value: '#4f46e5' },
 ];
 
+interface Site {
+  id: string;
+  name: string;
+  domain: string;
+  bot_name: string | null;
+  welcome_message: string | null;
+  theme_config: Record<string, string> | null;
+  api_keys: Array<{ key_prefix: string; is_active: boolean }>;
+}
+
 export default function WidgetPage() {
+  const { user, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState('');
   const [botName, setBotName] = useState('NorskBot');
   const [welcomeMessage, setWelcomeMessage] = useState('Hei! Hvordan kan jeg hjelpe deg i dag?');
   const [themeColor, setThemeColor] = useState('#2563eb');
@@ -23,15 +39,108 @@ export default function WidgetPage() {
   const [autoOpenDelay, setAutoOpenDelay] = useState(5);
   const [copied, setCopied] = useState(false);
   const [showTestWidget, setShowTestWidget] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
-  const embedCode = `<script src="https://cdn.norskbot.no/widget.js"
-  data-bot-name="${botName}"
-  data-welcome="${welcomeMessage}"
-  data-color="${themeColor}"
-  data-position="${position}"
-  data-auto-open="${autoOpenDelay}"
+  useEffect(() => {
+    if (!user) return;
+
+    const loadSites = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('sites')
+          .select('id, name, domain, bot_name, welcome_message, theme_config, api_keys(key_prefix, is_active)')
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        const siteData = (data || []) as Site[];
+        setSites(siteData);
+
+        if (siteData.length > 0) {
+          const site = siteData[0];
+          setSelectedSiteId(site.id);
+          setBotName(site.bot_name || 'NorskBot');
+          setWelcomeMessage(site.welcome_message || 'Hei! Hvordan kan jeg hjelpe deg i dag?');
+          if (site.theme_config) {
+            setThemeColor(site.theme_config.color || '#2563eb');
+            setPosition((site.theme_config.position as 'bottom-right' | 'bottom-left') || 'bottom-right');
+          }
+        }
+      } catch {
+        // Silently handle
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSites();
+  }, [user]);
+
+  const selectedSite = sites.find((s) => s.id === selectedSiteId);
+
+  const handleSiteChange = (siteId: string) => {
+    setSelectedSiteId(siteId);
+    const site = sites.find((s) => s.id === siteId);
+    if (site) {
+      setBotName(site.bot_name || 'NorskBot');
+      setWelcomeMessage(site.welcome_message || 'Hei! Hvordan kan jeg hjelpe deg i dag?');
+      if (site.theme_config) {
+        setThemeColor(site.theme_config.color || '#2563eb');
+        setPosition((site.theme_config.position as 'bottom-right' | 'bottom-left') || 'bottom-right');
+      } else {
+        setThemeColor('#2563eb');
+        setPosition('bottom-right');
+      }
+    }
+    setSaveMessage('');
+  };
+
+  const handleSaveConfig = async () => {
+    if (!selectedSiteId) return;
+    setSaving(true);
+    setSaveMessage('');
+    try {
+      const { error } = await supabase
+        .from('sites')
+        .update({
+          bot_name: botName,
+          welcome_message: welcomeMessage,
+          theme_config: {
+            color: themeColor,
+            position: position,
+            autoOpenDelay: autoOpenDelay,
+          },
+        })
+        .eq('id', selectedSiteId);
+
+      if (error) throw error;
+      setSaveMessage('Konfigurasjon lagret!');
+
+      // Update local state
+      setSites((prev) =>
+        prev.map((s) =>
+          s.id === selectedSiteId
+            ? { ...s, bot_name: botName, welcome_message: welcomeMessage, theme_config: { color: themeColor, position, autoOpenDelay: String(autoOpenDelay) } }
+            : s
+        )
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kunne ikke lagre konfigurasjon';
+      setSaveMessage(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const embedCode = selectedSite
+    ? `<script src="${typeof window !== 'undefined' ? window.location.origin : ''}/widget.js"
+  data-site-id="${selectedSite.id}"
+  data-api-key="DIN_API_NØKKEL"
   async>
-<\/script>`;
+<\/script>`
+    : '';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(embedCode).then(() => {
@@ -39,6 +148,30 @@ export default function WidgetPage() {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  if (authLoading || loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', fontFamily: fontStack }}>
+        <p style={{ color: '#64748b', fontSize: '16px' }}>Laster...</p>
+      </div>
+    );
+  }
+
+  if (sites.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', fontFamily: fontStack }}>
+        <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Widget-konfigurasjon</h1>
+        </div>
+        <div style={{ padding: '24px' }}>
+          <div style={{ textAlign: 'center', padding: '60px 24px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '16px', color: '#64748b', marginBottom: '8px' }}>Ingen nettsteder funnet</p>
+            <p style={{ fontSize: '14px', color: '#94a3b8' }}>Opprett et nettsted først for å konfigurere widgeten.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', fontFamily: fontStack }}>
@@ -48,6 +181,37 @@ export default function WidgetPage() {
       </div>
 
       <main style={{ padding: '24px', flex: 1, overflow: 'auto' }}>
+        {/* Site selector */}
+        {sites.length > 1 && (
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Velg nettsted</label>
+            <select
+              value={selectedSiteId}
+              onChange={(e) => handleSiteChange(e.target.value)}
+              style={{ padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', fontFamily: fontStack, cursor: 'pointer', backgroundColor: 'white', minWidth: '300px' }}
+            >
+              {sites.map((site) => (
+                <option key={site.id} value={site.id}>{site.name} ({site.domain})</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {saveMessage && (
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: saveMessage.includes('lagret') ? '#f0fdf4' : '#fef2f2',
+            border: `1px solid ${saveMessage.includes('lagret') ? '#bbf7d0' : '#fecaca'}`,
+            color: saveMessage.includes('lagret') ? '#16a34a' : '#dc2626',
+            fontSize: '14px',
+            fontWeight: '500',
+            marginBottom: '24px',
+          }}>
+            {saveMessage}
+          </div>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '24px', maxWidth: '1200px' }}>
           {/* Configuration */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -90,7 +254,7 @@ export default function WidgetPage() {
                 </div>
               </div>
 
-              <div>
+              <div style={{ marginBottom: '18px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>
                   Auto-apne forsinkelse: {autoOpenDelay} sekunder
                 </label>
@@ -100,6 +264,19 @@ export default function WidgetPage() {
                   <span>30s</span>
                 </div>
               </div>
+
+              <button
+                onClick={handleSaveConfig}
+                disabled={saving}
+                style={{
+                  padding: '12px 24px', backgroundColor: '#2563eb', color: 'white', border: 'none',
+                  borderRadius: '8px', cursor: saving ? 'default' : 'pointer', fontSize: '14px',
+                  fontWeight: '600', fontFamily: fontStack, transition: 'background-color 0.2s',
+                  opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {saving ? 'Lagrer...' : 'Lagre konfigurasjon'}
+              </button>
             </div>
 
             {/* Embed Code Card */}
@@ -111,9 +288,17 @@ export default function WidgetPage() {
                   {copied ? 'Kopiert!' : 'Kopier kode'}
                 </button>
               </div>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 12px 0' }}>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 8px 0' }}>
                 Lim inn denne koden for lukke-taggen pa nettstedet ditt.
               </p>
+              <p style={{ fontSize: '12px', color: '#f59e0b', margin: '0 0 12px 0', fontWeight: '500' }}>
+                ⚠️ Bruk API-nøkkelen du fikk da du opprettet nettstedet. Nøkkelen vises kun én gang.
+              </p>
+              {selectedSite?.api_keys && selectedSite.api_keys.length > 0 && (
+                <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px 0' }}>
+                  Aktiv API-nøkkel: <code style={{ backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{selectedSite.api_keys.find(k => k.is_active)?.key_prefix || '—'}••••</code>
+                </p>
+              )}
               <pre style={{ backgroundColor: '#0f172a', color: '#e2e8f0', padding: '16px', borderRadius: '8px', overflow: 'auto', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>
                 {embedCode}
               </pre>

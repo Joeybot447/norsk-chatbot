@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/supabase/hooks';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -36,23 +39,34 @@ const sectionStyle: React.CSSProperties = {
 };
 
 export default function ProfilePage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [focusedField, setFocusedField] = useState('');
   const [saving, setSaving] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const [name, setName] = useState('Ola Nordmann');
-  const [email, setEmail] = useState('ola@firma.no');
-  const [company, setCompany] = useState('Nordmann AS');
-  const [phone, setPhone] = useState('+47 123 45 678');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [phone, setPhone] = useState('');
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const initials = name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  useEffect(() => {
+    if (user) {
+      setName(user.displayName || '');
+      setEmail(user.email || '');
+      setCompany(user.companyName || '');
+    }
+  }, [user]);
+
+  const initials = name ? name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) : '??';
 
   const getInputStyle = (field: string): React.CSSProperties => ({
     ...inputStyle,
@@ -61,13 +75,23 @@ export default function ProfilePage() {
   });
 
   const handleSaveProfile = async () => {
+    if (!user) return;
     setSaving(true);
     setMessage('');
     try {
-      await new Promise((r) => setTimeout(r, 800));
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: name,
+          company_name: company,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
       setMessage('Profilen er oppdatert!');
-    } catch {
-      setMessage('Noe gikk galt. Prøv igjen.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Noe gikk galt. Prøv igjen.';
+      setMessage(msg);
     } finally {
       setSaving(false);
     }
@@ -85,17 +109,47 @@ export default function ProfilePage() {
     }
     setSavingPassword(true);
     try {
-      await new Promise((r) => setTimeout(r, 800));
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
       setPasswordMessage('Passordet er endret!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch {
-      setPasswordMessage('Noe gikk galt. Prøv igjen.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Noe gikk galt. Prøv igjen.';
+      setPasswordMessage(msg);
     } finally {
       setSavingPassword(false);
     }
   };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+
+      if (error) throw error;
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kunne ikke slette kontoen. Prøv igjen.';
+      setMessage(msg);
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', fontFamily }}>
+        <p style={{ color: '#64748b', fontSize: '16px' }}>Laster...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: 640, margin: '0 auto', fontFamily }}>
@@ -118,9 +172,9 @@ export default function ProfilePage() {
             {initials}
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', fontFamily }}>{name}</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', fontFamily }}>{name || 'Ukjent'}</div>
             <div style={{ fontSize: 14, color: '#64748b', fontFamily }}>{email}</div>
-            <div style={{ fontSize: 13, color: '#94a3b8', fontFamily, marginTop: 2 }}>{company}</div>
+            <div style={{ fontSize: 13, color: '#94a3b8', fontFamily, marginTop: 2 }}>{company || ''}</div>
           </div>
         </div>
 
@@ -149,9 +203,8 @@ export default function ProfilePage() {
           <div>
             <label style={labelStyle}>E-postadresse</label>
             <input
-              type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField('')}
-              style={getInputStyle('email')}
+              type="email" value={email} disabled
+              style={{ ...getInputStyle('email'), color: '#94a3b8', cursor: 'not-allowed' }}
             />
           </div>
           <div>
@@ -174,7 +227,15 @@ export default function ProfilePage() {
 
         <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
           <button
-            onClick={() => { setName('Ola Nordmann'); setEmail('ola@firma.no'); setCompany('Nordmann AS'); setPhone('+47 123 45 678'); setMessage(''); }}
+            onClick={() => {
+              if (user) {
+                setName(user.displayName || '');
+                setEmail(user.email || '');
+                setCompany(user.companyName || '');
+                setPhone('');
+                setMessage('');
+              }
+            }}
             style={{
               height: 48, padding: '0 24px', borderRadius: 8, border: '1px solid #e2e8f0',
               backgroundColor: '#fff', color: '#64748b', fontSize: 14, fontWeight: 600,
@@ -302,6 +363,7 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', gap: 12 }}>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
                 style={{
                   height: 40, padding: '0 20px', borderRadius: 8, border: '1px solid #e2e8f0',
                   backgroundColor: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600,
@@ -311,14 +373,15 @@ export default function ProfilePage() {
                 Avbryt
               </button>
               <button
-                onClick={() => { /* Delete API call */ }}
+                onClick={handleDeleteAccount}
+                disabled={deleting}
                 style={{
                   height: 40, padding: '0 20px', borderRadius: 8, border: 'none',
                   backgroundColor: '#dc2626', color: '#fff', fontSize: 13, fontWeight: 600,
-                  fontFamily, cursor: 'pointer',
+                  fontFamily, cursor: 'pointer', opacity: deleting ? 0.6 : 1,
                 }}
               >
-                Ja, slett kontoen min
+                {deleting ? 'Sletter...' : 'Ja, slett kontoen min'}
               </button>
             </div>
           </div>

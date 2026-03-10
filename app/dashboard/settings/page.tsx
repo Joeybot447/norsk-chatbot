@@ -1,17 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/supabase/hooks';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 export default function SettingsPage() {
-  const [email, setEmail] = useState('admin@norskbot.no');
+  const { user, loading: authLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [company, setCompany] = useState('');
   const [notifications, setNotifications] = useState(true);
   const [theme, setTheme] = useState('light');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
-  const handleSave = () => {
-    alert('Innstillinger lagret!');
+  useEffect(() => {
+    if (user) {
+      setEmail(user.email || '');
+      setFullName(user.displayName || '');
+      setCompany(user.companyName || '');
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    setMessage('');
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: fullName,
+          company_name: company,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      setMessage('Innstillinger lagret!');
+      setMessageType('success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Kunne ikke lagre innstillinger';
+      setMessage(msg);
+      setMessageType('error');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', fontFamily }}>
+        <p style={{ color: '#64748b', fontSize: '16px' }}>Laster...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', fontFamily }}>
@@ -22,6 +68,21 @@ export default function SettingsPage() {
 
       {/* Main Content */}
       <main style={{ padding: '24px', flex: 1, overflow: 'auto', maxWidth: '900px' }}>
+        {message && (
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: messageType === 'success' ? '#f0fdf4' : '#fef2f2',
+            border: `1px solid ${messageType === 'success' ? '#bbf7d0' : '#fecaca'}`,
+            color: messageType === 'success' ? '#16a34a' : '#dc2626',
+            fontSize: '14px',
+            fontWeight: '500',
+            marginBottom: '24px',
+          }}>
+            {message}
+          </div>
+        )}
+
         {/* Kontoinnstillinger */}
         <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
@@ -34,7 +95,7 @@ export default function SettingsPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                disabled
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -43,14 +104,18 @@ export default function SettingsPage() {
                   fontSize: '14px',
                   fontFamily,
                   boxSizing: 'border-box' as const,
+                  backgroundColor: '#f8fafc',
+                  color: '#64748b',
                 }}
               />
+              <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px', marginBottom: 0 }}>E-postadressen kan ikke endres her</p>
             </div>
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', color: '#0f172a', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Fullt navn</label>
               <input
                 type="text"
-                defaultValue="Admin Bruker"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -66,7 +131,8 @@ export default function SettingsPage() {
               <label style={{ display: 'block', color: '#0f172a', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Organisasjon</label>
               <input
                 type="text"
-                defaultValue="NorskBot AS"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -88,84 +154,9 @@ export default function SettingsPage() {
             <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', marginBottom: 0 }}>Administrer API-nokler og tilgang</p>
           </div>
           <div style={{ padding: '20px' }}>
-            <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div>
-                  <p style={{ color: '#0f172a', fontWeight: '500', fontSize: '14px', margin: 0 }}>Produksjons-API-nokkel</p>
-                  <p style={{ color: '#64748b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>sk-prod-••••••••••••••••</p>
-                </div>
-                <button
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#2563eb',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    fontFamily,
-                    transition: 'background-color 0.2s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
-                >
-                  Kopier
-                </button>
-              </div>
-              <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>Opprettet 1. mars 2024</p>
-            </div>
-
-            <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div>
-                  <p style={{ color: '#0f172a', fontWeight: '500', fontSize: '14px', margin: 0 }}>Utviklings-API-nokkel</p>
-                  <p style={{ color: '#64748b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>sk-dev-••••••••••••••••</p>
-                </div>
-                <button
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#2563eb',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    fontFamily,
-                    transition: 'background-color 0.2s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
-                >
-                  Kopier
-                </button>
-              </div>
-              <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>Opprettet 15. februar 2024</p>
-            </div>
-
-            <button
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'white',
-                color: '#2563eb',
-                border: '1px solid #2563eb',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                fontFamily,
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = '#eff6ff';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = 'white';
-              }}
-            >
-              + Generer ny API-nokkel
-            </button>
+            <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
+              API-nøkler administreres per nettsted. Gå til <strong>Widget-konfigurasjon</strong> for å se dine API-nøkler.
+            </p>
           </div>
         </div>
 
@@ -243,24 +234,33 @@ export default function SettingsPage() {
         <div style={{ marginTop: '32px', display: 'flex', gap: '12px' }}>
           <button
             onClick={handleSave}
+            disabled={saving}
             style={{
               padding: '10px 24px',
               backgroundColor: '#2563eb',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: saving ? 'default' : 'pointer',
               fontSize: '14px',
               fontWeight: '500',
               fontFamily,
               transition: 'background-color 0.2s',
+              opacity: saving ? 0.6 : 1,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
+            onMouseEnter={(e) => !saving && (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+            onMouseLeave={(e) => !saving && (e.currentTarget.style.backgroundColor = '#2563eb')}
           >
-            Lagre endringer
+            {saving ? 'Lagrer...' : 'Lagre endringer'}
           </button>
           <button
+            onClick={() => {
+              if (user) {
+                setFullName(user.displayName || '');
+                setCompany(user.companyName || '');
+                setMessage('');
+              }
+            }}
             style={{
               padding: '10px 24px',
               backgroundColor: 'white',
