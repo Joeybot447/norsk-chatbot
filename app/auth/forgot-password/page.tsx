@@ -16,7 +16,7 @@ export default function ForgotPasswordPage() {
     setError('');
     setLoading(true);
     try {
-      // API call placeholder
+      // TODO: Replace with actual password reset API call
       await new Promise((r) => setTimeout(r, 1200));
       setSent(true);
     } catch (err) {
@@ -168,6 +168,14 @@ export default function ForgotPasswordPage() {
           }}>
             ← Tilbake til innlogging
           </a>
+        </div>
+
+        {/* Footer */}
+        <div style={{ textAlign: 'center', marginTop: 28, fontSize: 12, color: '#64748b', fontFamily }}>
+          {'© 2026 NorskBot \u2014 '}
+          <a href="/personvern" style={{ color: '#2563eb', textDecoration: 'none' }}>Personvern</a>
+          {' \u00B7 '}
+          <a href="/brukervilkar" style={{ color: '#2563eb', textDecoration: 'none' }}>Vilkår</a>
         </div>
 
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

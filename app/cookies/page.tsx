@@ -1,94 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import {
+  navStyle, logoStyle, navLinksStyle, navLinkStyle,
+  containerStyle, h1Style, h2Style, h3Style,
+  sectionStyle, lastSectionStyle, updatedStyle,
+  ulStyle, liStyle, linkStyle,
+  footerStyle, footerInnerStyle, footerColStyle,
+  footerLabelStyle, footerLinkStyle, footerCopyStyle,
+} from '../styles/legalPageStyles';
 
 export default function CookiesPage() {
-  const navStyle: React.CSSProperties = {
-    backgroundColor: '#ffffff',
-    borderBottom: '1px solid #e2e8f0',
-    padding: '16px 24px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  };
-
-  const logoStyle: React.CSSProperties = {
-    fontSize: '20px',
-    fontWeight: 700,
-    color: '#0f172a',
-    textDecoration: 'none',
-  };
-
-  const navLinksStyle: React.CSSProperties = {
-    display: 'flex',
-    gap: '24px',
-  };
-
-  const navLinkStyle: React.CSSProperties = {
-    color: '#64748b',
-    textDecoration: 'none',
-    fontSize: '14px',
-    fontWeight: 500,
-  };
-
-  const containerStyle: React.CSSProperties = {
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '48px 24px 64px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    color: '#334155',
-    fontSize: '16px',
-    lineHeight: 1.7,
-  };
-
-  const h1Style: React.CSSProperties = {
-    fontSize: '32px',
-    fontWeight: 700,
-    color: '#0f172a',
-    marginBottom: '8px',
-    lineHeight: 1.3,
-  };
-
-  const h2Style: React.CSSProperties = {
-    fontSize: '24px',
-    fontWeight: 600,
-    color: '#1e293b',
-    marginTop: '40px',
-    marginBottom: '16px',
-    lineHeight: 1.3,
-  };
-
-  const h3Style: React.CSSProperties = {
-    fontSize: '18px',
-    fontWeight: 600,
-    color: '#1e293b',
-    marginTop: '24px',
-    marginBottom: '12px',
-  };
-
-  const sectionStyle: React.CSSProperties = {
-    paddingBottom: '32px',
-    marginBottom: '32px',
-    borderBottom: '1px solid #e2e8f0',
-  };
-
-  const lastSectionStyle: React.CSSProperties = {
-    paddingBottom: '32px',
-    marginBottom: '32px',
-  };
-
-  const updatedStyle: React.CSSProperties = {
-    color: '#94a3b8',
-    fontSize: '14px',
-    marginBottom: '40px',
-  };
-
-  const linkStyle: React.CSSProperties = {
-    color: '#2563eb',
-    textDecoration: 'underline',
-  };
-
   const tableStyle: React.CSSProperties = {
     width: '100%',
     borderCollapse: 'collapse' as const,
@@ -116,59 +38,6 @@ export default function CookiesPage() {
     color: '#334155',
   };
 
-  const ulStyle: React.CSSProperties = {
-    paddingLeft: '24px',
-    marginBottom: '16px',
-  };
-
-  const liStyle: React.CSSProperties = {
-    marginBottom: '8px',
-  };
-
-  const footerStyle: React.CSSProperties = {
-    backgroundColor: '#f8fafc',
-    borderTop: '1px solid #e2e8f0',
-    padding: '32px 24px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  };
-
-  const footerInnerStyle: React.CSSProperties = {
-    maxWidth: '800px',
-    margin: '0 auto',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap' as const,
-    gap: '24px',
-  };
-
-  const footerColStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '8px',
-  };
-
-  const footerLabelStyle: React.CSSProperties = {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#1e293b',
-    marginBottom: '4px',
-  };
-
-  const footerLinkStyle: React.CSSProperties = {
-    color: '#64748b',
-    textDecoration: 'none',
-    fontSize: '14px',
-  };
-
-  const footerCopyStyle: React.CSSProperties = {
-    fontSize: '13px',
-    color: '#94a3b8',
-    marginTop: '24px',
-    width: '100%',
-    textAlign: 'center' as const,
-  };
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
       <nav style={navStyle}>
@@ -176,6 +45,7 @@ export default function CookiesPage() {
         <div style={navLinksStyle}>
           <Link href="/" style={navLinkStyle}>Hjem</Link>
           <Link href="/dashboard" style={navLinkStyle}>Kontrollpanel</Link>
+          <Link href="/auth" style={navLinkStyle}>Logg inn</Link>
         </div>
       </nav>
 

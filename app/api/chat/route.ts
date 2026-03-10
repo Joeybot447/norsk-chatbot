@@ -132,14 +132,14 @@ export async function POST(request: NextRequest) {
 
       if (!messageId || typeof messageId !== 'string') {
         return NextResponse.json(
-          { error: 'messageId is required' },
+          { error: 'Meldings-ID er påkrevd' },
           { status: 400 }
         );
       }
 
       if (![-1, 1].includes(rating)) {
         return NextResponse.json(
-          { error: 'Rating must be -1 or 1' },
+          { error: 'Vurdering må være -1 eller 1' },
           { status: 400 }
         );
       }
