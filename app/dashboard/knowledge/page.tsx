@@ -2,81 +2,63 @@
 
 import { useState } from 'react';
 
+const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 export default function KnowledgePage() {
   const [activeTab, setActiveTab] = useState('sources');
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Nav */}
-      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-100 h-14 flex items-center px-5">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <svg
-              viewBox="0 0 24 24"
-              className="w-4 h-4 fill-white"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <span className="font-bold text-blue-600">NorskBot</span>
-        </div>
-      </nav>
-
-      {/* Sidebar */}
-      <div className="fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-gray-200 pt-3 overflow-y-auto">
-        <div className="px-4 space-y-2">
-          <div
-            onClick={() => setActiveTab('sources')}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer text-sm transition ${
-              activeTab === 'sources'
-                ? 'bg-blue-100 text-blue-600 font-semibold'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <span>📚</span>
-            <span>Kilder</span>
-          </div>
-          <div
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer text-sm transition ${
-              activeTab === 'settings'
-                ? 'bg-blue-100 text-blue-600 font-semibold'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <span>⚙️</span>
-            <span>Innstillinger</span>
-          </div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', fontFamily: fontStack }}>
+      {/* Top Bar */}
+      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 24px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 4px 0' }}>Kunnskapsbase</h1>
+        <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+          Administrer kilder og dokumenter som boten skal laere fra
+        </p>
       </div>
 
       {/* Main Content */}
-      <main className="ml-56 mt-14 p-8 max-w-2xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Kunnskapsbase</h1>
-        <p className="text-gray-600 mb-8">
-          Administrer kilder og dokumenter som bot skal lære fra
-        </p>
-
+      <main style={{ padding: '24px', flex: 1, overflow: 'auto', maxWidth: '720px' }}>
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <div className="flex gap-8">
+        <div style={{ borderBottom: '1px solid #e2e8f0', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', gap: '32px' }}>
             <button
               onClick={() => setActiveTab('sources')}
-              className={`pb-3 font-medium text-sm border-b-2 transition ${
-                activeTab === 'sources'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600'
-              }`}
+              style={{
+                paddingBottom: '12px',
+                fontWeight: activeTab === 'sources' ? '600' : '400',
+                fontSize: '14px',
+                borderBottom: activeTab === 'sources' ? '2px solid #2563eb' : '2px solid transparent',
+                color: activeTab === 'sources' ? '#2563eb' : '#64748b',
+                background: 'none',
+                border: 'none',
+                borderBottomWidth: '2px',
+                borderBottomStyle: 'solid',
+                borderBottomColor: activeTab === 'sources' ? '#2563eb' : 'transparent',
+                cursor: 'pointer',
+                fontFamily: fontStack,
+                transition: 'color 0.15s',
+              }}
             >
               Kilder
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`pb-3 font-medium text-sm border-b-2 transition ${
-                activeTab === 'settings'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600'
-              }`}
+              style={{
+                paddingBottom: '12px',
+                fontWeight: activeTab === 'settings' ? '600' : '400',
+                fontSize: '14px',
+                borderBottom: activeTab === 'settings' ? '2px solid #2563eb' : '2px solid transparent',
+                color: activeTab === 'settings' ? '#2563eb' : '#64748b',
+                background: 'none',
+                border: 'none',
+                borderBottomWidth: '2px',
+                borderBottomStyle: 'solid',
+                borderBottomColor: activeTab === 'settings' ? '#2563eb' : 'transparent',
+                cursor: 'pointer',
+                fontFamily: fontStack,
+                transition: 'color 0.15s',
+              }}
             >
               Innstillinger
             </button>
@@ -86,29 +68,51 @@ export default function KnowledgePage() {
         {/* Sources Tab */}
         {activeTab === 'sources' && (
           <div>
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Legg til kilder</h3>
-              <div className="space-y-4">
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <h3 style={{ fontWeight: '600', color: '#0f172a', fontSize: '16px', marginBottom: '16px', marginTop: 0 }}>Legg til kilder</h3>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px' }}>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px' }}>
                     URL eller filbane
                   </label>
                   <input
                     type="text"
                     placeholder="https://eksempel.no eller /sti/til/fil.pdf"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-600 outline-none"
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      backgroundColor: '#f8fafc',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box' as const,
+                      fontFamily: fontStack,
+                    }}
                   />
                 </div>
-                <button className="w-full py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition">
+                <button style={{
+                  width: '100%',
+                  padding: '10px',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: fontStack,
+                  transition: 'background-color 0.2s',
+                }}>
                   Legg til kilde
                 </button>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600 font-semibold">Aktiverte kilder:</p>
-              <div className="bg-white rounded-lg shadow p-4 text-center text-gray-500 text-sm">
-                Ingen kilder lagt til ennå
+            <div>
+              <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '600', marginBottom: '8px' }}>Aktiverte kilder:</p>
+              <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', textAlign: 'center' as const, color: '#64748b', fontSize: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                Ingen kilder lagt til enna
               </div>
             </div>
           </div>
@@ -116,9 +120,9 @@ export default function KnowledgePage() {
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Innstillinger</h3>
-            <p className="text-gray-600 text-sm">Mer kommer snart...</p>
+          <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <h3 style={{ fontWeight: '600', color: '#0f172a', fontSize: '16px', marginBottom: '16px', marginTop: 0 }}>Innstillinger</h3>
+            <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Mer kommer snart...</p>
           </div>
         )}
       </main>

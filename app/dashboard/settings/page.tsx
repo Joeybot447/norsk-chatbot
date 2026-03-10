@@ -1,42 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 
-const SidebarNav = ({ currentPage }: { currentPage: string }) => (
-  <div style={{ width: '250px', backgroundColor: '#1f2937', color: 'white', minHeight: '100vh', padding: '20px 0' }}>
-    <div style={{ padding: '0 20px', marginBottom: '30px' }}>
-      <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>NorskBot</h2>
-      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Admin Dashboard</p>
-    </div>
-    
-    <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {[
-        { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-        { href: '/dashboard/sites', label: 'Sites', icon: '🌐' },
-        { href: '/dashboard/analytics', label: 'Analytics', icon: '📈' },
-        { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
-      ].map((item) => (
-        <Link key={item.href} href={item.href}>
-          <div
-            style={{
-              padding: '12px 20px',
-              backgroundColor: currentPage === item.label ? '#374151' : 'transparent',
-              cursor: 'pointer',
-              borderLeft: currentPage === item.label ? '4px solid #3b82f6' : '4px solid transparent',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => { if (currentPage !== item.label) (e.currentTarget as HTMLElement).style.backgroundColor = '#2d3748'; }}
-            onMouseLeave={(e) => { if (currentPage !== item.label) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
-          >
-            <span style={{ marginRight: '8px' }}>{item.icon}</span>
-            {item.label}
-          </div>
-        </Link>
-      ))}
-    </nav>
-  </div>
-);
+const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 export default function SettingsPage() {
   const [email, setEmail] = useState('admin@norskbot.no');
@@ -44,277 +10,280 @@ export default function SettingsPage() {
   const [theme, setTheme] = useState('light');
 
   const handleSave = () => {
-    alert('Settings saved successfully!');
+    alert('Innstillinger lagret!');
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      <SidebarNav currentPage="Settings" />
-      
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Top Bar */}
-        <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827' }}>Settings</h1>
+    <div style={{ display: 'flex', flexDirection: 'column', fontFamily }}>
+      {/* Top Bar */}
+      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Innstillinger</h1>
+      </div>
+
+      {/* Main Content */}
+      <main style={{ padding: '24px', flex: 1, overflow: 'auto', maxWidth: '900px' }}>
+        {/* Kontoinnstillinger */}
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Kontoinnstillinger</h3>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', marginBottom: 0 }}>Administrer kontoinformasjonen din</p>
+          </div>
+          <div style={{ padding: '20px' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#0f172a', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>E-postadresse</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily,
+                  boxSizing: 'border-box' as const,
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#0f172a', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Fullt navn</label>
+              <input
+                type="text"
+                defaultValue="Admin Bruker"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily,
+                  boxSizing: 'border-box' as const,
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#0f172a', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Organisasjon</label>
+              <input
+                type="text"
+                defaultValue="NorskBot AS"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily,
+                  boxSizing: 'border-box' as const,
+                }}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Main Content */}
-        <main style={{ padding: '24px', flex: 1, overflow: 'auto', maxWidth: '900px' }}>
-          {/* Account Settings */}
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden', marginBottom: '24px' }}>
-            <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Account Settings</h3>
-              <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>Manage your account information</p>
-            </div>
-            <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', color: '#111827', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Email Address</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', color: '#111827', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Full Name</label>
-                <input
-                  type="text"
-                  defaultValue="Admin User"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', color: '#111827', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Organization</label>
-                <input
-                  type="text"
-                  defaultValue="NorskBot Inc."
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-            </div>
+        {/* API-innstillinger */}
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: 0 }}>API-innstillinger</h3>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', marginBottom: 0 }}>Administrer API-nokler og tilgang</p>
           </div>
-
-          {/* API Settings */}
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden', marginBottom: '24px' }}>
-            <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>API Settings</h3>
-              <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>Manage your API keys and access</p>
-            </div>
-            <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div>
-                    <p style={{ color: '#111827', fontWeight: '500', fontSize: '14px' }}>Production API Key</p>
-                    <p style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px' }}>sk-prod-••••••••••••••••</p>
-                  </div>
-                  <button
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#3b82f6')}
-                  >
-                    Copy
-                  </button>
-                </div>
-                <p style={{ color: '#9ca3af', fontSize: '12px' }}>Created on March 1, 2024</p>
-              </div>
-
-              <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div>
-                    <p style={{ color: '#111827', fontWeight: '500', fontSize: '14px' }}>Development API Key</p>
-                    <p style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px' }}>sk-dev-••••••••••••••••</p>
-                  </div>
-                  <button
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#3b82f6')}
-                  >
-                    Copy
-                  </button>
-                </div>
-                <p style={{ color: '#9ca3af', fontSize: '12px' }}>Created on February 15, 2024</p>
-              </div>
-
-              <button
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'white',
-                  color: '#3b82f6',
-                  border: '1px solid #3b82f6',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = '#eff6ff';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'white';
-                }}
-              >
-                + Generate New API Key
-              </button>
-            </div>
-          </div>
-
-          {/* Preferences */}
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden', marginBottom: '24px' }}>
-            <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Preferences</h3>
-              <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>Customize your experience</p>
-            </div>
-            <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ padding: '20px' }}>
+            <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div>
-                  <p style={{ color: '#111827', fontWeight: '500', fontSize: '14px' }}>Email Notifications</p>
-                  <p style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px' }}>Receive email updates about your account</p>
+                  <p style={{ color: '#0f172a', fontWeight: '500', fontSize: '14px', margin: 0 }}>Produksjons-API-nokkel</p>
+                  <p style={{ color: '#64748b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>sk-prod-••••••••••••••••</p>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={notifications}
-                  onChange={(e) => setNotifications(e.target.checked)}
-                  style={{ width: '24px', height: '24px', cursor: 'pointer' }}
-                />
-              </div>
-              <div style={{ marginBottom: '20px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
-                <label style={{ display: 'block', color: '#111827', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Theme</label>
-                <select
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value)}
+                <button
                   style={{
-                    padding: '10px 12px',
-                    border: '1px solid #e5e7eb',
+                    padding: '6px 12px',
+                    backgroundColor: '#2563eb',
+                    color: 'white',
+                    border: 'none',
                     borderRadius: '6px',
-                    fontSize: '14px',
                     cursor: 'pointer',
-                    backgroundColor: 'white',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    fontFamily,
+                    transition: 'background-color 0.2s',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
                 >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="auto">Auto</option>
-                </select>
+                  Kopier
+                </button>
               </div>
+              <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>Opprettet 1. mars 2024</p>
             </div>
-          </div>
 
-          {/* Danger Zone */}
-          <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fee2e2', overflow: 'hidden' }}>
-            <div style={{ padding: '20px', borderBottom: '1px solid #fee2e2' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#991b1b' }}>Danger Zone</h3>
-              <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '4px' }}>Irreversible actions</p>
+            <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div>
+                  <p style={{ color: '#0f172a', fontWeight: '500', fontSize: '14px', margin: 0 }}>Utviklings-API-nokkel</p>
+                  <p style={{ color: '#64748b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>sk-dev-••••••••••••••••</p>
+                </div>
+                <button
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    fontFamily,
+                    transition: 'background-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
+                >
+                  Kopier
+                </button>
+              </div>
+              <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>Opprettet 15. februar 2024</p>
             </div>
-            <div style={{ padding: '20px' }}>
-              <button
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'background-color 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
-              >
-                Delete Account
-              </button>
-            </div>
-          </div>
 
-          {/* Save Button */}
-          <div style={{ marginTop: '32px', display: 'flex', gap: '12px' }}>
-            <button
-              onClick={handleSave}
-              style={{
-                padding: '10px 24px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'background-color 0.2s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#3b82f6')}
-            >
-              Save Changes
-            </button>
             <button
               style={{
-                padding: '10px 24px',
+                padding: '8px 16px',
                 backgroundColor: 'white',
-                color: '#6b7280',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
+                color: '#2563eb',
+                border: '1px solid #2563eb',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: '500',
+                fontFamily,
                 transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = '#f9fafb';
+                (e.currentTarget as HTMLElement).style.backgroundColor = '#eff6ff';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'white';
               }}
             >
-              Cancel
+              + Generer ny API-nokkel
             </button>
           </div>
-        </main>
-      </div>
+        </div>
+
+        {/* Preferanser */}
+        <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Preferanser</h3>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', marginBottom: 0 }}>Tilpass opplevelsen din</p>
+          </div>
+          <div style={{ padding: '20px' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ color: '#0f172a', fontWeight: '500', fontSize: '14px', margin: 0 }}>E-postvarsler</p>
+                <p style={{ color: '#64748b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>Motta e-postoppdateringer om kontoen din</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={notifications}
+                onChange={(e) => setNotifications(e.target.checked)}
+                style={{ width: '24px', height: '24px', cursor: 'pointer' }}
+              />
+            </div>
+            <div style={{ marginBottom: '20px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'block', color: '#0f172a', fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>Tema</label>
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                style={{
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  backgroundColor: 'white',
+                  fontFamily,
+                }}
+              >
+                <option value="light">Lyst</option>
+                <option value="dark">Morkt</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Faresone */}
+        <div style={{ backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fee2e2', overflow: 'hidden' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #fee2e2' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#991b1b', margin: 0 }}>Faresone</h3>
+            <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '4px', marginBottom: 0 }}>Irreversible handlinger</p>
+          </div>
+          <div style={{ padding: '20px' }}>
+            <button
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                fontFamily,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
+            >
+              Slett konto
+            </button>
+          </div>
+        </div>
+
+        {/* Lagre-knapper */}
+        <div style={{ marginTop: '32px', display: 'flex', gap: '12px' }}>
+          <button
+            onClick={handleSave}
+            style={{
+              padding: '10px 24px',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              fontFamily,
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2563eb')}
+          >
+            Lagre endringer
+          </button>
+          <button
+            style={{
+              padding: '10px 24px',
+              backgroundColor: 'white',
+              color: '#64748b',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              fontFamily,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = '#f8fafc';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'white';
+            }}
+          >
+            Avbryt
+          </button>
+        </div>
+      </main>
     </div>
   );
 }
