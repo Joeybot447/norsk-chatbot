@@ -1,254 +1,472 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../_lib/supabase/client';
 import { useAuth } from '../../_lib/supabase/hooks';
 
-const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+// ---------------------------------------------------------------------------
+// Design tokens
+// ---------------------------------------------------------------------------
+const font = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const blue = '#2563eb';
+const dark = '#0f172a';
+const secondary = '#64748b';
+const border = '#e2e8f0';
+const bg = '#f8fafc';
+const red = '#ef4444';
 
-const UsageMeter = ({ label, used, total, color }: { label: string; used: number; total: number; color: string }) => {
-  const pct = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+// ---------------------------------------------------------------------------
+// Plan configuration
+// ---------------------------------------------------------------------------
+interface PlanConfig {
+  label: string;
+  price: string;
+  period: string;
+  messages: number;
+  chatbots: number;
+  features: string[];
+  highlighted: boolean;
+}
+
+const PLANS: Record<string, PlanConfig> = {
+  free: {
+    label: 'Gratis',
+    price: '0',
+    period: 'kr/mnd',
+    messages: 100,
+    chatbots: 1,
+    features: [
+      '1 chatbot',
+      '100 meldinger per maned',
+      'Grunnleggende widget',
+      'E-poststotte',
+    ],
+    highlighted: false,
+  },
+  professional: {
+    label: 'Pro',
+    price: '990',
+    period: 'kr/mnd',
+    messages: 10_000,
+    chatbots: 5,
+    features: [
+      '5 chatbots',
+      '10 000 meldinger per maned',
+      'Widget-tilpasning',
+      'Prioritert stotte',
+      'Analyse-dashboard',
+      'API-tilgang',
+    ],
+    highlighted: true,
+  },
+  enterprise: {
+    label: 'Enterprise',
+    price: 'Tilpasset',
+    period: '',
+    messages: Infinity,
+    chatbots: Infinity,
+    features: [
+      'Ubegrenset chatbots',
+      'Ubegrenset meldinger',
+      'Hvit-merke widget',
+      'Dedikert kontaktperson',
+      'SLA-garanti',
+      'Egendefinerte integrasjoner',
+      'SSO / SAML',
+    ],
+    highlighted: false,
+  },
+};
+
+const PLAN_ORDER = ['free', 'professional', 'enterprise'] as const;
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function ProgressBar({ label, used, limit, color = blue }: { label: string; used: number; limit: number; color?: string }) {
+  const isUnlimited = !isFinite(limit);
+  const pct = isUnlimited ? 0 : limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
+  const overThreshold = pct > 80;
+
   return (
-    <div style={{ marginBottom: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-        <span style={{ fontSize: '14px', fontWeight: '500', color: '#0f172a' }}>{label}</span>
-        <span style={{ fontSize: '13px', color: '#64748b' }}>{used.toLocaleString('nb-NO')} / {total.toLocaleString('nb-NO')}</span>
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 14, fontWeight: 500, color: dark }}>{label}</span>
+        <span style={{ fontSize: 13, color: secondary }}>
+          {used.toLocaleString('nb-NO')} / {isUnlimited ? 'Ubegrenset' : limit.toLocaleString('nb-NO')}
+        </span>
       </div>
-      <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', backgroundColor: pct > 90 ? '#ef4444' : color, borderRadius: '5px', transition: 'width 0.5s ease' }} />
+      <div style={{ width: '100%', height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+        <div
+          style={{
+            width: isUnlimited ? '0%' : `${pct}%`,
+            height: '100%',
+            backgroundColor: overThreshold ? red : color,
+            borderRadius: 4,
+            transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+          }}
+        />
       </div>
-      {pct > 80 && (
-        <p style={{ fontSize: '11px', color: '#ef4444', margin: '4px 0 0 0' }}>Advarsel: {pct >= 100 ? 'Grensen er nadd!' : 'Naermer seg grensen'}</p>
+      {overThreshold && (
+        <p style={{ fontSize: 12, color: red, margin: '4px 0 0', fontWeight: 500 }}>
+          {pct >= 100 ? 'Grensen er nadd' : 'Naermer seg grensen'}
+        </p>
       )}
     </div>
   );
-};
+}
+
+function UpgradeModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: 'white', borderRadius: 16, padding: '32px 28px',
+          maxWidth: 420, width: '90%',
+          boxShadow: '0 24px 48px rgba(0,0,0,0.16)',
+          fontFamily: font,
+        }}
+      >
+        <h3 style={{ fontSize: 20, fontWeight: 700, color: dark, margin: '0 0 8px' }}>
+          Oppgradering kommer snart
+        </h3>
+        <p style={{ fontSize: 14, color: secondary, lineHeight: 1.6, margin: '0 0 24px' }}>
+          Stripe-betaling er under utvikling. Kontakt oss for a oppgradere planen din allerede i dag.
+        </p>
+        <div style={{ padding: '16px', backgroundColor: bg, borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
+          <p style={{ fontSize: 14, color: dark, fontWeight: 600, margin: '0 0 4px' }}>hei@norskbot.no</p>
+          <p style={{ fontSize: 13, color: secondary, margin: 0 }}>Vi svarer innen 24 timer</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, height: 44, borderRadius: 8, border: `1px solid ${border}`,
+              backgroundColor: 'white', color: secondary, fontSize: 14, fontWeight: 600,
+              fontFamily: font, cursor: 'pointer',
+            }}
+          >
+            Lukk
+          </button>
+          <button
+            onClick={() => { window.location.href = 'mailto:hei@norskbot.no?subject=Oppgradering%20NorskBot'; }}
+            style={{
+              flex: 1, height: 44, borderRadius: 8, border: 'none',
+              backgroundColor: blue, color: 'white', fontSize: 14, fontWeight: 600,
+              fontFamily: font, cursor: 'pointer',
+            }}
+          >
+            Send e-post
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 interface Subscription {
   plan_name: string;
   status: string;
+  current_period_start?: string;
   current_period_end?: string;
 }
-
-const planLimits: Record<string, { messages: number; documents: number; sites: number }> = {
-  free: { messages: 100, documents: 1, sites: 1 },
-  pro: { messages: 5000, documents: 50, sites: 10 },
-  enterprise: { messages: 999999, documents: 999999, sites: 999999 },
-};
-
-const planPrices: Record<string, string> = {
-  free: '0',
-  pro: '499',
-  enterprise: '1 999',
-};
 
 export default function BillingPage() {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [usageMessages, setUsageMessages] = useState(0);
-  const [usageTokens, setUsageTokens] = useState(0);
   const [usageDocs, setUsageDocs] = useState(0);
+  const [siteCount, setSiteCount] = useState(0);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  const currentPlan = subscription?.plan_name || 'free';
-  const currentPlanLabel = currentPlan === 'free' ? 'Gratis' : currentPlan === 'pro' ? 'Pro' : 'Enterprise';
-  const limits = planLimits[currentPlan] || planLimits.free;
+  const currentPlanKey = subscription?.plan_name || 'free';
+  const plan = PLANS[currentPlanKey] || PLANS.free;
 
-  useEffect(() => {
+  const loadBilling = useCallback(async () => {
     if (!user) return;
+    setLoading(true);
+    try {
+      // Subscription
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('plan_name, status, current_period_start, current_period_end')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+      setSubscription(sub);
 
-    const loadBilling = async () => {
-      setLoading(true);
-      try {
-        // Load subscription
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .single();
+      // Count sites
+      const { count: sites } = await supabase
+        .from('sites')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      setSiteCount(sites ?? 0);
 
-        setSubscription(sub);
+      // Usage this period
+      const periodStart = sub?.current_period_start || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const { data: logs } = await supabase
+        .from('usage_logs')
+        .select('action_type')
+        .eq('user_id', user.id)
+        .gte('created_at', periodStart);
 
-        // Load usage logs
-        const { data: logs } = await supabase
-          .from('usage_logs')
-          .select('action_type, tokens_used')
-          .eq('user_id', user.id);
-
-        if (logs) {
-          let totalMessages = 0;
-          let totalTokens = 0;
-          let totalDocs = 0;
-
-          for (const log of logs) {
-            if (log.action_type === 'chat_message') {
-              totalMessages++;
-              totalTokens += log.tokens_used || 0;
-            } else if (log.action_type === 'document_ingest') {
-              totalDocs++;
-            }
-          }
-
-          setUsageMessages(totalMessages);
-          setUsageTokens(totalTokens);
-          setUsageDocs(totalDocs);
+      if (logs) {
+        let msgs = 0;
+        let docs = 0;
+        for (const log of logs) {
+          if (log.action_type === 'chat_message') msgs++;
+          else if (log.action_type === 'document_ingest') docs++;
         }
-      } catch {
-        // Silently handle - show defaults
-      } finally {
-        setLoading(false);
+        setUsageMessages(msgs);
+        setUsageDocs(docs);
       }
-    };
-
-    loadBilling();
+    } catch {
+      // defaults
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
-  const plans = [
-    {
-      name: 'Gratis',
-      key: 'free',
-      price: '0',
-      period: '/mnd',
-      features: ['100 meldinger/mnd', '1 nettsted', '1 dokument', 'Grunnleggende widget', 'E-poststotte'],
-      highlighted: false,
-      current: currentPlan === 'free',
-    },
-    {
-      name: 'Pro',
-      key: 'pro',
-      price: '499',
-      period: '/mnd',
-      features: ['5 000 meldinger/mnd', '10 nettsteder', '50 dokumenter', 'Tilpassbar widget', 'Prioritert stotte', 'Analyse-dashboard', 'API-tilgang'],
-      highlighted: true,
-      current: currentPlan === 'pro',
-    },
-    {
-      name: 'Enterprise',
-      key: 'enterprise',
-      price: '1 999',
-      period: '/mnd',
-      features: ['Ubegrenset meldinger', 'Ubegrenset nettsteder', 'Ubegrenset dokumenter', 'Hvit-merke widget', 'Dedikert support', 'SLA-garanti', 'Egendefinerte integrasjoner', 'SSO / SAML'],
-      highlighted: false,
-      current: currentPlan === 'enterprise',
-    },
-  ];
+  useEffect(() => { loadBilling(); }, [loadBilling]);
 
+  // ---- Loading state ----
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', fontFamily: fontStack }}>
-        <p style={{ color: '#64748b', fontSize: '16px' }}>Laster...</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400, fontFamily: font }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: blue, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <p style={{ color: secondary, fontSize: 14 }}>Laster fakturering...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        </div>
       </div>
     );
   }
 
-  const nextBillingDate = subscription?.current_period_end
+  const nextBilling = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
 
+  const planIdx = PLAN_ORDER.indexOf(currentPlanKey as typeof PLAN_ORDER[number]);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', fontFamily: fontStack }}>
-      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Fakturering og abonnement</h1>
-        <p style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0 0' }}>Administrer plan, forbruk og betalingsmetoder</p>
+    <div style={{ display: 'flex', flexDirection: 'column', fontFamily: font, minHeight: '100%' }}>
+      {/* Header */}
+      <div style={{ backgroundColor: 'white', borderBottom: `1px solid ${border}`, padding: '20px 28px' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: dark, margin: 0, letterSpacing: '-0.02em' }}>
+          Fakturering
+        </h1>
+        <p style={{ fontSize: 14, color: secondary, margin: '4px 0 0' }}>
+          Administrer abonnement, forbruk og betalinger
+        </p>
       </div>
 
-      <main style={{ padding: '24px', flex: 1, overflow: 'auto' }}>
-        {/* Current Plan + Usage */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px', maxWidth: '1100px' }}>
-          {/* Current Plan */}
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <div>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 4px 0' }}>Naavaerende plan</p>
-                <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#0f172a', margin: 0 }}>{currentPlanLabel}</h2>
+      <main style={{ padding: '28px', flex: 1, overflow: 'auto' }}>
+        <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+
+          {/* ---- Current plan + Usage row ---- */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 36 }}>
+            {/* Current Plan Card */}
+            <div style={{
+              backgroundColor: 'white', borderRadius: 14, border: `1px solid ${border}`,
+              padding: 28, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                <div>
+                  <p style={{ fontSize: 13, color: secondary, margin: '0 0 4px', fontWeight: 500 }}>Navaerende plan</p>
+                  <h2 style={{ fontSize: 28, fontWeight: 700, color: dark, margin: 0 }}>{plan.label}</h2>
+                </div>
+                <span style={{
+                  padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                  backgroundColor: '#dbeafe', color: blue,
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22c55e' }} />
+                  Aktiv
+                </span>
               </div>
-              <span style={{ padding: '4px 12px', backgroundColor: '#d1fae5', color: '#065f46', borderRadius: '20px', fontSize: '12px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
-                Aktiv
-              </span>
+
+              {currentPlanKey !== 'enterprise' && (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 16 }}>
+                  <span style={{ fontSize: 36, fontWeight: 700, color: dark, letterSpacing: '-0.03em' }}>{plan.price}</span>
+                  <span style={{ fontSize: 15, color: secondary }}>{plan.period}</span>
+                </div>
+              )}
+              {currentPlanKey === 'enterprise' && (
+                <p style={{ fontSize: 15, color: secondary, margin: '0 0 16px', fontWeight: 500 }}>Tilpasset pris</p>
+              )}
+
+              {nextBilling && (
+                <p style={{ fontSize: 13, color: secondary, margin: 0 }}>
+                  Neste fakturering: <strong style={{ color: dark }}>{nextBilling}</strong>
+                </p>
+              )}
+              {!subscription && (
+                <p style={{ fontSize: 13, color: secondary, margin: 0 }}>Ingen betalt abonnement</p>
+              )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '20px' }}>
-              <span style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a' }}>{planPrices[currentPlan] || '0'}</span>
-              <span style={{ fontSize: '16px', color: '#64748b' }}>kr/mnd</span>
+
+            {/* Usage Card */}
+            <div style={{
+              backgroundColor: 'white', borderRadius: 14, border: `1px solid ${border}`,
+              padding: 28, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: dark, margin: '0 0 20px' }}>
+                Forbruk denne perioden
+              </h3>
+              <ProgressBar label="Meldinger" used={usageMessages} limit={plan.messages} />
+              <ProgressBar label="Chatbots" used={siteCount} limit={plan.chatbots} color="#8b5cf6" />
+              <ProgressBar label="Kunnskapskilder" used={usageDocs} limit={plan.chatbots * 10} color="#16a34a" />
             </div>
-            {nextBillingDate && (
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 4px 0' }}>Neste fakturering: <strong style={{ color: '#0f172a' }}>{nextBillingDate}</strong></p>
-            )}
-            {!subscription && (
-              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Ingen aktiv betalt plan</p>
-            )}
           </div>
 
-          {/* Usage Stats */}
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 20px 0' }}>Forbruk denne maneden</h3>
-            <UsageMeter label="Meldinger" used={usageMessages} total={limits.messages} color="#2563eb" />
-            <UsageMeter label="Dokumenter" used={usageDocs} total={limits.documents} color="#16a34a" />
-            <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-                Totalt tokens brukt: <strong style={{ color: '#0f172a' }}>{usageTokens.toLocaleString('nb-NO')}</strong>
+          {/* ---- Plan cards ---- */}
+          <div style={{ marginBottom: 36 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: dark, margin: '0 0 16px', letterSpacing: '-0.01em' }}>
+              Tilgjengelige planer
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+              {PLAN_ORDER.map((key, idx) => {
+                const p = PLANS[key];
+                const isCurrent = key === currentPlanKey;
+                const isHigher = idx > planIdx;
+                const isEnterprise = key === 'enterprise';
+
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      backgroundColor: 'white', borderRadius: 14, position: 'relative',
+                      border: p.highlighted ? `2px solid ${blue}` : `1px solid ${border}`,
+                      padding: '28px 24px',
+                      boxShadow: p.highlighted ? `0 4px 24px rgba(37,99,235,0.12)` : '0 1px 3px rgba(0,0,0,0.04)',
+                      display: 'flex', flexDirection: 'column',
+                    }}
+                  >
+                    {/* Badges */}
+                    {isCurrent && (
+                      <span style={{
+                        position: 'absolute', top: 14, right: 14,
+                        padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                        backgroundColor: '#dbeafe', color: blue,
+                      }}>
+                        Navaerende plan
+                      </span>
+                    )}
+                    {p.highlighted && !isCurrent && (
+                      <span style={{
+                        position: 'absolute', top: 14, right: 14,
+                        padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                        backgroundColor: blue, color: 'white',
+                      }}>
+                        Mest populaer
+                      </span>
+                    )}
+
+                    <h4 style={{ fontSize: 18, fontWeight: 700, color: dark, margin: '0 0 8px' }}>{p.label}</h4>
+
+                    {!isEnterprise ? (
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 20 }}>
+                        <span style={{ fontSize: 40, fontWeight: 700, color: dark, letterSpacing: '-0.03em' }}>{p.price}</span>
+                        <span style={{ fontSize: 14, color: secondary }}>{p.period}</span>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 16, fontWeight: 600, color: secondary, margin: '4px 0 20px' }}>Tilpasset pris</p>
+                    )}
+
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', flex: 1 }}>
+                      {p.features.map((f) => (
+                        <li key={f} style={{ padding: '5px 0', fontSize: 14, color: '#334155', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <CheckIcon />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <button
+                      onClick={() => {
+                        if (!isCurrent) setShowUpgradeModal(true);
+                      }}
+                      disabled={isCurrent}
+                      style={{
+                        width: '100%', height: 44, borderRadius: 8, fontSize: 14, fontWeight: 600,
+                        fontFamily: font, cursor: isCurrent ? 'default' : 'pointer',
+                        border: isCurrent ? 'none' : isHigher && p.highlighted ? 'none' : `1px solid ${border}`,
+                        backgroundColor: isCurrent ? '#f1f5f9' : isHigher && p.highlighted ? blue : 'white',
+                        color: isCurrent ? secondary : isHigher && p.highlighted ? 'white' : dark,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {isCurrent
+                        ? 'Navaerende plan'
+                        : isEnterprise
+                          ? 'Kontakt oss'
+                          : isHigher
+                            ? 'Oppgrader'
+                            : 'Bytt plan'
+                      }
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ---- Billing history ---- */}
+          <div style={{
+            backgroundColor: 'white', borderRadius: 14, border: `1px solid ${border}`,
+            overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          }}>
+            <div style={{ padding: '20px 28px', borderBottom: `1px solid ${border}` }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: dark, margin: 0 }}>Faktureringshistorikk</h3>
+            </div>
+            <div style={{ padding: '48px 28px', textAlign: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <FileIcon />
+              </div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: dark, margin: '0 0 4px' }}>Ingen fakturaer enna</p>
+              <p style={{ fontSize: 13, color: secondary, margin: 0 }}>
+                Fakturaer vil vises her nar du oppgraderer til en betalt plan
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Plans Comparison */}
-        <div style={{ marginBottom: '32px', maxWidth: '1100px' }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#0f172a', marginBottom: '16px' }}>Velg plan</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                style={{
-                  backgroundColor: 'white', borderRadius: '12px',
-                  border: plan.highlighted ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                  padding: '28px', boxShadow: plan.highlighted ? '0 4px 20px rgba(37,99,235,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
-                  position: 'relative' as const, overflow: 'hidden',
-                }}
-              >
-                {plan.highlighted && (
-                  <div style={{ position: 'absolute' as const, top: '12px', right: '-28px', backgroundColor: '#2563eb', color: 'white', fontSize: '11px', fontWeight: '600', padding: '4px 32px', transform: 'rotate(45deg)' }}>
-                    Populaer
-                  </div>
-                )}
-
-                <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#0f172a', margin: '0 0 8px 0' }}>{plan.name}</h4>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', marginBottom: '20px' }}>
-                  <span style={{ fontSize: '36px', fontWeight: '700', color: '#0f172a' }}>{plan.price}</span>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>kr{plan.period}</span>
-                </div>
-
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0' }}>
-                  {plan.features.map((feature) => (
-                    <li key={feature} style={{ padding: '6px 0', fontSize: '14px', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  style={{
-                    width: '100%', padding: '12px',
-                    backgroundColor: plan.current ? '#f1f5f9' : plan.highlighted ? '#2563eb' : 'white',
-                    color: plan.current ? '#64748b' : plan.highlighted ? 'white' : '#0f172a',
-                    border: plan.current || plan.highlighted ? 'none' : '1px solid #e2e8f0',
-                    borderRadius: '8px', cursor: plan.current ? 'default' : 'pointer',
-                    fontSize: '14px', fontWeight: '600', fontFamily: fontStack,
-                    transition: 'all 0.2s',
-                  }}
-                  disabled={plan.current}
-                >
-                  {plan.current ? 'Naavaerende plan' : plan.name === 'Enterprise' ? 'Kontakt oss' : 'Oppgrader'}
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
       </main>
+
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     </div>
   );
 }
