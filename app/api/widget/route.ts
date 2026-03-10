@@ -1,43 +1,43 @@
 /**
  * Widget Routes
- * GET /api/widget - Get widget configuration
+ * GET /v1/widget/:siteId - Get widget configuration (cached)
+ * GET /v1/widget/script/:siteId - Get embeddable widget script
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOne } from '../../../lib/db/client';
-import config from '../../../lib/config';
+import { getOne } from '../../../packages/api/src/db/client.js';
+import { logger } from '../../../packages/api/src/utils/logger.js';
+import config from '../../../packages/api/src/config.js';
 
 // Simple in-memory cache for widget configs (TTL: 5 minutes)
-const widgetConfigCache = new Map();
+const widgetConfigCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-function getCachedConfig(siteId: string) {
-  const cached = widgetConfigCache.get(siteId) as any;
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+function getCachedConfig(siteId: string): any | null {
+  const cached = widgetConfigCache.get(siteId);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
     return cached.data;
   }
   widgetConfigCache.delete(siteId);
   return null;
 }
 
-function setCachedConfig(siteId: string, data: any) {
+function setCachedConfig(siteId: string, data: any): void {
   widgetConfigCache.set(siteId, { data, timestamp: Date.now() });
 }
 
+/**
+ * GET /api/widget/:siteId
+ * Return widget configuration for the specified site (cached)
+ */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams, pathname } = request.nextUrl;
-    const siteId = searchParams.get('siteId');
+    const pathname = request.nextUrl.pathname;
+    const pathParts = pathname.split('/');
+    const siteId = pathParts[pathParts.length - 1];
 
-    if (!siteId) {
-      return NextResponse.json(
-        { error: 'siteId query parameter is required' },
-        { status: 400 }
-      );
-    }
-
-    // Check for script endpoint
-    if (pathname.includes('/script')) {
+    // GET /api/widget/script/:siteId
+    if (pathname.includes('/script/') && pathParts[pathParts.length - 2] === 'script') {
       const site = getOne(
         `SELECT id FROM sites WHERE id = ?`,
         [siteId]
@@ -50,9 +50,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const protocol = request.headers.get('x-forwarded-proto') || 'http';
-      const host = request.headers.get('host');
-      const apiUrl = config.apiUrl || `${protocol}://${host}`;
+      const apiUrl = config.apiUrl || `${request.nextUrl.protocol}//${request.headers.get('host')}`;
       const scriptUrl = `${apiUrl}/widget.min.js`;
 
       return NextResponse.json({
@@ -61,12 +59,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // GET /api/widget/:siteId
     // Check cache first
     const cached = getCachedConfig(siteId);
     if (cached) {
-      return NextResponse.json(cached, {
-        headers: { 'X-Cache': 'HIT' },
-      });
+      const response = NextResponse.json(cached);
+      response.headers.set('X-Cache', 'HIT');
+      return response;
     }
 
     const site = getOne(
@@ -81,24 +80,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const widgetConfig =
-      typeof (site as any).widget_config === 'string'
-        ? JSON.parse((site as any).widget_config)
-        : (site as any).widget_config || {};
+    const widgetConfig = typeof site.widget_config === 'string'
+      ? JSON.parse(site.widget_config)
+      : site.widget_config || {};
 
     const responseData = {
       id: site.id,
-      name: (site as any).name,
+      name: site.name,
       config: widgetConfig,
     };
 
     // Cache the result
     setCachedConfig(siteId, responseData);
+    const response = NextResponse.json(responseData);
+    response.headers.set('X-Cache', 'MISS');
 
-    return NextResponse.json(responseData, {
-      headers: { 'X-Cache': 'MISS' },
-    });
+    return response;
   } catch (err) {
+    const error = err as Error;
+    logger.error(`Widget route error: ${error.message}`);
     return NextResponse.json(
       { error: 'Failed to load widget configuration' },
       { status: 500 }

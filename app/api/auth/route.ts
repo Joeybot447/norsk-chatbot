@@ -1,28 +1,29 @@
 /**
  * Authentication Routes
- * POST /api/auth?action=register
- * POST /api/auth?action=login
- * POST /api/auth?action=verify
+ * Handles user registration and login for the dashboard
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
-import bcryptjs from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query, getOne } from '../../../lib/db/client';
-import config from '../../../lib/config';
+import { query, getOne } from '../../../packages/api/src/db/client.js';
+import { logger } from '../../../packages/api/src/utils/logger.js';
+import config from '../../../packages/api/src/config.js';
 
+/**
+ * POST /api/auth/register
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl;
-    const action = searchParams.get('action') || 'login';
-    const body = await request.json();
-
-    if (action === 'register') {
+    const pathname = request.nextUrl.pathname;
+    
+    // Route to /api/auth/register
+    if (pathname.endsWith('/register')) {
+      const body = await request.json();
       const { email, password, company_name, companyName } = body;
       const company = company_name || companyName;
 
-      // Validation
       if (!email || typeof email !== 'string' || !email.trim()) {
         return NextResponse.json(
           { error: 'Email is required' },
@@ -56,10 +57,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const existingUser = getOne(
-        'SELECT id FROM users WHERE email = ?',
-        [email.toLowerCase().trim()]
-      );
+      const existingUser = getOne('SELECT id FROM users WHERE email = ?', [email.toLowerCase().trim()]);
       if (existingUser) {
         return NextResponse.json(
           { error: 'Email already registered' },
@@ -67,33 +65,23 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const password_hash = bcryptjs.hashSync(password, 10);
+      const password_hash = bcrypt.hashSync(password, 10);
       const userId = uuid();
       const api_key = 'sk_' + uuid().replace(/-/g, '').substring(0, 20);
 
       query(
         `INSERT INTO users (id, email, password_hash, company_name, api_key, plan, status)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          userId,
-          email.toLowerCase().trim(),
-          password_hash,
-          company.trim(),
-          api_key,
-          'starter',
-          'active',
-        ]
+        [userId, email.toLowerCase().trim(), password_hash, company.trim(), api_key, 'starter', 'active']
       );
 
       const token = jwt.sign(
-        {
-          userId,
-          email: email.toLowerCase().trim(),
-          company_name: company.trim(),
-        },
+        { userId, email: email.toLowerCase().trim(), company_name: company.trim() },
         config.jwtSecret,
         { expiresIn: config.jwtExpiry }
       );
+
+      logger.info(`User registered: ${email}`);
 
       return NextResponse.json(
         {
@@ -111,7 +99,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (action === 'login') {
+    // Route to /api/auth/login
+    if (pathname.endsWith('/login')) {
+      const body = await request.json();
       const { email, password } = body;
 
       if (!email || !password) {
@@ -121,10 +111,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const user = getOne(
-        'SELECT * FROM users WHERE email = ?',
-        [email.toLowerCase().trim()]
-      );
+      const user = getOne('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
       if (!user) {
         return NextResponse.json(
           { error: 'Invalid email or password' },
@@ -132,10 +119,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const passwordMatch = bcryptjs.compareSync(
-        password,
-        (user as any).password_hash
-      );
+      const passwordMatch = bcrypt.compareSync(password, user.password_hash);
       if (!passwordMatch) {
         return NextResponse.json(
           { error: 'Invalid email or password' },
@@ -144,28 +128,27 @@ export async function POST(request: NextRequest) {
       }
 
       const token = jwt.sign(
-        {
-          userId: user.id,
-          email: (user as any).email,
-          company_name: (user as any).company_name,
-        },
+        { userId: user.id, email: user.email, company_name: user.company_name },
         config.jwtSecret,
         { expiresIn: config.jwtExpiry }
       );
+
+      logger.info(`User logged in: ${email}`);
 
       return NextResponse.json({
         success: true,
         token,
         user: {
           id: user.id,
-          email: (user as any).email,
-          company_name: (user as any).company_name,
-          plan: (user as any).plan,
+          email: user.email,
+          company_name: user.company_name,
+          plan: user.plan,
         },
       });
     }
 
-    if (action === 'verify') {
+    // Route to /api/auth/verify
+    if (pathname.endsWith('/verify')) {
       const authHeader = request.headers.get('authorization');
       const token = authHeader?.replace('Bearer ', '');
       if (!token) {
@@ -181,11 +164,8 @@ export async function POST(request: NextRequest) {
           clockTolerance: 30,
         });
 
-        return NextResponse.json({
-          success: true,
-          user: decoded,
-        });
-      } catch {
+        return NextResponse.json({ success: true, user: decoded });
+      } catch (err) {
         return NextResponse.json(
           { error: 'Invalid or expired token' },
           { status: 401 }
@@ -194,12 +174,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Invalid action' },
-      { status: 400 }
+      { error: 'Not found' },
+      { status: 404 }
     );
   } catch (err) {
+    const error = err as Error;
+    logger.error(`Auth route error: ${error.message}`);
     return NextResponse.json(
-      { error: String(err) },
+      { error: 'Auth operation failed. Please try again.' },
       { status: 500 }
     );
   }
