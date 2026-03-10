@@ -1,12 +1,14 @@
 /**
  * Chat Routes
  * POST /v1/chat/message - Handle incoming messages
+ * POST /v1/chat/feedback - Submit feedback
+ * GET  /v1/chat/history  - Get conversation history
  */
 
 import express from 'express';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
-import { getOne, query } from '../db/client.js';
+import { getOne, getMany, query } from '../db/client.js';
 import { logger } from '../utils/logger.js';
 import { chatService } from '../services/chatService.js';
 
@@ -14,11 +16,11 @@ const router = express.Router();
 
 // Validation schema
 const chatMessageSchema = z.object({
-  message: z.string().min(1).max(2000),
+  message: z.string().min(1, 'Message cannot be empty').max(2000, 'Message too long (max 2000 chars)'),
   sessionId: z.string().optional(),
-  visitorName: z.string().optional(),
+  visitorName: z.string().max(100).optional(),
   visitorEmail: z.string().email().optional(),
-  visitorCompany: z.string().optional(),
+  visitorCompany: z.string().max(200).optional(),
 });
 
 /**
@@ -31,14 +33,17 @@ router.post('/message', async (req, res) => {
     const validation = chatMessageSchema.safeParse(req.body);
     if (!validation.success) {
       return res.status(400).json({
-        error: 'Validation error',
-        details: validation.error.errors,
+        error: 'Ugyldig forespørsel',
+        details: validation.error.errors.map(e => e.message),
       });
     }
 
     const { message, sessionId, visitorName, visitorEmail, visitorCompany } = validation.data;
     const siteId = req.siteId;
     const newSessionId = sessionId || uuid();
+
+    // Set processing header
+    res.setHeader('X-Processing', 'true');
 
     // Get or create conversation
     let conversation = getOne(
@@ -47,7 +52,7 @@ router.post('/message', async (req, res) => {
     );
 
     if (!conversation) {
-      const result = query(
+      query(
         `INSERT INTO conversations 
           (id, site_id, session_id, visitor_name, visitor_email, visitor_company, ip_address, user_agent)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -75,7 +80,7 @@ router.post('/message', async (req, res) => {
       [uuid(), conversation.id, siteId, 'user', message, Math.ceil(message.length / 4)]
     );
 
-    // Get AI response using ChatService
+    // Get AI response using ChatService (now includes conversation history)
     const response = await chatService.getResponse({
       siteId,
       conversationId: conversation.id,
@@ -84,11 +89,12 @@ router.post('/message', async (req, res) => {
     });
 
     // Store assistant message
+    const assistantMessageId = uuid();
     query(
       `INSERT INTO messages (id, conversation_id, site_id, role, content, confidence_score, sources, tokens_used)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        uuid(),
+        assistantMessageId,
         conversation.id,
         siteId,
         'assistant',
@@ -108,14 +114,15 @@ router.post('/message', async (req, res) => {
     // Return response
     res.json({
       message: response.content,
+      messageId: assistantMessageId,
       confidence: response.confidence,
       sources: response.sources,
       sessionId: newSessionId,
       conversationId: conversation.id,
     });
   } catch (err) {
-    logger.error(`Chat route error: ${err.message}`);
-    res.status(500).json({ error: 'Failed to process message' });
+    logger.error({ reqId: req.requestId }, `Chat route error: ${err.message}`);
+    res.status(500).json({ error: 'Beklager, noe gikk galt. Vennligst prøv igjen.' });
   }
 });
 
@@ -127,8 +134,12 @@ router.post('/feedback', async (req, res) => {
   try {
     const { messageId, rating } = req.body;
 
-    if (!messageId || ![-1, 1].includes(rating)) {
-      return res.status(400).json({ error: 'Invalid feedback' });
+    if (!messageId || typeof messageId !== 'string') {
+      return res.status(400).json({ error: 'messageId is required' });
+    }
+
+    if (![-1, 1].includes(rating)) {
+      return res.status(400).json({ error: 'Rating must be -1 or 1' });
     }
 
     query(
@@ -138,8 +149,55 @@ router.post('/feedback', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    logger.error(`Feedback route error: ${err.message}`);
+    logger.error({ reqId: req.requestId }, `Feedback route error: ${err.message}`);
     res.status(500).json({ error: 'Failed to save feedback' });
+  }
+});
+
+/**
+ * GET /v1/chat/history?sessionId=xxx
+ * Get conversation history for a session
+ */
+router.get('/history', async (req, res) => {
+  try {
+    const { sessionId } = req.query;
+    if (!sessionId || typeof sessionId !== 'string') {
+      return res.status(400).json({ error: 'sessionId query parameter is required' });
+    }
+
+    const siteId = req.siteId;
+
+    const conversation = getOne(
+      `SELECT id FROM conversations WHERE site_id = ? AND session_id = ?`,
+      [siteId, sessionId]
+    );
+
+    if (!conversation) {
+      return res.json({ messages: [], sessionId });
+    }
+
+    const messages = getMany(
+      `SELECT id, role, content, confidence_score, sources, feedback, created_at
+       FROM messages
+       WHERE conversation_id = ?
+       ORDER BY created_at ASC`,
+      [conversation.id]
+    );
+
+    // Parse sources JSON
+    const parsed = messages.map(m => ({
+      ...m,
+      sources: m.sources ? JSON.parse(m.sources) : [],
+    }));
+
+    res.json({
+      messages: parsed,
+      sessionId,
+      conversationId: conversation.id,
+    });
+  } catch (err) {
+    logger.error({ reqId: req.requestId }, `Chat history error: ${err.message}`);
+    res.status(500).json({ error: 'Failed to load conversation history' });
   }
 });
 

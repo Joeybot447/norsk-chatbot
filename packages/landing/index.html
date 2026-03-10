@@ -3,1169 +3,475 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="NorskBot - Din AI-assistent for kundeservice. Chatbot trent på din bedrift, bygget for norsk, GDPR-kompatibel.">
+    <meta name="description" content="NorskBot - Gjør AI til din ekspert kundeserviceagent. Chatbot trent på ditt innhold, bygget for norsk, GDPR-kompatibel.">
     <title>NorskBot - AI Chatbot for Norske Bedrifter</title>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #2563EB;
+            --primary-hover: #1D4ED8;
+            --primary-light: #DBEAFE;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --bg-white: #FFFFFF;
+            --bg-gray: #F9FAFB;
+            --bg-gray-dark: #F3F4F6;
+            --border: #E5E7EB;
+            --border-light: #F3F4F6;
+            --success: #059669;
+            --danger: #DC2626;
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             line-height: 1.6;
-            color: #1a1a1a;
-            background: #ffffff;
+            color: var(--text-primary);
+            background: var(--bg-white);
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.8s ease-in-out forwards;
-            opacity: 0;
-        }
-
-        .fade-in-up {
-            animation: fadeInUp 0.8s ease-in-out forwards;
-            opacity: 0;
-        }
-
-        /* Navigation */
+        /* ── Nav ── */
         nav {
-            position: sticky;
-            top: 0;
-            background: #ffffff;
-            border-bottom: 1px solid #f0f0f0;
-            z-index: 1000;
-            padding: 1rem 0;
+            position: sticky; top: 0; background: var(--bg-white);
+            border-bottom: 1px solid var(--border); z-index: 1000;
+            padding: 0;
         }
-
         .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            max-width: 1200px; margin: 0 auto; padding: 0 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 64px;
         }
-
         .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1a365d;
-            text-decoration: none;
+            font-size: 1.35rem; font-weight: 700; color: var(--primary);
+            text-decoration: none; display: flex; align-items: center; gap: 8px;
         }
-
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
+        .logo-dot {
+            width: 32px; height: 32px; background: var(--primary); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
         }
-
+        .logo-dot svg { width: 18px; height: 18px; fill: #fff; }
+        .nav-links { display: flex; list-style: none; gap: 2rem; }
         .nav-links a {
-            text-decoration: none;
-            color: #1a1a1a;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: color 0.3s ease;
+            text-decoration: none; color: var(--text-secondary); font-weight: 500;
+            font-size: 0.9rem; transition: color 0.2s;
         }
-
-        .nav-links a:hover {
-            color: #3182ce;
+        .nav-links a:hover { color: var(--text-primary); }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.6rem 1.25rem; border-radius: var(--radius-md);
+            font-weight: 600; font-size: 0.9rem; text-decoration: none;
+            transition: all 0.2s; border: none; cursor: pointer;
         }
-
         .btn-primary {
-            background: #3182ce;
-            color: #ffffff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
+            background: var(--primary); color: #fff;
+            box-shadow: var(--shadow-sm);
         }
-
         .btn-primary:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(49, 130, 206, 0.2);
+            background: var(--primary-hover);
+            box-shadow: var(--shadow-md);
         }
-
-        .btn-secondary {
-            background: transparent;
-            color: #3182ce;
-            padding: 0.75rem 1.5rem;
-            border: 2px solid #3182ce;
-            border-radius: 0.5rem;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
+        .btn-outline {
+            background: transparent; color: var(--primary);
+            border: 1.5px solid var(--border);
         }
+        .btn-outline:hover { border-color: var(--primary); background: var(--primary-light); }
+        .btn-lg { padding: 0.8rem 2rem; font-size: 1rem; border-radius: var(--radius-lg); }
 
-        .btn-secondary:hover {
-            background: #3182ce;
-            color: #ffffff;
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
 
-        /* Hero Section */
+        /* ── Hero ── */
         .hero {
-            background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-            padding: 6rem 2rem;
-            text-align: center;
+            padding: 100px 2rem 80px; text-align: center;
+            background: var(--bg-white);
         }
-
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
+        .hero-content { max-width: 720px; margin: 0 auto; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--primary-light); color: var(--primary);
+            padding: 6px 14px; border-radius: 20px; font-size: 0.8rem;
+            font-weight: 600; margin-bottom: 24px;
         }
-
         .hero h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #1a365d;
-            margin-bottom: 1rem;
-            line-height: 1.2;
+            font-size: 3.2rem; font-weight: 700; color: var(--text-primary);
+            line-height: 1.15; margin-bottom: 1.25rem; letter-spacing: -0.02em;
         }
-
         .hero p {
-            font-size: 1.25rem;
-            color: #4a5568;
-            margin-bottom: 2rem;
-            line-height: 1.8;
+            font-size: 1.15rem; color: var(--text-secondary);
+            line-height: 1.7; margin-bottom: 2.5rem; max-width: 560px;
+            margin-left: auto; margin-right: auto;
         }
+        .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
-        .hero-cta {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 4rem;
+        /* ── Steps ── */
+        .steps-section { padding: 100px 2rem; background: var(--bg-gray); }
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-header h2 {
+            font-size: 2.2rem; font-weight: 700; color: var(--text-primary);
+            margin-bottom: 0.75rem; letter-spacing: -0.01em;
         }
-
-        .hero-visual {
-            width: 100%;
-            max-width: 500px;
-            height: 300px;
-            background: linear-gradient(135deg, #3182ce 0%, #1a365d 100%);
-            border-radius: 1rem;
-            margin: 0 auto;
-            opacity: 0.9;
+        .section-header p { font-size: 1.05rem; color: var(--text-secondary); max-width: 520px; margin: 0 auto; }
+        .steps-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 2rem; max-width: 960px; margin: 0 auto;
         }
-
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
+        .step-card {
+            background: var(--bg-white); padding: 2.5rem 2rem; border-radius: var(--radius-xl);
+            border: 1px solid var(--border); text-align: center;
+            transition: box-shadow 0.3s, transform 0.3s;
         }
-
-        /* Problem & Solution Section */
-        .problem-solution {
-            padding: 6rem 2rem;
-            background: #ffffff;
+        .step-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+        .step-num {
+            width: 48px; height: 48px; background: var(--primary-light); color: var(--primary);
+            border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.2rem; margin-bottom: 1.25rem;
         }
+        .step-card h3 { font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.5rem; }
+        .step-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
 
-        .problem-solution-content {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .ps-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .ps-header h2 {
-            font-size: 2.5rem;
-            color: #1a365d;
-            margin-bottom: 1rem;
-        }
-
-        .ps-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
-            margin-bottom: 3rem;
-        }
-
-        .ps-column h3 {
-            font-size: 1.5rem;
-            color: #1a365d;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .ps-column ul {
-            list-style: none;
-        }
-
-        .ps-column li {
-            margin-bottom: 1.5rem;
-            font-size: 1.1rem;
-            color: #4a5568;
-            padding-left: 2rem;
-            position: relative;
-        }
-
-        .ps-column li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #3182ce;
-            font-weight: bold;
-        }
-
-        .problem h3 {
-            color: #c53030;
-        }
-
-        .problem li:before {
-            content: "✕";
-            color: #c53030;
-        }
-
-        .divider {
-            text-align: center;
-            font-size: 2rem;
-            margin: 2rem 0;
-            color: #cbd5e0;
-        }
-
-        /* How It Works */
-        .how-it-works {
-            padding: 6rem 2rem;
-            background: #f5f7fa;
-        }
-
-        .hiw-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .hiw-header h2 {
-            font-size: 2.5rem;
-            color: #1a365d;
-            margin-bottom: 1rem;
-        }
-
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .step {
-            background: #ffffff;
-            padding: 2rem;
-            border-radius: 1rem;
-            text-align: center;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-
-        .step:hover {
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transform: translateY(-5px);
-        }
-
-        .step-number {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            background: #3182ce;
-            color: #ffffff;
-            border-radius: 50%;
-            line-height: 50px;
-            font-weight: 700;
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .step h3 {
-            font-size: 1.3rem;
-            color: #1a365d;
-            margin-bottom: 1rem;
-        }
-
-        .step p {
-            color: #4a5568;
-            line-height: 1.8;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 6rem 2rem;
-            background: #ffffff;
-        }
-
-        .features-header {
-            text-align: center;
-            margin-bottom: 4rem;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .features-header h2 {
-            font-size: 2.5rem;
-            color: #1a365d;
-            margin-bottom: 1rem;
-        }
-
+        /* ── Features ── */
+        .features-section { padding: 100px 2rem; background: var(--bg-white); }
         .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            max-width: 1100px;
-            margin: 0 auto;
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem; max-width: 1060px; margin: 0 auto;
         }
-
         .feature-card {
-            padding: 2rem;
-            border-radius: 1rem;
-            background: #f5f7fa;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
+            padding: 2rem; border-radius: var(--radius-xl);
+            border: 1px solid var(--border); background: var(--bg-white);
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-
-        .feature-card:hover {
-            background: #ffffff;
-            border-color: #3182ce;
-            box-shadow: 0 10px 30px rgba(49, 130, 206, 0.15);
-        }
-
+        .feature-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
         .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+            width: 44px; height: 44px; background: var(--primary-light);
+            border-radius: var(--radius-md); display: flex; align-items: center;
+            justify-content: center; font-size: 1.3rem; margin-bottom: 1rem;
+        }
+        .feature-card h3 { font-size: 1rem; color: var(--text-primary); margin-bottom: 0.35rem; font-weight: 600; }
+        .feature-card p { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.55; }
+
+        /* ── Social Proof ── */
+        .social-proof { padding: 80px 2rem; background: var(--bg-gray); text-align: center; }
+        .social-proof h2 { font-size: 1.3rem; font-weight: 600; color: var(--text-muted); margin-bottom: 2rem; }
+        .logos-row {
+            display: flex; align-items: center; justify-content: center;
+            gap: 3rem; flex-wrap: wrap; opacity: 0.5;
+        }
+        .logo-placeholder {
+            font-size: 1.1rem; font-weight: 700; color: var(--text-secondary);
+            letter-spacing: 0.04em;
         }
 
-        .feature-card h3 {
-            font-size: 1.2rem;
-            color: #1a365d;
-            margin-bottom: 0.5rem;
+        /* ── Demo ── */
+        .demo-section { padding: 100px 2rem; background: var(--bg-white); }
+        .demo-wrapper {
+            max-width: 800px; margin: 0 auto; text-align: center;
         }
-
-        .feature-card p {
-            color: #4a5568;
-            font-size: 0.95rem;
+        .demo-box {
+            background: var(--bg-gray); border: 1px solid var(--border);
+            border-radius: var(--radius-xl); padding: 3rem 2rem;
+            margin-top: 2.5rem; min-height: 360px;
+            display: flex; align-items: center; justify-content: center;
         }
+        .demo-placeholder { text-align: center; }
+        .demo-placeholder .demo-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .demo-placeholder p { color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .demo-placeholder .demo-title { font-weight: 600; color: var(--text-primary); font-size: 1.1rem; }
 
-        /* Demo Section */
-        .demo {
-            padding: 6rem 2rem;
-            background: linear-gradient(135deg, #1a365d 0%, #2c5aa0 100%);
-            color: #ffffff;
-            text-align: center;
-        }
-
-        .demo-header h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .demo-header p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.95;
-        }
-
-        .demo-container {
-            max-width: 700px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 1rem;
-            padding: 2rem;
-            color: #1a1a1a;
-            min-height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
-        }
-
-        .demo-placeholder {
-            text-align: center;
-        }
-
-        .demo-placeholder p {
-            color: #4a5568;
-            margin-bottom: 1rem;
-        }
-
-        /* Pricing Section */
-        .pricing {
-            padding: 6rem 2rem;
-            background: #f5f7fa;
-        }
-
-        .pricing-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .pricing-header h2 {
-            font-size: 2.5rem;
-            color: #1a365d;
-            margin-bottom: 1rem;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .pricing-card {
-            background: #ffffff;
-            border-radius: 1rem;
-            padding: 2rem;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .pricing-card.featured {
-            border: 2px solid #3182ce;
-            transform: scale(1.05);
-            box-shadow: 0 20px 40px rgba(49, 130, 206, 0.2);
-        }
-
-        .pricing-badge {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #3182ce;
-            color: #ffffff;
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .pricing-card h3 {
-            font-size: 1.3rem;
-            color: #1a365d;
-            margin-bottom: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .pricing-price {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #3182ce;
-            margin-bottom: 0.5rem;
-        }
-
-        .pricing-period {
-            color: #4a5568;
-            margin-bottom: 1.5rem;
-            font-size: 0.95rem;
-        }
-
-        .pricing-features {
-            list-style: none;
-            margin-bottom: 2rem;
-            flex-grow: 1;
-        }
-
-        .pricing-features li {
-            padding: 0.75rem 0;
-            color: #4a5568;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 0.95rem;
-        }
-
-        .pricing-features li:before {
-            content: "✓";
-            color: #3182ce;
-            font-weight: bold;
-            margin-right: 0.5rem;
-        }
-
-        .pricing-cta {
-            width: 100%;
-            padding: 0.75rem 1.5rem;
-            background: #3182ce;
-            color: #ffffff;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .pricing-card.featured .pricing-cta {
-            background: #3182ce;
-        }
-
-        .pricing-cta:hover {
-            background: #2563eb;
-        }
-
-        /* Testimonials */
-        .testimonials {
-            padding: 6rem 2rem;
-            background: #ffffff;
-        }
-
-        .testimonials-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .testimonials-header h2 {
-            font-size: 2.5rem;
-            color: #1a365d;
-            margin-bottom: 1rem;
-        }
-
+        /* ── Testimonials ── */
+        .testimonials-section { padding: 100px 2rem; background: var(--bg-gray); }
         .testimonials-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            max-width: 1100px;
-            margin: 0 auto;
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem; max-width: 1060px; margin: 0 auto;
+        }
+        .testimonial-card {
+            background: var(--bg-white); padding: 2rem; border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+        }
+        .testimonial-stars { color: #F59E0B; font-size: 0.9rem; margin-bottom: 1rem; letter-spacing: 2px; }
+        .testimonial-card blockquote {
+            font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;
+            margin-bottom: 1.5rem; font-style: normal;
+        }
+        .testimonial-author { display: flex; align-items: center; gap: 12px; }
+        .testimonial-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--primary-light); color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.9rem;
+        }
+        .testimonial-name { font-weight: 600; font-size: 0.875rem; color: var(--text-primary); }
+        .testimonial-role { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* ── CTA ── */
+        .cta-section { padding: 100px 2rem; background: var(--bg-white); text-align: center; }
+        .cta-section h2 {
+            font-size: 2.2rem; font-weight: 700; color: var(--text-primary);
+            margin-bottom: 1rem; letter-spacing: -0.01em;
+        }
+        .cta-section p {
+            font-size: 1.05rem; color: var(--text-secondary);
+            margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto;
         }
 
-        .testimonial {
-            background: #f5f7fa;
-            padding: 2rem;
-            border-radius: 1rem;
-            border-left: 4px solid #3182ce;
-        }
-
-        .testimonial p {
-            color: #4a5568;
-            margin-bottom: 1.5rem;
-            font-style: italic;
-            line-height: 1.8;
-        }
-
-        .testimonial-author {
-            font-weight: 600;
-            color: #1a365d;
-        }
-
-        .testimonial-title {
-            color: #4a5568;
-            font-size: 0.9rem;
-        }
-
-        /* FAQ Section */
-        .faq {
-            padding: 6rem 2rem;
-            background: #f5f7fa;
-        }
-
-        .faq-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .faq-header h2 {
-            font-size: 2.5rem;
-            color: #1a365d;
-            margin-bottom: 1rem;
-        }
-
-        .faq-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .faq-item {
-            background: #ffffff;
-            margin-bottom: 1rem;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
-        }
-
-        .faq-question {
-            padding: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            color: #1a365d;
-            transition: all 0.3s ease;
-        }
-
-        .faq-question:hover {
-            background: #f5f7fa;
-        }
-
-        .faq-toggle {
-            display: inline-block;
-            transition: transform 0.3s ease;
-        }
-
-        .faq-item.active .faq-toggle {
-            transform: rotate(180deg);
-        }
-
-        .faq-answer {
-            display: none;
-            padding: 0 1.5rem 1.5rem 1.5rem;
-            color: #4a5568;
-            line-height: 1.8;
-        }
-
-        .faq-item.active .faq-answer {
-            display: block;
-        }
-
-        /* Footer CTA */
-        .footer-cta {
-            padding: 6rem 2rem;
-            background: linear-gradient(135deg, #1a365d 0%, #2c5aa0 100%);
-            color: #ffffff;
-            text-align: center;
-        }
-
-        .footer-cta h2 {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .footer-cta p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.95;
-        }
-
-        /* Footer */
+        /* ── Footer ── */
         footer {
-            background: #1a1a1a;
-            color: #ffffff;
-            padding: 3rem 2rem;
-            text-align: center;
+            background: var(--bg-gray); border-top: 1px solid var(--border);
+            padding: 3rem 2rem; text-align: center;
         }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
+        .footer-content { max-width: 1200px; margin: 0 auto; }
         .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
+            display: flex; justify-content: center; gap: 2rem;
+            margin-bottom: 1.5rem; flex-wrap: wrap;
         }
+        .footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; }
+        .footer-links a:hover { color: var(--text-primary); }
+        .footer-bottom { color: var(--text-muted); font-size: 0.8rem; }
 
-        .footer-links a {
-            color: #cbd5e0;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer-links a:hover {
-            color: #ffffff;
-        }
-
-        .footer-bottom {
-            color: #4a5568;
-            font-size: 0.9rem;
-        }
-
-        /* Responsive */
+        /* ── Responsive ── */
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hero h1 {
-                font-size: 2rem;
-            }
-
-            .hero p {
-                font-size: 1rem;
-            }
-
-            .hero-visual {
-                height: 200px;
-            }
-
-            .steps {
-                grid-template-columns: 1fr;
-            }
-
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .testimonials-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .pricing-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .pricing-card.featured {
-                transform: scale(1);
-            }
-
-            .ps-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .footer-links {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .ps-header h2,
-            .hiw-header h2,
-            .features-header h2,
-            .pricing-header h2,
-            .testimonials-header h2,
-            .faq-header h2 {
-                font-size: 1.8rem;
-            }
+            .nav-links { display: none; }
+            .hero { padding: 60px 1.5rem 50px; }
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            .steps-grid, .features-grid, .testimonials-grid { grid-template-columns: 1fr; }
+            .section-header h2 { font-size: 1.6rem; }
+            .cta-section h2 { font-size: 1.6rem; }
+            .logos-row { gap: 1.5rem; }
         }
-
         @media (max-width: 480px) {
-            .nav-container {
-                padding: 0 1rem;
-            }
-
-            .hero {
-                padding: 3rem 1rem;
-            }
-
-            .hero h1 {
-                font-size: 1.5rem;
-            }
-
-            .pricing-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-cta {
-                flex-direction: column;
-            }
-
-            .btn-primary,
-            .btn-secondary {
-                width: 100%;
-                text-align: center;
-            }
+            .hero h1 { font-size: 1.6rem; }
+            .hero-cta { flex-direction: column; }
+            .hero-cta .btn { width: 100%; }
+            .nav-container { padding: 0 1rem; }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav>
-        <div class="nav-container">
-            <a href="#" class="logo">NorskBot</a>
-            <ul class="nav-links">
-                <li><a href="#features">Funksjoner</a></li>
-                <li><a href="#pricing">Priser</a></li>
-                <li><a href="#demo">Demo</a></li>
-                <li><a href="#contact">Kontakt</a></li>
-            </ul>
-            <a href="/dashboard/auth.html" class="btn-primary" style="text-decoration: none;">Prøv Gratis</a>
-        </div>
-    </nav>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="fade-in-up" style="animation-delay: 0.1s;">Din AI-assistent som kjenner bedriften din</h1>
-            <p class="fade-in-up" style="animation-delay: 0.2s;">La en intelligent chatbot svare kundene dine 24/7. Trent på ditt innhold, tilpasset din merkevare.</p>
-            <div class="hero-cta fade-in-up" style="animation-delay: 0.3s;">
-                <a href="/dashboard/auth.html" class="btn-primary" style="text-decoration: none;">Start gratis prøveperiode</a>
-                <button class="btn-secondary" onclick="document.getElementById('demo').scrollIntoView({behavior: 'smooth'})">Se demo</button>
+<!-- Nav -->
+<nav>
+    <div class="nav-container">
+        <a href="#" class="logo">
+            <div class="logo-dot">
+                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <div class="hero-visual fade-in-up" style="animation-delay: 0.4s;"></div>
+            NorskBot
+        </a>
+        <ul class="nav-links">
+            <li><a href="#features">Funksjoner</a></li>
+            <li><a href="#pricing">Priser</a></li>
+            <li><a href="#demo">Demo</a></li>
+            <li><a href="#contact">Kontakt</a></li>
+        </ul>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <a href="/dashboard/auth.html" class="btn btn-outline" style="text-decoration:none;">Logg inn</a>
+            <a href="/dashboard/auth.html" class="btn btn-primary" style="text-decoration:none;">Kom i gang gratis</a>
         </div>
-    </section>
+    </div>
+</nav>
 
-    <!-- Problem & Solution -->
-    <section class="problem-solution">
-        <div class="problem-solution-content">
-            <div class="ps-header">
-                <h2>Fra problem til løsning</h2>
-            </div>
-            <div class="ps-grid">
-                <div class="problem">
-                    <h3>🔴 Før NorskBot</h3>
-                    <ul>
-                        <li>Kundene dine venter i kø for svar</li>
-                        <li>Supportteamet er overbelastet</li>
-                        <li>Du mister salg utenfor åpningstid</li>
-                    </ul>
-                </div>
-                <div class="solution">
-                    <h3>🟢 Med NorskBot</h3>
-                    <ul>
-                        <li>Øyeblikkelige svar 24/7</li>
-                        <li>Avlast supportteamet med 70%</li>
-                        <li>Fang leads mens du sover</li>
-                    </ul>
-                </div>
-            </div>
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge">🚀 Brukt av 200+ norske bedrifter</div>
+        <h1>Gjør AI til din ekspert kundeserviceagent</h1>
+        <p>Tren en chatbot på ditt eget innhold. Svar kundene 24/7 med presise, relevante svar — på norsk.</p>
+        <div class="hero-cta">
+            <a href="/dashboard/auth.html" class="btn btn-primary btn-lg" style="text-decoration:none;">Kom i gang gratis →</a>
+            <button class="btn btn-outline btn-lg" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Se demo</button>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- How It Works -->
-    <section class="how-it-works" id="howitworks">
-        <div class="container">
-            <div class="hiw-header">
-                <h2>Slik fungerer det</h2>
+<!-- 3 Steps -->
+<section class="steps-section" id="howitworks">
+    <div class="container">
+        <div class="section-header">
+            <h2>Tre enkle steg til din egen AI-chatbot</h2>
+            <p>Kom i gang på under 5 minutter — ingen teknisk kompetanse nødvendig.</p>
+        </div>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-num">1</div>
+                <h3>Legg til innhold</h3>
+                <p>Gi chatboten en URL, last opp filer, eller lim inn tekst. Vi gjør resten.</p>
             </div>
-            <div class="steps">
-                <div class="step fade-in-up" style="animation-delay: 0.1s;">
-                    <div class="step-number">1</div>
-                    <h3>Legg inn nettadressen din</h3>
-                    <p>Vi scanner hele nettsiden din og lærer alt om bedriften</p>
-                </div>
-                <div class="step fade-in-up" style="animation-delay: 0.2s;">
-                    <div class="step-number">2</div>
-                    <h3>Legg til chatboten</h3>
-                    <p>Kopier én kodelinje inn på nettsiden din</p>
-                </div>
-                <div class="step fade-in-up" style="animation-delay: 0.3s;">
-                    <div class="step-number">3</div>
-                    <h3>La AI-en jobbe</h3>
-                    <p>Chatboten svarer kundene dine med presise, relevante svar</p>
-                </div>
+            <div class="step-card">
+                <div class="step-num">2</div>
+                <h3>Installer chatboten</h3>
+                <p>Kopier én kodelinje og lim den inn på nettsiden din. Ferdig.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">3</div>
+                <h3>Forbedre over tid</h3>
+                <p>Bruk samtalehistorikk og innsikt til å gjøre chatboten stadig bedre.</p>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- Features -->
-    <section class="features" id="features">
-        <div class="container">
-            <div class="features-header">
-                <h2>Kraftige funksjoner for moderne bedrifter</h2>
+<!-- Features -->
+<section class="features-section" id="features">
+    <div class="container">
+        <div class="section-header">
+            <h2>Alt du trenger for smart kundeservice</h2>
+            <p>Kraftige funksjoner for moderne norske bedrifter.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>Personlig chatbot</h3>
+                <p>Trent på ditt innhold. Svarer med din stemme og tone.</p>
             </div>
-            <div class="features-grid">
-                <div class="feature-card fade-in-up" style="animation-delay: 0.1s;">
-                    <div class="feature-icon">🤖</div>
-                    <h3>Personlig chatbot</h3>
-                    <p>Trent på DIN bedrift, snakker med DIN stemme</p>
-                </div>
-                <div class="feature-card fade-in-up" style="animation-delay: 0.2s;">
-                    <div class="feature-icon">🇳🇴</div>
-                    <h3>Norsk språkforståelse</h3>
-                    <p>Bygget for norsk, ikke bare oversatt fra engelsk</p>
-                </div>
-                <div class="feature-card fade-in-up" style="animation-delay: 0.3s;">
-                    <div class="feature-icon">🔒</div>
-                    <h3>GDPR-kompatibel</h3>
-                    <p>Data lagres i Norge, full personvern</p>
-                </div>
-                <div class="feature-card fade-in-up" style="animation-delay: 0.4s;">
-                    <div class="feature-icon">💬</div>
-                    <h3>Sømløs overføring</h3>
-                    <p>Koble til menneskelig support når det trengs</p>
-                </div>
-                <div class="feature-card fade-in-up" style="animation-delay: 0.5s;">
-                    <div class="feature-icon">📊</div>
-                    <h3>Innsikt og analyse</h3>
-                    <p>Se hva kundene spør om, finn forbedringsmuligheter</p>
-                </div>
-                <div class="feature-card fade-in-up" style="animation-delay: 0.6s;">
-                    <div class="feature-icon">🔌</div>
-                    <h3>Integrasjoner</h3>
-                    <p>Koble til Zendesk, Freshdesk, e-post og mer</p>
-                </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Hurtigmeldinger</h3>
+                <p>Forhåndsdefinerte spørsmål og svar for raskere respons.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📧</div>
+                <h3>E-postoppsummeringer</h3>
+                <p>Daglige rapporter med innsikt fra alle samtaler.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👤</div>
+                <h3>Eskaler til menneske</h3>
+                <p>Sømløs overgang til live agent når det trengs.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📋</div>
+                <h3>Samle leads</h3>
+                <p>Fang potensielle kunder automatisk fra samtaler.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔧</div>
+                <h3>Funksjoner</h3>
+                <p>Automatiser oppgaver som booking, ordrestatus og mer.</p>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- Demo -->
-    <section class="demo" id="demo">
-        <div class="container">
-            <div class="demo-header">
-                <h2>Prøv selv</h2>
-                <p>Spør chatboten om NorskBot — den er trent på denne siden</p>
-            </div>
-            <div class="demo-container">
-                <div class="demo-placeholder">
-                    <p style="font-size: 3rem; margin-bottom: 1rem;">💬</p>
-                    <p style="color: #1a1a1a; font-weight: 600;">NorskBot Chat Widget</p>
-                    <p style="color: #4a5568; margin: 1rem 0;">Live chatbot demo kommer snart</p>
-                    <button class="btn-primary" style="margin-top: 1rem;">Åpne full demo</button>
-                </div>
+<!-- Social Proof -->
+<section class="social-proof">
+    <h2>Brukt av norske bedrifter som</h2>
+    <div class="logos-row">
+        <div class="logo-placeholder">FjordTech</div>
+        <div class="logo-placeholder">Bergen Digital</div>
+        <div class="logo-placeholder">NordSoft</div>
+        <div class="logo-placeholder">OsloConnect</div>
+        <div class="logo-placeholder">Stavanger IT</div>
+    </div>
+</section>
+
+<!-- Demo -->
+<section class="demo-section" id="demo">
+    <div class="demo-wrapper">
+        <div class="section-header">
+            <h2>Se selv. Prøv NorskBot-chatboten.</h2>
+            <p>Spør den om hva som helst — den er trent på denne siden.</p>
+        </div>
+        <div class="demo-box">
+            <div class="demo-placeholder">
+                <div class="demo-icon">💬</div>
+                <p class="demo-title">NorskBot Chat Widget</p>
+                <p>Live chatbot demo kommer snart</p>
+                <button class="btn btn-primary" style="margin-top:1.5rem;">Åpne full demo</button>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- Pricing -->
-    <section class="pricing" id="pricing">
-        <div class="container">
-            <div class="pricing-header">
-                <h2>Enkel og rettferdig prising</h2>
-                <p>Velg planen som passer din bedrift</p>
-            </div>
-            <div class="pricing-grid">
-                <div class="pricing-card fade-in-up" style="animation-delay: 0.1s;">
-                    <h3>Starter</h3>
-                    <div class="pricing-price">399 <span style="font-size: 1rem;">NOK</span></div>
-                    <div class="pricing-period">per måned</div>
-                    <ul class="pricing-features">
-                        <li>1 chatbot</li>
-                        <li>500 samtaler/mnd</li>
-                        <li>E-post support</li>
-                    </ul>
-                    <a href="/dashboard/auth.html" class="pricing-cta" style="text-decoration: none; display: block; text-align: center;">Start gratis</a>
-                </div>
-
-                <div class="pricing-card featured fade-in-up" style="animation-delay: 0.2s;">
-                    <div class="pricing-badge">Mest populær</div>
-                    <h3>Pro</h3>
-                    <div class="pricing-price">999 <span style="font-size: 1rem;">NOK</span></div>
-                    <div class="pricing-period">per måned</div>
-                    <ul class="pricing-features">
-                        <li>3 chatbots</li>
-                        <li>2500 samtaler/mnd</li>
-                        <li>Prioritert support</li>
-                        <li>Analyse og innsikt</li>
-                    </ul>
-                    <a href="/dashboard/auth.html" class="pricing-cta" style="text-decoration: none; display: block; text-align: center;">Start gratis</a>
-                </div>
-
-                <div class="pricing-card fade-in-up" style="animation-delay: 0.3s;">
-                    <h3>Business</h3>
-                    <div class="pricing-price">2499 <span style="font-size: 1rem;">NOK</span></div>
-                    <div class="pricing-period">per måned</div>
-                    <ul class="pricing-features">
-                        <li>Unlimited chatbots</li>
-                        <li>Unlimited samtaler</li>
-                        <li>API-tilgang</li>
-                        <li>Dedikert kontakt</li>
-                    </ul>
-                    <button class="pricing-cta" onclick="alert('Kontaktinformasjon kommer snart')">Ta kontakt</button>
-                </div>
-
-                <div class="pricing-card fade-in-up" style="animation-delay: 0.4s;">
-                    <h3>Enterprise</h3>
-                    <div class="pricing-price">Kontakt oss</div>
-                    <div class="pricing-period">for tilpasset pris</div>
-                    <ul class="pricing-features">
-                        <li>Egendefinerte løsninger</li>
-                        <li>SLA-garanti</li>
-                        <li>On-premise mulighet</li>
-                        <li>Dedikert team</li>
-                    </ul>
-                    <button class="pricing-cta" onclick="alert('Kontaktinformasjon kommer snart')">Ta kontakt</button>
-                </div>
-            </div>
+<!-- Testimonials -->
+<section class="testimonials-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Hva kundene våre sier</h2>
         </div>
-    </section>
-
-    <!-- Testimonials -->
-    <section class="testimonials">
-        <div class="container">
-            <div class="testimonials-header">
-                <h2>Hva sier kundene våre?</h2>
-            </div>
-            <div class="testimonials-grid">
-                <div class="testimonial fade-in-up" style="animation-delay: 0.1s;">
-                    <p>"NorskBot har redusert supporthenvendelsene våre med 60%. Kundene får svar på sekunder."</p>
-                    <div class="testimonial-author">Kari Nordmann</div>
-                    <div class="testimonial-title">CEO, Fjordtech AS</div>
-                </div>
-                <div class="testimonial fade-in-up" style="animation-delay: 0.2s;">
-                    <p>"Endelig en chatbot som forstår norsk ordentlig. Anbefales på det sterkeste!"</p>
-                    <div class="testimonial-author">Erik Hansen</div>
-                    <div class="testimonial-title">CTO, Bergen Digital</div>
-                </div>
-                <div class="testimonial fade-in-up" style="animation-delay: 0.3s;">
-                    <p>"Vi sparer 20 timer i uken på kundeservice. En game changer for oss."</p>
-                    <div class="testimonial-author">Maria Olsen</div>
-                    <div class="testimonial-title">Support Lead, NordSoft</div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-stars">★★★★★</div>
+                <blockquote>"NorskBot har redusert supporthenvendelsene våre med 60%. Kundene får svar på sekunder."</blockquote>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">K</div>
+                    <div>
+                        <div class="testimonial-name">Kari Nordmann</div>
+                        <div class="testimonial-role">CEO, Fjordtech AS</div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="faq">
-        <div class="container">
-            <div class="faq-header">
-                <h2>Vanlige spørsmål</h2>
+            <div class="testimonial-card">
+                <div class="testimonial-stars">★★★★★</div>
+                <blockquote>"Endelig en chatbot som forstår norsk ordentlig. Anbefales på det sterkeste!"</blockquote>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">E</div>
+                    <div>
+                        <div class="testimonial-name">Erik Hansen</div>
+                        <div class="testimonial-role">CTO, Bergen Digital</div>
+                    </div>
+                </div>
             </div>
-            <div class="faq-container">
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Hva er NorskBot?</span>
-                        <span class="faq-toggle">▼</span>
-                    </div>
-                    <div class="faq-answer">
-                        NorskBot er en AI-drevet chatbot spesielt utviklet for norske bedrifter. Den lærer fra ditt nettsted og bedriftskontekst, og kan svare kundene dine 24/7 med presise, relevante svar på norsk.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Hvordan lærer chatboten om bedriften min?</span>
-                        <span class="faq-toggle">▼</span>
-                    </div>
-                    <div class="faq-answer">
-                        Du gir oss nettadressen din, og vår system scanner og analyserer innholdet ditt. Chatboten lærer fra produktbeskrivelser, FAQ-er, kontaktsider og annet innhold på nettsiden din. Du kan også legge til egne data manuelt.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Er NorskBot GDPR-kompatibel?</span>
-                        <span class="faq-toggle">▼</span>
-                    </div>
-                    <div class="faq-answer">
-                        Ja, fullt ut. Vi lagrer alle data i Norge og oppfyller alle GDPR-krav. Vi behandler persondata på det strengeste, og du har full kontroll over dine data. Lese mer i vår personvernpolicy.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Kan chatboten overføre til menneskelig support?</span>
-                        <span class="faq-toggle">▼</span>
-                    </div>
-                    <div class="faq-answer">
-                        Ja, absolutt! Chatboten kan automatisk oppdage når den trenger hjelp fra et menneske, eller kunden kan be om å snakke med en agent. Den kan integreres med Zendesk, Freshdesk, og andre support-systemer.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Hvilke språk støtter NorskBot?</span>
-                        <span class="faq-toggle">▼</span>
-                    </div>
-                    <div class="faq-answer">
-                        Foreløpig er NorskBot optimalisert for norsk (både Bokmål og Nynorsk), men den kan også håndtere engelsk og andre språk. Vi fokuserer primært på norsk excellence.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Hvor lang tid tar det å komme i gang?</span>
-                        <span class="faq-toggle">▼</span>
-                    </div>
-                    <div class="faq-answer">
-                        Du kan være i gang på mindre enn 5 minutter! Det tar bare 3 steg: (1) Legg inn nettadressen din, (2) vi trener chatboten, (3) kopier kodelinja til nettsiden din. Din chatbot er live og klar til å snakke med kundene dine.
+            <div class="testimonial-card">
+                <div class="testimonial-stars">★★★★★</div>
+                <blockquote>"Vi sparer 20 timer i uken på kundeservice. En game changer for oss."</blockquote>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">M</div>
+                    <div>
+                        <div class="testimonial-name">Maria Olsen</div>
+                        <div class="testimonial-role">Support Lead, NordSoft</div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- Footer CTA -->
-    <section class="footer-cta" id="contact">
-        <div class="container">
-            <h2>Klar til å gi kundene dine bedre support?</h2>
-            <p>Start din gratis prøveperiode i dag. Ingen kredittkort påkrevd.</p>
-            <a href="/dashboard/auth.html" class="btn-primary" style="text-decoration: none;">Start gratis prøveperiode</a>
+<!-- CTA -->
+<section class="cta-section" id="contact">
+    <h2>Klar til å prøve NorskBot?</h2>
+    <p>Start din gratis prøveperiode i dag. Ingen kredittkort påkrevd.</p>
+    <a href="/dashboard/auth.html" class="btn btn-primary btn-lg" style="text-decoration:none;">Kom i gang gratis →</a>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="footer-content">
+        <div class="footer-links">
+            <a href="#features">Funksjoner</a>
+            <a href="pricing.html">Priser</a>
+            <a href="#demo">Demo</a>
+            <a href="#">Personvern</a>
+            <a href="#">Vilkår</a>
+            <a href="#contact">Kontakt</a>
         </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="footer-content">
-            <div class="footer-links">
-                <a href="#about">Om oss</a>
-                <a href="#privacy">Personvern</a>
-                <a href="#terms">Vilkår</a>
-                <a href="#contact">Kontakt</a>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 NorskBot. Alle rettigheter forbeholdt. Bygget for norske bedrifter.</p>
-            </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 NorskBot. Alle rettigheter forbeholdt.</p>
         </div>
-    </footer>
+    </div>
+</footer>
 
-    <script>
-        // Smooth scroll for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                const href = this.getAttribute('href');
-                if (href !== '#') {
-                    e.preventDefault();
-                    const element = document.querySelector(href);
-                    if (element) {
-                        element.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                }
-            });
+<script>
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (href !== '#') {
+                e.preventDefault();
+                const element = document.querySelector(href);
+                if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
-
-        // FAQ toggle functionality
-        document.querySelectorAll('.faq-question').forEach(question => {
-            question.addEventListener('click', function() {
-                const faqItem = this.closest('.faq-item');
-                faqItem.classList.toggle('active');
-            });
-        });
-
-        // Simple intersection observer for fade-in animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
-
-        const observer = new IntersectionObserver(function(entries) {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                }
-            });
-        }, observerOptions);
-
-        document.querySelectorAll('.fade-in, .fade-in-up').forEach(el => {
-            observer.observe(el);
-        });
-    </script>
+    });
+</script>
 </body>
 </html>

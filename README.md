@@ -1,97 +1,155 @@
-# NorskBot - AI Chatbot for Norwegian Businesses
+# NorskBot — AI Chatbot for Norwegian Businesses
 
-A lightweight, GDPR-compliant AI chatbot platform for Norwegian SMBs. Embed a 24/7 customer service chatbot on your website in 5 minutes.
-
-## Features
-
-- **Norwegian Language Native:** Built specifically for Norwegian businesses, with full Norwegian language support
-- **No Coding Required:** Embed via a single line of JavaScript, customize via dashboard
-- **GDPR Compliant:** EU data residency, full compliance with Norwegian/EU data protection laws
-- **Intelligent RAG:** Automatically learns from your website and documents using vector embeddings
-- **Streaming Responses:** Real-time response generation with Claude AI
-- **Easy Setup:** Website crawl → Customize colors → Live in minutes
-- **Human Handoff:** Seamlessly escalate complex questions to your team
-- **Analytics:** Track conversations, satisfaction, top questions, and more
-
-## Tech Stack
-
-- **Frontend Widget:** Vanilla JavaScript (< 30KB bundled)
-- **Backend API:** Node.js + Express.js
-- **Database:** PostgreSQL + pgvector (vector search)
-- **LLM:** Claude 3.5 Sonnet (Anthropic)
-- **Dashboard:** React + TypeScript
-- **Hosting:** Docker + Railway/Vercel
+> Embeddable AI-powered customer service chatbot with RAG (Retrieval-Augmented Generation) knowledge base.
 
 ## Quick Start
 
-### For Developers (Local Setup)
+### Prerequisites
+- Node.js 18+
+- Anthropic API key
+
+### Setup
 
 ```bash
-git clone https://github.com/Joeybot447/norsk-chatbot.git
+# Clone and install
+git clone <repo-url>
 cd norsk-chatbot
 
+# Configure environment
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY
+
 # Install dependencies
+cd packages/api
 npm install
 
-# Set up environment
-cp .env.example .env
-# Edit .env with your API keys
-
-# Run services
-npm run dev:api
-npm run dev:widget
-npm run dev:dashboard
+# Start the server
+npm start
 ```
 
-### For Customers (One-Line Install)
+The API starts on `http://localhost:4000` (or whatever `PORT` is set to).
 
-```html
-<!-- Add this to your website -->
-<script src="https://api.norsk-chatbot.no/widget.js" data-site-id="YOUR_SITE_ID"></script>
-```
+### Demo
+Open `http://localhost:4000/demo.html` to see the chatbot in action with demo data.
 
-## Project Structure
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ANTHROPIC_API_KEY` | ✅ | — | Claude API key for chat responses |
+| `PORT` | No | `3000` | Server port |
+| `JWT_SECRET` | ⚠️ | `dev-secret...` | JWT signing secret (change in production!) |
+| `NODE_ENV` | No | `development` | `development` or `production` |
+| `API_URL` | No | auto-detect | Public API URL for widget embed codes |
+| `LOG_LEVEL` | No | `info` | Pino log level |
+
+## Architecture
 
 ```
 norsk-chatbot/
-├── README.md
-├── package.json (workspace root)
-├── .env.example
-├── .gitignore
-├── docker-compose.yml
-└── packages/
-    ├── api/          # Express backend server
-    ├── widget/       # Embeddable chat widget
-    └── dashboard/    # Customer dashboard (React)
+├── packages/
+│   ├── api/          # Express API server
+│   │   ├── src/
+│   │   │   ├── config.js          # Centralized configuration
+│   │   │   ├── index.js           # Entry point
+│   │   │   ├── db/                # SQLite database
+│   │   │   ├── middleware/        # Auth, rate limiting, tenant isolation
+│   │   │   ├── routes/            # API endpoints
+│   │   │   ├── services/          # Business logic (chat, RAG, LLM)
+│   │   │   └── utils/             # Logger, cache
+│   │   └── public/                # Static files (widget.min.js, demo)
+│   ├── dashboard/    # Admin dashboard (HTML)
+│   ├── landing/      # Landing page
+│   └── widget/       # Widget source (builds to public/)
+└── .env              # Environment config
 ```
 
-## Documentation
+## API Endpoints
 
-- **API Documentation:** `packages/api/README.md`
-- **Widget Documentation:** `packages/widget/README.md`
-- **Dashboard Documentation:** `packages/dashboard/README.md`
-- **Full Technical Plan:** `CHATBOT_SAAS_PLAN.md` (internal)
+### Public
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Basic health check |
+| `GET` | `/health/ready` | Database readiness check |
+| `GET` | `/health/detailed` | Full system health (DB size, counts, memory) |
 
-## Pricing
+### Authentication
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/auth/register` | Register new user |
+| `POST` | `/api/auth/login` | Login, returns JWT |
+| `POST` | `/api/auth/verify` | Verify JWT token |
 
-- **Starter:** 599 NOK/month (€60) - 1 website, basic features
-- **Pro:** 1,999 NOK/month (€200) - 3 websites, advanced features
-- **Enterprise:** Custom - unlimited everything
+### Chat (requires `X-Site-Id` header)
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/chat/message` | Send message, get AI response |
+| `POST` | `/v1/chat/feedback` | Submit feedback on a message |
+| `GET` | `/v1/chat/history?sessionId=xxx` | Get conversation history |
 
-## Support
+### Knowledge Ingestion (requires Bearer token)
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/ingest/url` | Ingest content from a URL |
+| `POST` | `/v1/ingest/text` | Ingest raw text |
+| `POST` | `/v1/ingest/upload` | Upload file (PDF, TXT, DOCX) |
+| `GET` | `/v1/ingest/sources?siteId=xxx` | List knowledge sources |
+| `DELETE` | `/v1/ingest/sources/:id` | Delete a source |
 
-- Email: support@norsk-chatbot.no
-- Documentation: https://docs.norsk-chatbot.no
-- Status: https://status.norsk-chatbot.no
+### Dashboard (requires JWT)
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/dashboard/sites` | List user's sites |
+| `POST` | `/api/dashboard/sites` | Create new site |
+| `PUT` | `/api/dashboard/sites/:id` | Update site settings |
+| `GET` | `/api/dashboard/stats` | Dashboard statistics |
+| `GET` | `/api/dashboard/conversations/:site_id` | List conversations |
+
+### Widget
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/v1/widget/:siteId` | Get widget configuration |
+| `GET` | `/v1/widget/script/:siteId` | Get embed code |
+
+## Widget Integration
+
+Add this to any website:
+
+```html
+<script 
+  src="https://your-api.com/widget.min.js" 
+  data-site="YOUR_SITE_ID"
+  data-api-url="https://your-api.com"
+  data-color="#0066cc"
+  data-position="bottom-right">
+</script>
+```
+
+### Widget Options (data attributes)
+- `data-site` — Site ID (required)
+- `data-api-url` — API URL (defaults to current origin)
+- `data-color` — Primary color (hex)
+- `data-position` — `bottom-right` or `bottom-left`
+
+## Security Features
+
+- **Helmet.js** security headers
+- **Rate limiting** — 30 req/min on chat, 100 req/min on auth
+- **JWT** with proper expiry validation
+- **Input sanitization** — script tags stripped from ingested content
+- **CORS** configured for widget cross-origin embedding
+- **No credential leaks** — API keys never in error responses
+
+## Database
+
+Uses SQLite (via better-sqlite3) with WAL mode for concurrent read performance.
+Data stored in `packages/api/data/norskbot.db`.
+
+## Demo Credentials
+
+- **Email:** `fjordtech@demo.no`
+- **Password:** `demo123`
 
 ## License
 
-Proprietary - All rights reserved
-
-## Contributing
-
-Internal development only (not open source).
-
----
-
-**Built with ❤️ for Norwegian businesses**
+Proprietary

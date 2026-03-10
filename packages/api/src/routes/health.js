@@ -3,8 +3,10 @@
  */
 
 import express from 'express';
+import fs from 'fs';
 import { getDb, getOne } from '../db/client.js';
 import { logger } from '../utils/logger.js';
+import config from '../config.js';
 
 const router = express.Router();
 
@@ -22,7 +24,7 @@ router.get('/', (req, res) => {
 /**
  * GET /health/ready
  */
-router.get('/ready', async (req, res) => {
+router.get('/ready', (req, res) => {
   try {
     const db = getDb();
     const result = db.prepare('SELECT 1 as ok').get();
@@ -36,6 +38,63 @@ router.get('/ready', async (req, res) => {
   } catch (err) {
     logger.error(`Health check error: ${err.message}`);
     res.status(503).json({ status: 'error', error: err.message });
+  }
+});
+
+/**
+ * GET /health/detailed
+ * Detailed health info: DB size, total chunks, total sites, uptime, memory
+ */
+router.get('/detailed', (req, res) => {
+  try {
+    const db = getDb();
+
+    // DB file size
+    let dbSizeBytes = 0;
+    try {
+      const dbPath = config.databaseUrl;
+      const stats = fs.statSync(dbPath);
+      dbSizeBytes = stats.size;
+    } catch (_) {}
+
+    // Counts
+    const sitesCount = db.prepare('SELECT COUNT(*) as count FROM sites').get()?.count || 0;
+    const knowledgeChunksCount = db.prepare('SELECT COUNT(*) as count FROM knowledge_chunks').get()?.count || 0;
+    const legacyChunksCount = db.prepare('SELECT COUNT(*) as count FROM chunks').get()?.count || 0;
+    const conversationsCount = db.prepare('SELECT COUNT(*) as count FROM conversations').get()?.count || 0;
+    const messagesCount = db.prepare('SELECT COUNT(*) as count FROM messages').get()?.count || 0;
+    const sourcesCount = db.prepare('SELECT COUNT(*) as count FROM knowledge_sources').get()?.count || 0;
+
+    const memUsage = process.memoryUsage();
+
+    res.json({
+      status: 'ok',
+      uptime: Math.floor(process.uptime()),
+      startedAt: new Date(config.startedAt).toISOString(),
+      database: {
+        sizeBytes: dbSizeBytes,
+        sizeMB: (dbSizeBytes / (1024 * 1024)).toFixed(2),
+        journalMode: db.pragma('journal_mode', { simple: true }),
+      },
+      counts: {
+        sites: sitesCount,
+        knowledgeSources: sourcesCount,
+        knowledgeChunks: knowledgeChunksCount,
+        legacyChunks: legacyChunksCount,
+        totalChunks: knowledgeChunksCount + legacyChunksCount,
+        conversations: conversationsCount,
+        messages: messagesCount,
+      },
+      memory: {
+        rss: `${(memUsage.rss / 1024 / 1024).toFixed(1)}MB`,
+        heapUsed: `${(memUsage.heapUsed / 1024 / 1024).toFixed(1)}MB`,
+        heapTotal: `${(memUsage.heapTotal / 1024 / 1024).toFixed(1)}MB`,
+      },
+      node: process.version,
+    });
+  } catch (err) {
+    logger.error(`Detailed health check error: ${err.message}`);
+    res.status(500).json({ status: 'error', error: err.message });
   }
 });
 

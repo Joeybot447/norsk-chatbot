@@ -1,15 +1,15 @@
 /**
  * Authentication Middleware
- * Validates JWT tokens from Authorization header
+ * Validates JWT tokens and API keys
  */
 
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+import config from '../config.js';
 
 /**
  * JWT authentication middleware
+ * Strictly validates token — no fallback in production
  */
 export function authMiddleware(req, res, next) {
   try {
@@ -24,17 +24,24 @@ export function authMiddleware(req, res, next) {
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(token, config.jwtSecret, {
+        algorithms: ['HS256'],
+        clockTolerance: 30, // 30 seconds tolerance for clock skew
+      });
       req.user = decoded;
+      next();
     } catch (jwtErr) {
-      // For backwards compatibility, also accept any non-empty token in dev mode
-      req.user = { token };
+      if (jwtErr.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired' });
+      }
+      if (jwtErr.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+      return res.status(401).json({ error: 'Authentication failed' });
     }
-
-    next();
   } catch (err) {
-    logger.warn(`Authentication failed: ${err.message}`);
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    logger.warn({ reqId: req.requestId }, `Authentication error: ${err.message}`);
+    return res.status(401).json({ error: 'Authentication failed' });
   }
 }
 
@@ -48,14 +55,14 @@ export function apiKeyMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Missing API key' });
     }
 
-    if (!apiKey.startsWith('sk_sit_')) {
+    if (!apiKey.startsWith('sk_')) {
       return res.status(401).json({ error: 'Invalid API key format' });
     }
 
     req.apiKey = apiKey;
     next();
   } catch (err) {
-    logger.warn(`API key validation failed: ${err.message}`);
+    logger.warn({ reqId: req.requestId }, `API key validation failed: ${err.message}`);
     return res.status(401).json({ error: 'Authentication failed' });
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Debug routes (for MVP troubleshooting)
+ * Debug routes (development only)
  */
 
 import express from 'express';
@@ -9,27 +9,28 @@ const router = express.Router();
 
 /**
  * GET /debug/db
- * Show current database contents
+ * Show current database table counts (dev only)
  */
 router.get('/db', (req, res) => {
   try {
     const db = getDb();
-    res.json({
-      customers: db.data.customers,
-      sites: db.data.sites,
-      documents: db.data.documents.map((d) => ({ id: d.id, title: d.title, site_id: d.site_id })),
-      chunks: {
-        count: db.data.chunks.length,
-      },
-      conversations: {
-        count: db.data.conversations.length,
-      },
-      messages: {
-        count: db.data.messages.length,
-      },
-    });
+
+    const counts = {};
+    const tables = ['customers', 'sites', 'users', 'documents', 'chunks',
+                     'conversations', 'messages', 'knowledge_sources', 'knowledge_chunks'];
+
+    for (const table of tables) {
+      try {
+        const result = db.prepare(`SELECT COUNT(*) as count FROM ${table}`).get();
+        counts[table] = result?.count || 0;
+      } catch {
+        counts[table] = 'table not found';
+      }
+    }
+
+    res.json({ counts });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Debug query failed' });
   }
 });
 

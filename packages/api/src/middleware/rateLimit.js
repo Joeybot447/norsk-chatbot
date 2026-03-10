@@ -1,52 +1,83 @@
 /**
  * Rate Limiting Middleware
- * Uses session ID or IP address to limit requests
+ * In-memory rate limiting per IP (no Redis dependency)
  */
 
-import { redisClient } from '../utils/redis.js';
 import { logger } from '../utils/logger.js';
+import config from '../config.js';
 
-const RATE_LIMIT_WINDOW = 60; // seconds
-const RATE_LIMIT_MAX_REQUESTS = 100; // requests per window
+// In-memory store for rate limiting
+const rateLimitStore = new Map();
+
+// Cleanup old entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore) {
+    if (now - entry.windowStart > 120000) { // 2 min stale
+      rateLimitStore.delete(key);
+    }
+  }
+}, 300000);
 
 /**
- * Rate limit middleware
+ * Create a rate limiter with configurable limits
  */
-export async function rateLimitMiddleware(req, res, next) {
-  try {
-    // Get identifier: session ID > IP address
-    const sessionId = req.headers['x-session-id'];
-    const identifier = sessionId || req.ip || req.connection.remoteAddress;
-    const key = `rate-limit:${identifier}`;
+function createRateLimiter(windowSeconds, maxRequests) {
+  return (req, res, next) => {
+    try {
+      const identifier = req.ip || req.connection?.remoteAddress || 'unknown';
+      const key = `rl:${windowSeconds}:${maxRequests}:${identifier}`;
+      const now = Date.now();
+      const windowMs = windowSeconds * 1000;
 
-    // Get current count
-    const current = await redisClient.incr(key);
+      let entry = rateLimitStore.get(key);
 
-    // Set expiration on first request
-    if (current === 1) {
-      await redisClient.expire(key, RATE_LIMIT_WINDOW);
+      if (!entry || (now - entry.windowStart) > windowMs) {
+        entry = { windowStart: now, count: 0 };
+        rateLimitStore.set(key, entry);
+      }
+
+      entry.count++;
+
+      // Set headers
+      const remaining = Math.max(0, maxRequests - entry.count);
+      const resetTime = Math.ceil((entry.windowStart + windowMs) / 1000);
+      res.setHeader('X-RateLimit-Limit', maxRequests);
+      res.setHeader('X-RateLimit-Remaining', remaining);
+      res.setHeader('X-RateLimit-Reset', resetTime);
+
+      if (entry.count > maxRequests) {
+        const retryAfter = Math.ceil((entry.windowStart + windowMs - now) / 1000);
+        logger.warn({ reqId: req.requestId, ip: identifier }, `Rate limit exceeded`);
+        res.setHeader('Retry-After', retryAfter);
+        return res.status(429).json({
+          error: 'For mange forespørsler. Vennligst vent litt.',
+          retryAfter,
+        });
+      }
+
+      next();
+    } catch (err) {
+      logger.error(`Rate limit middleware error: ${err.message}`);
+      next(); // Allow on error
     }
-
-    // Check limit
-    if (current > RATE_LIMIT_MAX_REQUESTS) {
-      logger.warn(`Rate limit exceeded for ${identifier}`);
-      return res.status(429).json({
-        error: 'Too many requests',
-        retryAfter: RATE_LIMIT_WINDOW,
-      });
-    }
-
-    // Add headers
-    res.setHeader('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS);
-    res.setHeader('X-RateLimit-Remaining', RATE_LIMIT_MAX_REQUESTS - current);
-    res.setHeader('X-RateLimit-Reset', Math.ceil(Date.now() / 1000) + RATE_LIMIT_WINDOW);
-
-    next();
-  } catch (err) {
-    logger.error(`Rate limit middleware error: ${err.message}`);
-    // On cache error, allow request but log it
-    next();
-  }
+  };
 }
+
+/**
+ * Chat endpoint rate limiter (30 req/min per IP)
+ */
+export const rateLimitMiddleware = createRateLimiter(
+  config.chatRateLimit.windowSeconds,
+  config.chatRateLimit.maxRequests
+);
+
+/**
+ * General API rate limiter (100 req/min per IP)
+ */
+export const generalRateLimiter = createRateLimiter(
+  config.globalRateLimit.windowSeconds,
+  config.globalRateLimit.maxRequests
+);
 
 export default rateLimitMiddleware;

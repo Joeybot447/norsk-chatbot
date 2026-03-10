@@ -9,59 +9,55 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query, getOne } from '../db/client.js';
 import { logger } from '../utils/logger.js';
+import config from '../config.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
-const JWT_EXPIRY = '7d';
 
 /**
  * POST /api/auth/register
- * Create a new user account
  */
 router.post('/register', async (req, res) => {
   try {
     const { email, password, company_name, companyName } = req.body;
     const company = company_name || companyName;
 
-    // Validation
-    if (!email || !password || !company) {
-      return res.status(400).json({
-        error: 'Email, password, and company name are required',
-      });
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ error: 'Email is required' });
     }
-
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+    if (!company || typeof company !== 'string' || !company.trim()) {
+      return res.status(400).json({ error: 'Company name is required' });
+    }
     if (password.length < 8) {
-      return res.status(400).json({
-        error: 'Password must be at least 8 characters',
-      });
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    // Check if user exists
-    const existingUser = getOne('SELECT id FROM users WHERE email = ?', [email]);
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const existingUser = getOne('SELECT id FROM users WHERE email = ?', [email.toLowerCase().trim()]);
     if (existingUser) {
-      return res.status(409).json({
-        error: 'Email already registered',
-      });
+      return res.status(409).json({ error: 'Email already registered' });
     }
 
-    // Hash password
     const password_hash = bcrypt.hashSync(password, 10);
-
-    // Create user
     const userId = uuid();
     const api_key = 'sk_' + uuid().replace(/-/g, '').substring(0, 20);
 
     query(
       `INSERT INTO users (id, email, password_hash, company_name, api_key, plan, status)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, email, password_hash, company, api_key, 'starter', 'active']
+      [userId, email.toLowerCase().trim(), password_hash, company.trim(), api_key, 'starter', 'active']
     );
 
-    // Generate JWT
     const token = jwt.sign(
-      { userId, email, company_name: company },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRY }
+      { userId, email: email.toLowerCase().trim(), company_name: company.trim() },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiry }
     );
 
     logger.info(`User registered: ${email}`);
@@ -71,56 +67,43 @@ router.post('/register', async (req, res) => {
       token,
       user: {
         id: userId,
-        email,
-        company_name: company,
+        email: email.toLowerCase().trim(),
+        company_name: company.trim(),
         api_key,
         plan: 'starter',
       },
     });
   } catch (err) {
     logger.error(`Registration error: ${err.message}`);
-    res.status(500).json({
-      error: 'Registration failed',
-      details: err.message,
-    });
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 });
 
 /**
  * POST /api/auth/login
- * Login with email and password
  */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        error: 'Email and password are required',
-      });
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Find user
-    const user = getOne('SELECT * FROM users WHERE email = ?', [email]);
+    const user = getOne('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
     if (!user) {
-      return res.status(401).json({
-        error: 'Invalid email or password',
-      });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Verify password
     const passwordMatch = bcrypt.compareSync(password, user.password_hash);
     if (!passwordMatch) {
-      return res.status(401).json({
-        error: 'Invalid email or password',
-      });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { userId: user.id, email: user.email, company_name: user.company_name },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRY }
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiry }
     );
 
     logger.info(`User logged in: ${email}`);
@@ -132,41 +115,33 @@ router.post('/login', async (req, res) => {
         id: user.id,
         email: user.email,
         company_name: user.company_name,
-        api_key: user.api_key,
         plan: user.plan,
       },
     });
   } catch (err) {
     logger.error(`Login error: ${err.message}`);
-    res.status(500).json({
-      error: 'Login failed',
-      details: err.message,
-    });
+    res.status(500).json({ error: 'Login failed. Please try again.' });
   }
 });
 
 /**
  * POST /api/auth/verify
- * Verify JWT token (for dashboard)
  */
 router.post('/verify', (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
-      return res.status(401).json({
-        error: 'No token provided',
-      });
+      return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({
-      success: true,
-      user: decoded,
+    const decoded = jwt.verify(token, config.jwtSecret, {
+      algorithms: ['HS256'],
+      clockTolerance: 30,
     });
+
+    res.json({ success: true, user: decoded });
   } catch (err) {
-    res.status(401).json({
-      error: 'Invalid or expired token',
-    });
+    res.status(401).json({ error: 'Invalid or expired token' });
   }
 });
 
