@@ -286,10 +286,11 @@ export async function POST(request: NextRequest) {
       .from('knowledge_sources')
       .insert({
         site_id: siteId,
-        type: 'website',
+        type: 'webpage',
         title: domain,
         status: 'processing',
-        metadata: { url, maxPages, pagesFound: 0, pagesCrawled: 0, chunksCreated: 0 },
+        content: url,
+        chunk_count: 0,
       })
       .select('id')
       .single();
@@ -307,7 +308,7 @@ export async function POST(request: NextRequest) {
     if (!normalizedStart) {
       await supabase
         .from('knowledge_sources')
-        .update({ status: 'error', metadata: { url, error: 'Ugyldig start-URL' } })
+        .update({ status: 'error', content: `${url} — Ugyldig start-URL` })
         .eq('id', sourceId);
       return NextResponse.json({ error: 'Ugyldig start-URL' }, { status: 400 });
     }
@@ -383,17 +384,12 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Update progress in metadata
+      // Update progress
       await supabase
         .from('knowledge_sources')
         .update({
-          metadata: {
-            url,
-            maxPages: effectiveMaxPages,
-            pagesFound,
-            pagesCrawled,
-            chunksCreated,
-          },
+          chunk_count: chunksCreated,
+          content: `${url} — ${pagesCrawled}/${pagesFound} sider skannet`,
         })
         .eq('id', sourceId);
     }
@@ -405,13 +401,7 @@ export async function POST(request: NextRequest) {
       .update({
         status: finalStatus,
         chunk_count: chunksCreated,
-        metadata: {
-          url,
-          maxPages: effectiveMaxPages,
-          pagesFound,
-          pagesCrawled,
-          chunksCreated,
-        },
+        content: `${url} — ${pagesCrawled} sider, ${chunksCreated} deler`,
       })
       .eq('id', sourceId);
 
@@ -455,7 +445,7 @@ export async function GET(request: NextRequest) {
     // Fetch source
     const { data: source, error } = await supabase
       .from('knowledge_sources')
-      .select('id, site_id, type, title, status, chunk_count, metadata, created_at')
+      .select('id, site_id, type, title, status, chunk_count, content, created_at')
       .eq('id', sourceId)
       .single();
 
@@ -475,15 +465,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ingen tilgang' }, { status: 403 });
     }
 
-    const meta = source.metadata || {};
-
     return NextResponse.json({
       sourceId: source.id,
       status: source.status,
       title: source.title,
-      pagesFound: meta.pagesFound || 0,
-      pagesCrawled: meta.pagesCrawled || 0,
-      chunksCreated: meta.chunksCreated || source.chunk_count || 0,
+      chunksCreated: source.chunk_count || 0,
     });
   } catch (err) {
     const error = err as Error;
