@@ -17,7 +17,7 @@
     "@anthropic-ai/sdk": "^0.78.0",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^12.6.2",
+    "sql.js": "^1.8.0",
     "cheerio": "^1.0.0-rc.12",
     "jsonwebtoken": "^9.0.0",
     "multer": "^2.1.1",
@@ -30,6 +30,8 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
