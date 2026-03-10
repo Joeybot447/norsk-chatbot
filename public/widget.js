@@ -1,6 +1,7 @@
 /**
  * NorskBot AI Chat Widget
  * Embeddable, zero-dependency, Shadow DOM isolated
+ * Features: 6-hour localStorage persistence, conversation restore, rate limit handling
  * (c) 2026 NorskBot AS
  */
 (function() {
@@ -19,15 +20,77 @@
     return;
   }
 
+  // ── Constants ──
+  var STORAGE_KEY = 'norskbot_chat_' + siteId;
+  var VISITOR_KEY = 'norskbot_visitor_' + siteId;
+  var MAX_PERSISTENCE_MS = 6 * 60 * 60 * 1000; // 6 hours
+  var MAX_STORED_MESSAGES = 50;
+
   // ── Utilities ──
   function generateId() {
     return 'v_' + Math.random().toString(36).substr(2, 16);
   }
 
-  function escapeHtml(str) {
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
+  function hasLocalStorage() {
+    try {
+      var test = '__norskbot_ls_test__';
+      localStorage.setItem(test, '1');
+      localStorage.removeItem(test);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  var canPersist = hasLocalStorage();
+
+  // ── Persistence helpers ──
+  function saveConversation() {
+    if (!canPersist) return;
+    try {
+      var toStore = state.messages.slice();
+      // Trim to max stored messages (keep newest)
+      if (toStore.length > MAX_STORED_MESSAGES) {
+        toStore = toStore.slice(toStore.length - MAX_STORED_MESSAGES);
+      }
+      var data = {
+        conversationId: state.conversationId,
+        messages: toStore,
+        lastActivity: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      // Storage full or unavailable — silently fail
+    }
+  }
+
+  function loadConversation() {
+    if (!canPersist) return null;
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || !data.lastActivity || !data.messages) return null;
+
+      var age = Date.now() - data.lastActivity;
+      if (age > MAX_PERSISTENCE_MS) {
+        // Expired — clear it
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearConversation() {
+    state.messages = [];
+    state.conversationId = null;
+    state.restoredCount = 0;
+    if (canPersist) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    }
   }
 
   // ── State ──
@@ -39,13 +102,14 @@
     visitorId: null,
     config: null,
     configLoaded: false,
-    rateLimited: false
+    rateLimited: false,
+    restoredCount: 0 // how many messages were restored from storage
   };
 
+  // Load visitor ID
   try {
-    state.conversationId = localStorage.getItem('norskbot_conv_' + siteId) || null;
-    state.visitorId = localStorage.getItem('norskbot_visitor_' + siteId) || generateId();
-    localStorage.setItem('norskbot_visitor_' + siteId, state.visitorId);
+    state.visitorId = localStorage.getItem(VISITOR_KEY) || generateId();
+    localStorage.setItem(VISITOR_KEY, state.visitorId);
   } catch (e) {
     state.visitorId = generateId();
   }
@@ -72,6 +136,14 @@
     '.nb-bubble:not(.nb-bubble--open) .nb-icon-chat { display: block; }',
     '.nb-bubble:not(.nb-bubble--open) .nb-icon-close { display: none; }',
 
+    /* Unread badge */
+    '.nb-badge {',
+    '  position: absolute; top: -2px; right: -2px; width: 18px; height: 18px;',
+    '  background: #ef4444; border-radius: 50%; border: 2px solid #fff;',
+    '  display: none; pointer-events: none;',
+    '}',
+    '.nb-badge--visible { display: block; }',
+
     /* Window */
     '.nb-window {',
     '  position: fixed; bottom: 100px; right: 24px; z-index: 2147483646;',
@@ -90,10 +162,18 @@
     /* Header */
     '.nb-header {',
     '  background: var(--nb-primary, #2563eb); color: #fff;',
-    '  padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;',
+    '  padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;',
     '  flex-shrink: 0;',
     '}',
+    '.nb-header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }',
     '.nb-header-title { font-size: 16px; font-weight: 600; line-height: 1.2; }',
+    '.nb-header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }',
+    '.nb-new-chat {',
+    '  background: rgba(255,255,255,0.15); border: none; color: #fff; cursor: pointer;',
+    '  padding: 5px 10px; border-radius: 6px; font-size: 12px; font-family: inherit;',
+    '  outline: none; transition: background 0.15s; white-space: nowrap;',
+    '}',
+    '.nb-new-chat:hover { background: rgba(255,255,255,0.25); }',
     '.nb-header-close {',
     '  background: none; border: none; color: #fff; cursor: pointer;',
     '  padding: 4px; display: flex; align-items: center; justify-content: center;',
@@ -115,6 +195,14 @@
     '.nb-msg--assistant {',
     '  align-self: flex-start; background: #f1f5f9; color: #1e293b;',
     '  border-radius: 16px 16px 16px 4px;',
+    '}',
+
+    /* Divider */
+    '.nb-divider {',
+    '  display: flex; align-items: center; gap: 10px; margin: 8px 0; color: #94a3b8; font-size: 11px;',
+    '}',
+    '.nb-divider::before, .nb-divider::after {',
+    '  content: ""; flex: 1; height: 1px; background: #e2e8f0;',
     '}',
 
     /* Typing indicator */
@@ -168,6 +256,16 @@
     /* Error */
     '.nb-error { font-style: italic; color: #ef4444; }',
 
+    /* Restore animation */
+    '.nb-msg--restored {',
+    '  animation: nb-fade-in 0.3s ease forwards;',
+    '  opacity: 0;',
+    '}',
+    '@keyframes nb-fade-in {',
+    '  from { opacity: 0; transform: translateY(4px); }',
+    '  to { opacity: 1; transform: translateY(0); }',
+    '}',
+
     /* Mobile */
     '@media (max-width: 480px) {',
     '  .nb-window { top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; border-radius: 0; }',
@@ -198,6 +296,12 @@
   bubble.className = 'nb-bubble';
   bubble.setAttribute('aria-label', 'Apne chat');
   bubble.innerHTML = '<span class="nb-icon-chat">' + ICON_CHAT + '</span><span class="nb-icon-close">' + ICON_CLOSE + '</span>';
+
+  // Unread badge
+  var badge = document.createElement('span');
+  badge.className = 'nb-badge';
+  bubble.appendChild(badge);
+
   shadow.appendChild(bubble);
 
   // Window
@@ -209,15 +313,31 @@
   // Header
   var header = document.createElement('div');
   header.className = 'nb-header';
+
+  var headerLeft = document.createElement('div');
+  headerLeft.className = 'nb-header-left';
   var headerTitle = document.createElement('div');
   headerTitle.className = 'nb-header-title';
   headerTitle.textContent = 'NorskBot';
+  headerLeft.appendChild(headerTitle);
+
+  var headerActions = document.createElement('div');
+  headerActions.className = 'nb-header-actions';
+
+  var newChatBtn = document.createElement('button');
+  newChatBtn.className = 'nb-new-chat';
+  newChatBtn.textContent = 'Ny samtale';
+  newChatBtn.setAttribute('aria-label', 'Start ny samtale');
+  headerActions.appendChild(newChatBtn);
+
   var closeBtn = document.createElement('button');
   closeBtn.className = 'nb-header-close';
   closeBtn.setAttribute('aria-label', 'Lukk chat');
   closeBtn.innerHTML = ICON_CLOSE;
-  header.appendChild(headerTitle);
-  header.appendChild(closeBtn);
+  headerActions.appendChild(closeBtn);
+
+  header.appendChild(headerLeft);
+  header.appendChild(headerActions);
   win.appendChild(header);
 
   // Messages
@@ -243,7 +363,7 @@
   inputArea.appendChild(sendBtn);
   win.appendChild(inputArea);
 
-  // Footer
+  // Footer with branding
   var footer = document.createElement('div');
   footer.className = 'nb-footer';
   footer.innerHTML = 'Drevet av <a href="https://norskbot.no" target="_blank" rel="noopener">NorskBot</a>';
@@ -258,12 +378,24 @@
     });
   }
 
-  function appendMessageEl(role, content) {
+  function appendMessageEl(role, content, options) {
+    var opts = options || {};
     var div = document.createElement('div');
     div.className = 'nb-msg nb-msg--' + role;
+    if (opts.restored) {
+      div.classList.add('nb-msg--restored');
+      div.style.animationDelay = (opts.index || 0) * 30 + 'ms';
+    }
     div.textContent = content;
     messagesEl.appendChild(div);
     scrollToBottom();
+  }
+
+  function appendDivider(text) {
+    var div = document.createElement('div');
+    div.className = 'nb-divider';
+    div.textContent = text;
+    messagesEl.appendChild(div);
   }
 
   function showTyping() {
@@ -285,23 +417,71 @@
     if (el) el.remove();
   }
 
-  function showError() {
+  function showError(msg) {
     var div = document.createElement('div');
     div.className = 'nb-msg nb-msg--assistant nb-error';
-    div.textContent = 'Beklager, noe gikk galt. Prov igjen.';
+    div.textContent = msg || 'Beklager, noe gikk galt. Prov igjen.';
     messagesEl.appendChild(div);
     scrollToBottom();
   }
 
+  function clearMessagesEl() {
+    messagesEl.innerHTML = '';
+  }
+
+  function showUnreadBadge() {
+    if (!state.isOpen) {
+      badge.classList.add('nb-badge--visible');
+    }
+  }
+
+  function hideUnreadBadge() {
+    badge.classList.remove('nb-badge--visible');
+  }
+
   function applyTheme(primaryColor) {
     if (primaryColor) {
-      host.style.setProperty('--nb-primary', primaryColor);
-      // Also set on shadow root for CSS variable inheritance
-      styleEl.textContent = CSS.replace(/var\(--nb-primary, #2563eb\)/g, primaryColor);
-      // Rebuild with both fallback and override
       var themed = ':host { --nb-primary: ' + primaryColor + '; }\n' + CSS;
       styleEl.textContent = themed;
     }
+  }
+
+  // ── Restore saved conversation ──
+  function restoreConversation() {
+    var saved = loadConversation();
+    if (!saved || !saved.messages || saved.messages.length === 0) {
+      return false;
+    }
+
+    state.conversationId = saved.conversationId || null;
+    state.messages = saved.messages;
+    state.restoredCount = saved.messages.length;
+
+    // Render divider and restored messages with staggered animation
+    appendDivider('Tidligere samtale');
+    for (var i = 0; i < saved.messages.length; i++) {
+      var m = saved.messages[i];
+      appendMessageEl(m.role, m.content, { restored: true, index: i });
+    }
+
+    return true;
+  }
+
+  // ── Start new conversation (Ny samtale button) ──
+  function startNewConversation() {
+    clearConversation();
+    clearMessagesEl();
+
+    // Re-show welcome message if available
+    var welcome = null;
+    if (state.config) {
+      welcome = state.config.welcomeMessage || state.config.welcome_message;
+    }
+    if (welcome) {
+      state.messages.push({ role: 'assistant', content: welcome });
+      appendMessageEl('assistant', welcome);
+    }
+    input.focus();
   }
 
   // ── API ──
@@ -331,18 +511,27 @@
           if (themeConfig.primary_color) applyTheme(themeConfig.primary_color);
         }
 
-        // Welcome message
-        var welcome = data.welcomeMessage || data.welcome_message;
-        if (welcome && state.messages.length === 0) {
-          state.messages.push({ role: 'assistant', content: welcome });
-          appendMessageEl('assistant', welcome);
+        // Try to restore saved conversation first
+        var restored = restoreConversation();
+
+        // Welcome message only if no restored conversation
+        if (!restored) {
+          var welcome = data.welcomeMessage || data.welcome_message;
+          if (welcome && state.messages.length === 0) {
+            state.messages.push({ role: 'assistant', content: welcome });
+            appendMessageEl('assistant', welcome);
+          }
         }
 
         callback();
       })
       .catch(function(err) {
         console.error('NorskBot: Kunne ikke laste konfigurasjon', err);
-        state.configLoaded = true; // Don't retry infinitely
+        state.configLoaded = true;
+
+        // Still try to restore saved conversation
+        restoreConversation();
+
         callback();
       });
   }
@@ -351,14 +540,22 @@
     if (!text.trim() || state.isLoading || state.rateLimited) return;
 
     var msg = text.trim();
+
+    // Client-side length check
+    if (msg.length > 2000) {
+      showError('Meldingen er for lang');
+      return;
+    }
+
     state.messages.push({ role: 'user', content: msg });
     appendMessageEl('user', msg);
+    saveConversation();
     input.value = '';
     state.isLoading = true;
     sendBtn.disabled = true;
     showTyping();
 
-    // Rate limit: 1s cooldown
+    // Rate limit: 1s cooldown between sends
     state.rateLimited = true;
     setTimeout(function() { state.rateLimited = false; }, 1000);
 
@@ -380,6 +577,11 @@
       body: JSON.stringify(body)
     })
       .then(function(res) {
+        if (res.status === 429) {
+          return res.json().then(function(data) {
+            throw { rateLimited: true, message: data.error || 'Du har sendt for mange meldinger. Prov igjen om litt.' };
+          });
+        }
         if (!res.ok) throw new Error('Chat request failed: ' + res.status);
         return res.json();
       })
@@ -392,25 +594,36 @@
         if (reply) {
           state.messages.push({ role: 'assistant', content: reply });
           appendMessageEl('assistant', reply);
+
+          // Show unread badge if chat is closed
+          if (!state.isOpen) {
+            showUnreadBadge();
+          }
         }
 
         // Store conversationId
         var newConvId = data.conversationId || data.conversation_id;
         if (newConvId) {
           state.conversationId = newConvId;
-          try {
-            localStorage.setItem('norskbot_conv_' + siteId, newConvId);
-          } catch (e) { /* localStorage unavailable */ }
         }
+
+        // Save to localStorage after bot response
+        saveConversation();
 
         input.focus();
       })
       .catch(function(err) {
-        console.error('NorskBot: Feil ved sending av melding', err);
         hideTyping();
         state.isLoading = false;
         sendBtn.disabled = false;
-        showError();
+
+        if (err && err.rateLimited) {
+          showError(err.message);
+        } else {
+          console.error('NorskBot: Feil ved sending av melding', err);
+          showError('Beklager, noe gikk galt. Prov igjen.');
+        }
+
         input.focus();
       });
   }
@@ -421,6 +634,7 @@
     bubble.classList.add('nb-bubble--open');
     bubble.setAttribute('aria-label', 'Lukk chat');
     win.classList.add('nb-window--visible');
+    hideUnreadBadge();
 
     loadConfig(function() {
       input.focus();
@@ -445,6 +659,7 @@
   // ── Event Listeners ──
   bubble.addEventListener('click', toggleChat);
   closeBtn.addEventListener('click', closeChat);
+  newChatBtn.addEventListener('click', startNewConversation);
 
   sendBtn.addEventListener('click', function() {
     sendMessage(input.value);
@@ -465,12 +680,25 @@
     }
   });
 
-  // Also listen on document for Escape
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && state.isOpen) {
       closeChat();
       bubble.focus();
     }
   });
+
+  // ── Auto-check for expired conversations on page load ──
+  // If there's a saved conversation older than 6 hours, clean it up immediately
+  if (canPersist) {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed.lastActivity && (Date.now() - parsed.lastActivity > MAX_PERSISTENCE_MS)) {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+    } catch (e) {}
+  }
 
 })();
