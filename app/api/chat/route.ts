@@ -205,12 +205,16 @@ export async function POST(request: NextRequest) {
     const lengthInstruction = lengthMap[botConfig.response_length] || lengthMap.medium;
 
     // 8. Build system prompt using bot_config
+    const norwayTime = new Date().toLocaleString('nb-NO', { timeZone: 'Europe/Oslo', dateStyle: 'full', timeStyle: 'short' });
+
     let systemPrompt: string;
     if (botConfig.system_prompt && botConfig.system_prompt.trim()) {
       systemPrompt = botConfig.system_prompt.replace('{site_name}', siteName);
     } else {
       systemPrompt = `Du er ${botName}, en hjelpsom AI-assistent for ${siteName}. Svar alltid på norsk med mindre brukeren skriver på et annet språk.`;
     }
+
+    systemPrompt += `\n\nNåværende dato og tid i Norge: ${norwayTime}`;
 
     systemPrompt += `\n\n${toneInstruction} ${lengthInstruction}`;
 

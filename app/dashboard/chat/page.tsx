@@ -20,9 +20,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant' | 'error';
   content: string;
-  sources?: { content: string; similarity?: number }[];
   timestamp: Date;
-  tokensUsed?: number;
   retryPayload?: { siteId: string; message: string; conversationId?: string };
 }
 
@@ -57,149 +55,80 @@ function stripMarkdown(text: string): string {
 }
 
 /**
- * Strip HTML tags and CSS from source content for clean display.
- */
-function stripHtmlCss(text: string): string {
-  if (!text) return '';
-  return text
-    // Remove <style> blocks
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    // Remove <script> blocks
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    // Remove all HTML tags
-    .replace(/<[^>]+>/g, ' ')
-    // Remove CSS-like content (selectors, properties)
-    .replace(/[.#]?[\w-]+\s*\{[^}]*\}/g, '')
-    .replace(/\{[^}]*\}/g, '')
-    // Remove CSS @rules
-    .replace(/@[\w-]+[^;{]*[;{]/g, '')
-    // Decode common HTML entities
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    // Collapse whitespace
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
  * Format a timestamp as HH:MM
  */
 function formatTime(date: Date): string {
   return date.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
 }
 
+/**
+ * Format a date for day separators
+ */
+function formatDateSeparator(date: Date): string {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return 'I dag';
+  if (date.toDateString() === yesterday.toDateString()) return 'I gar';
+
+  return date.toLocaleDateString('nb-NO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+/**
+ * Check if two dates are on different days
+ */
+function isDifferentDay(a: Date, b: Date): boolean {
+  return a.toDateString() !== b.toDateString();
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-/** Animated typing indicator — three pulsing dots */
+/** Typing indicator with text */
 function TypingIndicator({ botName }: { botName: string }) {
   return (
     <div className="flex justify-start animate-[fadeSlideUp_0.3s_ease-out]">
       <div className="max-w-[80%]">
         <div className="text-[11px] font-medium mb-1 text-[#64748b]">{botName}</div>
-        <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-[#f1f5f9] border border-slate-200/60 inline-flex items-center gap-1">
-          <span className="w-[6px] h-[6px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]" />
-          <span
-            className="w-[6px] h-[6px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]"
-            style={{ animationDelay: '0.2s' }}
-          />
-          <span
-            className="w-[6px] h-[6px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]"
-            style={{ animationDelay: '0.4s' }}
-          />
+        <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-[#f1f5f9] border border-slate-200/60 inline-flex items-center gap-2">
+          <span className="text-[13px] text-[#94a3b8] italic">skriver</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-[5px] h-[5px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]" />
+            <span
+              className="w-[5px] h-[5px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]"
+              style={{ animationDelay: '0.2s' }}
+            />
+            <span
+              className="w-[5px] h-[5px] bg-[#94a3b8] rounded-full animate-[typingDot_1.4s_ease-in-out_infinite]"
+              style={{ animationDelay: '0.4s' }}
+            />
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
-/** Collapsible source item */
-function SourceItem({ source, index }: { source: { content: string; similarity?: number }; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const cleanContent = stripHtmlCss(source.content);
-  const preview = cleanContent.slice(0, 100) + (cleanContent.length > 100 ? '...' : '');
-
+/** Date separator between messages on different days */
+function DateSeparator({ date }: { date: Date }) {
   return (
-    <button
-      onClick={() => setExpanded(!expanded)}
-      className="w-full text-left px-3 py-2 bg-white border border-slate-200/80 rounded-lg text-xs leading-relaxed transition-all duration-200 hover:border-slate-300 hover:shadow-sm cursor-pointer group"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <span className="text-[#94a3b8] font-mono text-[10px] mr-1.5">Kilde {index + 1}</span>
-          {source.similarity != null && (
-            <span className="text-[10px] text-[#94a3b8] tabular-nums">
-              {Math.round(source.similarity * 100)}% treff
-            </span>
-          )}
-          <p className="text-[#475569] mt-1 break-words">
-            {expanded ? cleanContent : preview}
-          </p>
-        </div>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#94a3b8"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`flex-shrink-0 mt-0.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </div>
-    </button>
-  );
-}
-
-/** Collapsible sources section under bot messages */
-function SourcesSection({ sources }: { sources: { content: string; similarity?: number }[] }) {
-  const [open, setOpen] = useState(false);
-
-  if (!sources || sources.length === 0) return null;
-
-  return (
-    <div className="mt-2">
-      <button
-        onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#94a3b8] hover:text-[#64748b] transition-colors cursor-pointer bg-transparent border-none p-0"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="11"
-          height="11"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-        {sources.length} {sources.length === 1 ? 'kilde' : 'kilder'}
-      </button>
-      {open && (
-        <div className="mt-1.5 space-y-1 animate-[fadeIn_0.2s_ease-out]">
-          {sources.map((source, idx) => (
-            <SourceItem key={idx} source={source} index={idx} />
-          ))}
-        </div>
-      )}
+    <div className="flex items-center gap-3 my-4">
+      <div className="flex-1 h-px bg-slate-200/70" />
+      <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wide">
+        {formatDateSeparator(date)}
+      </span>
+      <div className="flex-1 h-px bg-slate-200/70" />
     </div>
   );
 }
 
-/** Single chat message bubble */
+/** Single chat message bubble — clean, no sources, no tokens */
 function ChatBubble({
   msg,
   botName,
@@ -216,7 +145,7 @@ function ChatBubble({
     <div
       className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-[fadeSlideUp_0.3s_ease-out]`}
     >
-      <div className={`max-w-[75%] ${isUser ? '' : ''}`}>
+      <div className="max-w-[75%]">
         {/* Sender label + timestamp */}
         <div
           className={`flex items-center gap-2 mb-1 ${
@@ -266,18 +195,6 @@ function ChatBubble({
           >
             <div className="whitespace-pre-wrap break-words">{msg.content}</div>
           </div>
-        )}
-
-        {/* Token count (bot messages only) */}
-        {!isUser && !isError && msg.tokensUsed != null && (
-          <div className="mt-1 text-[10px] text-[#cbd5e1] tabular-nums">
-            {msg.tokensUsed.toLocaleString('nb-NO')} tokens
-          </div>
-        )}
-
-        {/* Sources (bot messages only) */}
-        {!isUser && !isError && msg.sources && msg.sources.length > 0 && (
-          <SourcesSection sources={msg.sources} />
         )}
       </div>
     </div>
@@ -338,7 +255,7 @@ export default function ChatPlaygroundPage() {
   }, [selectedSiteId, sites]);
 
   // ---------------------------------------------------------------------------
-  // Auto-scroll
+  // Smooth auto-scroll
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
@@ -446,9 +363,7 @@ export default function ChatPlaygroundPage() {
         id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
         role: 'assistant',
         content: stripMarkdown(data.response),
-        sources: data.sources,
         timestamp: new Date(),
-        tokensUsed: data.tokensUsed,
       };
 
       // Remove any existing error messages for this exchange, then add response
@@ -570,13 +485,6 @@ export default function ChatPlaygroundPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Conversation ID badge */}
-            {conversationId && (
-              <span className="text-[10px] text-[#cbd5e1] font-mono tracking-wider select-all">
-                {conversationId.slice(0, 8)}
-              </span>
-            )}
-
             {selectedSite && (
               <button
                 onClick={handleNewConversation}
@@ -601,6 +509,33 @@ export default function ChatPlaygroundPage() {
             )}
           </div>
         </header>
+
+        {/* ----------------------------------------------------------------- */}
+        {/* Conversation header (when site is selected)                       */}
+        {/* ----------------------------------------------------------------- */}
+        {selectedSite && (
+          <div className="bg-[#f8fafc] border-b border-slate-100 px-6 py-2.5 flex-shrink-0">
+            <div className="max-w-2xl mx-auto flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#2563eb] rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-[13px] font-bold">
+                  {(selectedSite.bot_name || selectedSite.name).charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-[#0f172a] truncate">
+                  {botName}
+                </p>
+                <p className="text-[11px] text-[#94a3b8] truncate">
+                  {selectedSite.domain || selectedSite.name}
+                </p>
+              </div>
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full" />
+                <span className="text-[11px] text-[#94a3b8]">Tilkoblet</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ----------------------------------------------------------------- */}
         {/* Empty state (no site selected)                                    */}
@@ -650,16 +585,16 @@ export default function ChatPlaygroundPage() {
             {/* ------------------------------------------------------------- */}
             {/* Messages area                                                  */}
             {/* ------------------------------------------------------------- */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 scroll-smooth">
               {/* Chat-start empty state */}
               {messages.length === 0 && !sending && (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center animate-[fadeIn_0.5s_ease-out]">
-                    <div className="w-10 h-10 bg-[#f1f5f9] rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <div className="w-12 h-12 bg-[#f1f5f9] rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="#94a3b8"
@@ -670,12 +605,12 @@ export default function ChatPlaygroundPage() {
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                       </svg>
                     </div>
-                    <p className="text-[13px] text-[#64748b]">
-                      Samtale med{' '}
-                      <span className="font-medium text-[#334155]">{botName}</span>
-                    </p>
-                    <p className="text-[12px] text-[#cbd5e1] mt-1">
-                      Skriv en melding for a starte
+                    <h3 className="text-[15px] font-semibold text-[#0f172a] mb-1">
+                      Start en samtale
+                    </h3>
+                    <p className="text-[13px] text-[#64748b] leading-relaxed max-w-xs">
+                      Still et sporsmaal til {botName} og se hvordan chatboten svarer
+                      basert pa kunnskapsbasen din.
                     </p>
                   </div>
                 </div>
@@ -683,14 +618,22 @@ export default function ChatPlaygroundPage() {
 
               {/* Message list */}
               <div className="max-w-2xl mx-auto space-y-4">
-                {messages.map((msg) => (
-                  <ChatBubble
-                    key={msg.id}
-                    msg={msg}
-                    botName={botName}
-                    onRetry={handleRetry}
-                  />
-                ))}
+                {messages.map((msg, idx) => {
+                  // Show date separator if day changed
+                  const prevMsg = idx > 0 ? messages[idx - 1] : null;
+                  const showDateSep = prevMsg && isDifferentDay(prevMsg.timestamp, msg.timestamp);
+
+                  return (
+                    <div key={msg.id}>
+                      {showDateSep && <DateSeparator date={msg.timestamp} />}
+                      <ChatBubble
+                        msg={msg}
+                        botName={botName}
+                        onRetry={handleRetry}
+                      />
+                    </div>
+                  );
+                })}
 
                 {/* Typing indicator */}
                 {sending && <TypingIndicator botName={botName} />}
