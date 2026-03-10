@@ -81,6 +81,7 @@ CREATE TABLE public.sites (
     welcome_message text DEFAULT 'Hei! Hvordan kan jeg hjelpe deg?',
     bot_name        text DEFAULT 'NorskBot',
     theme_config    jsonb DEFAULT '{"primaryColor": "#2563eb", "position": "bottom-right"}'::jsonb,
+    bot_config      jsonb DEFAULT '{"system_prompt": "", "tone": "vennlig", "response_length": "medium", "temperature": 0.7, "include_sources": true, "fallback_message": "Beklager, jeg fant ikke svar på det. Kontakt oss direkte for hjelp.", "max_tokens": 500}'::jsonb,
     is_active       boolean NOT NULL DEFAULT true,
     created_at      timestamptz NOT NULL DEFAULT now(),
     updated_at      timestamptz NOT NULL DEFAULT now()

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../_lib/supabase/client';
 import { useAuth } from '../../_lib/supabase/hooks';
 
@@ -18,6 +18,47 @@ interface Message {
   content: string;
   sources?: { content: string; similarity?: number }[];
   timestamp: Date;
+}
+
+/**
+ * Strip markdown formatting from text, returning clean readable plain text.
+ * Handles: bold, italic, headers, links, images, code blocks, lists, blockquotes, hr.
+ */
+function stripMarkdown(text: string): string {
+  if (!text) return '';
+  return text
+    // Remove code blocks (``` ... ```)
+    .replace(/```[\s\S]*?```/g, (match) => {
+      const inner = match.replace(/^```\w*\n?/, '').replace(/\n?```$/, '');
+      return inner;
+    })
+    // Remove inline code (` ... `)
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove images ![alt](url)
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+    // Convert links [text](url) to just text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove headers (## Header)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold (**text** or __text__)
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    // Remove italic (*text* or _text_)
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/_(.+?)_/g, '$1')
+    // Remove strikethrough (~~text~~)
+    .replace(/~~(.+?)~~/g, '$1')
+    // Remove blockquotes (> text)
+    .replace(/^>\s+/gm, '')
+    // Remove horizontal rules
+    .replace(/^[-*_]{3,}\s*$/gm, '')
+    // Remove unordered list markers (- item, * item)
+    .replace(/^[\s]*[-*+]\s+/gm, '- ')
+    // Remove ordered list markers (1. item)
+    .replace(/^[\s]*\d+\.\s+/gm, '')
+    // Collapse multiple blank lines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 export default function ChatPlaygroundPage() {
@@ -93,6 +134,47 @@ export default function ChatPlaygroundPage() {
     setError(null);
   };
 
+  /**
+   * Send a chat message with automatic 401 retry.
+   * If the first request returns 401, we refresh the token and retry once.
+   */
+  const sendChatRequest = useCallback(async (payload: { siteId: string; message: string; conversationId?: string }) => {
+    const attempt = async (isRetry: boolean) => {
+      const token = await getAccessToken();
+      if (!token) {
+        throw new Error('Ikke autentisert — prov a logge inn pa nytt');
+      }
+
+      const response = await fetch('/api/chat/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.status === 401 && !isRetry) {
+        // Token was stale — force refresh and retry once
+        // getAccessToken already handles refresh, but force a new one
+        const { data: { session } } = await supabase.auth.refreshSession();
+        if (session?.access_token) {
+          return attempt(true);
+        }
+        throw new Error('Ikke autentisert — prov a logge inn pa nytt');
+      }
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Feil ${response.status}`);
+      }
+
+      return response.json();
+    };
+
+    return attempt(false);
+  }, [getAccessToken]);
+
   const handleSend = async () => {
     if (!input.trim() || !selectedSiteId || sending) return;
 
@@ -109,30 +191,11 @@ export default function ChatPlaygroundPage() {
     setError(null);
 
     try {
-      const token = await getAccessToken();
-      if (!token) {
-        throw new Error('Ikke autentisert — prøv å logge inn på nytt');
-      }
-
-      const response = await fetch('/api/chat/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          siteId: selectedSiteId,
-          message: userMessage.content,
-          conversationId: conversationId || undefined,
-        }),
+      const data = await sendChatRequest({
+        siteId: selectedSiteId,
+        message: userMessage.content,
+        conversationId: conversationId || undefined,
       });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || `Feil ${response.status}`);
-      }
-
-      const data = await response.json();
 
       if (data.conversationId) {
         setConversationId(data.conversationId);
@@ -141,7 +204,7 @@ export default function ChatPlaygroundPage() {
       const assistantMessage: Message = {
         id: Math.random().toString(36).slice(2) + Date.now().toString(36),
         role: 'assistant',
-        content: data.response,
+        content: stripMarkdown(data.response),
         sources: data.sources,
         timestamp: new Date(),
       };
@@ -210,13 +273,13 @@ export default function ChatPlaygroundPage() {
             </div>
             <h2 className="text-lg font-semibold text-[#0f172a] mb-2">Test chatboten din</h2>
             <p className="text-sm text-[#64748b] leading-relaxed">
-              Velg et nettsted fra nedtrekkslisten for å starte en testsamtale med chatboten. 
+              Velg et nettsted fra nedtrekkslisten for a starte en testsamtale med chatboten. 
               Samtalen bruker kunnskapsbasen du har lastet opp.
             </p>
             {sites.length === 0 && (
               <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-800">
-                  Du har ingen aktive nettsteder. Opprett et nettsted først for å teste chatboten.
+                  Du har ingen aktive nettsteder. Opprett et nettsted forst for a teste chatboten.
                 </p>
                 <a
                   href="/dashboard/sites/new"
@@ -239,7 +302,7 @@ export default function ChatPlaygroundPage() {
                     Samtale med <span className="font-medium text-[#0f172a]">{selectedSite.bot_name || 'NorskBot'}</span> ({selectedSite.name})
                   </p>
                   <p className="text-[#94a3b8] text-xs">
-                    Skriv en melding for å starte samtalen
+                    Skriv en melding for a starte samtalen
                   </p>
                 </div>
               </div>
@@ -259,7 +322,7 @@ export default function ChatPlaygroundPage() {
                       {msg.role === 'user' ? 'Du' : (selectedSite.bot_name || 'NorskBot')}
                     </div>
 
-                    {/* Message bubble */}
+                    {/* Message bubble — plain text only, no markdown rendering */}
                     <div
                       className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                         msg.role === 'user'
@@ -365,7 +428,7 @@ export default function ChatPlaygroundPage() {
             </div>
             <div className="max-w-3xl mx-auto mt-2">
               <p className="text-[11px] text-[#94a3b8]">
-                Trykk Enter for å sende, Shift+Enter for ny linje
+                Trykk Enter for a sende, Shift+Enter for ny linje
               </p>
             </div>
           </div>

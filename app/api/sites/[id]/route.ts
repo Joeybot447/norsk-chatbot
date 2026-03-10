@@ -118,7 +118,7 @@ export async function PATCH(
     }
 
     // Only allow specific fields
-    const allowedFields = ['name', 'domain', 'welcome_message', 'bot_name', 'theme_config', 'is_active'];
+    const allowedFields = ['name', 'domain', 'welcome_message', 'bot_name', 'theme_config', 'bot_config', 'is_active'];
     const updates: Record<string, any> = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {

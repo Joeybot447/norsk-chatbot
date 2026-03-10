@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // 3. Verify the user owns this site
     const { data: site, error: siteError } = await supabase
       .from('sites')
-      .select('id, name, welcome_message, bot_name, theme_config, is_active')
+      .select('id, name, welcome_message, bot_name, theme_config, bot_config, is_active')
       .eq('id', siteId)
       .eq('user_id', user.id)
       .single();
@@ -190,24 +190,62 @@ export async function POST(request: NextRequest) {
       console.error('RAG context retrieval failed:', ragErr);
     }
 
-    // 8. Build system prompt
+    // 8. Build system prompt using bot_config if available
     const botName = site.bot_name || 'NorskBot';
-    let systemPrompt = `Du er ${botName}, en hjelpsom AI-assistent for ${site.name}. Svar alltid på norsk med mindre brukeren skriver på et annet språk. Vær vennlig, presis og hjelpsom.`;
+    const botConfig = site.bot_config || {};
+    const configuredTemp = typeof botConfig.temperature === 'number' ? botConfig.temperature : 0.7;
+    const configuredMaxTokens = typeof botConfig.max_tokens === 'number' ? Math.max(100, Math.min(2000, botConfig.max_tokens)) : 1024;
+
+    // Tone instructions
+    const toneMap: Record<string, string> = {
+      profesjonell: 'Bruk en profesjonell og formell tone.',
+      vennlig: 'Vær vennlig og imøtekommende.',
+      uformell: 'Bruk en uformell og avslappet tone.',
+      teknisk: 'Bruk en teknisk og presis tone med fagterminologi.',
+    };
+    const toneInstruction = toneMap[botConfig.tone] || toneMap.vennlig;
+
+    // Response length instructions
+    const lengthMap: Record<string, string> = {
+      kort: 'Hold svarene korte og konsise, maks 2-3 setninger.',
+      medium: 'Gi moderat detaljerte svar.',
+      detaljert: 'Gi detaljerte og grundige svar.',
+    };
+    const lengthInstruction = lengthMap[botConfig.response_length] || lengthMap.medium;
+
+    let systemPrompt: string;
+    if (botConfig.system_prompt && botConfig.system_prompt.trim()) {
+      systemPrompt = botConfig.system_prompt.replace('{site_name}', site.name);
+    } else {
+      systemPrompt = `Du er ${botName}, en hjelpsom AI-assistent for ${site.name}. Svar alltid på norsk med mindre brukeren skriver på et annet språk.`;
+    }
+
+    systemPrompt += `\n\n${toneInstruction} ${lengthInstruction}`;
 
     if (site.welcome_message) {
       systemPrompt += `\n\nVelkomstmelding for denne nettsiden: ${site.welcome_message}`;
     }
 
-    if (ragContext) {
-      systemPrompt += `\n\nHer er relevant informasjon fra kunnskapsbasen som du kan bruke til å svare:\n\n${ragContext}`;
+    // Fallback instruction
+    const fallbackMsg = botConfig.fallback_message || 'Beklager, jeg fant ikke svar på det. Kontakt oss direkte for hjelp.';
+    if (!ragContext || ragContext.trim().length === 0) {
+      systemPrompt += `\n\nHvis du ikke har relevant informasjon til å svare, si: "${fallbackMsg}"`;
     }
 
-    // 9. Call Claude
+    if (ragContext) {
+      systemPrompt += `\n\nHer er relevant informasjon fra kunnskapsbasen som du kan bruke til å svare:\n\n${ragContext}`;
+      if (botConfig.include_sources === false) {
+        systemPrompt += `\n\nIkke referer til kildene i svaret ditt.`;
+      }
+    }
+
+    // 9. Call Claude with bot_config settings
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const claudeResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+      max_tokens: configuredMaxTokens,
+      temperature: configuredTemp,
       system: systemPrompt,
       messages: history,
     });
@@ -240,11 +278,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 12. Return response
+    // 12. Return response (omit sources if include_sources is false)
     return NextResponse.json({
       response: assistantContent,
       conversationId: convId,
-      sources,
+      sources: botConfig.include_sources === false ? [] : sources,
       tokensUsed: totalTokens,
     });
   } catch (err) {

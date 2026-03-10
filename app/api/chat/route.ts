@@ -178,32 +178,69 @@ export async function POST(request: NextRequest) {
       // Continue without RAG context
     }
 
-    // 7. Get site config for system prompt
+    // 7. Get site config for system prompt (including bot_config)
     const { data: siteConfig } = await supabase
       .from('sites')
-      .select('welcome_message, bot_name, theme_config')
+      .select('welcome_message, bot_name, theme_config, bot_config')
       .eq('id', siteId)
       .single();
 
     const botName = siteConfig?.bot_name || 'NorskBot';
+    const botConfig = siteConfig?.bot_config || {};
+    const configuredTemp = typeof botConfig.temperature === 'number' ? botConfig.temperature : 0.7;
+    const configuredMaxTokens = typeof botConfig.max_tokens === 'number' ? Math.max(100, Math.min(2000, botConfig.max_tokens)) : 1024;
 
-    // 8. Build system prompt
-    let systemPrompt = `Du er ${botName}, en hjelpsom AI-assistent for ${siteName}. Svar alltid på norsk med mindre brukeren skriver på et annet språk. Vær vennlig, presis og hjelpsom.`;
+    // Tone instructions
+    const toneMap: Record<string, string> = {
+      profesjonell: 'Bruk en profesjonell og formell tone.',
+      vennlig: 'Vær vennlig og imøtekommende.',
+      uformell: 'Bruk en uformell og avslappet tone.',
+      teknisk: 'Bruk en teknisk og presis tone med fagterminologi.',
+    };
+    const toneInstruction = toneMap[botConfig.tone] || toneMap.vennlig;
+
+    // Response length instructions
+    const lengthMap: Record<string, string> = {
+      kort: 'Hold svarene korte og konsise, maks 2-3 setninger.',
+      medium: 'Gi moderat detaljerte svar.',
+      detaljert: 'Gi detaljerte og grundige svar.',
+    };
+    const lengthInstruction = lengthMap[botConfig.response_length] || lengthMap.medium;
+
+    // 8. Build system prompt using bot_config
+    let systemPrompt: string;
+    if (botConfig.system_prompt && botConfig.system_prompt.trim()) {
+      systemPrompt = botConfig.system_prompt.replace('{site_name}', siteName);
+    } else {
+      systemPrompt = `Du er ${botName}, en hjelpsom AI-assistent for ${siteName}. Svar alltid på norsk med mindre brukeren skriver på et annet språk.`;
+    }
+
+    systemPrompt += `\n\n${toneInstruction} ${lengthInstruction}`;
 
     if (siteConfig?.welcome_message) {
       systemPrompt += `\n\nVelkomstmelding for denne nettsiden: ${siteConfig.welcome_message}`;
     }
 
-    if (ragContext) {
-      systemPrompt += `\n\nHer er relevant informasjon fra kunnskapsbasen som du kan bruke til å svare:\n\n${ragContext}`;
+    // Fallback instruction
+    const fallbackMsg = botConfig.fallback_message || 'Beklager, jeg fant ikke svar på det. Kontakt oss direkte for hjelp.';
+    if (!ragContext || ragContext.trim().length === 0) {
+      systemPrompt += `\n\nHvis du ikke har relevant informasjon til å svare, si: "${fallbackMsg}"`;
     }
 
-    // 9. Call Claude
+    if (ragContext) {
+      systemPrompt += `\n\nHer er relevant informasjon fra kunnskapsbasen som du kan bruke til å svare:\n\n${ragContext}`;
+      if (botConfig.include_sources === false) {
+        systemPrompt += `\n\nIkke referer til kildene i svaret ditt.`;
+      }
+    }
+
+    // 9. Call Claude with bot_config settings
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const claudeResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+      max_tokens: configuredMaxTokens,
+      temperature: configuredTemp,
       system: systemPrompt,
       messages: history,
     });

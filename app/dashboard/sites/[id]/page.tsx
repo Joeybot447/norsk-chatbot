@@ -28,10 +28,21 @@ const presetColors = ['#2563eb', '#7c3aed', '#059669', '#dc2626', '#ea580c', '#d
 const tabs = [
   { key: 'general', label: 'Generelt' },
   { key: 'knowledge', label: 'Kunnskapsbase' },
+  { key: 'ai-settings', label: 'AI-innstillinger' },
   { key: 'widget', label: 'Widget-tilpasning' },
   { key: 'cta', label: 'CTA-er og automatisering' },
   { key: 'stats', label: 'Statistikk' },
 ];
+
+interface BotConfig {
+  system_prompt: string;
+  tone: string;
+  response_length: string;
+  temperature: number;
+  include_sources: boolean;
+  fallback_message: string;
+  max_tokens: number;
+}
 
 interface Site {
   id: string;
@@ -40,6 +51,7 @@ interface Site {
   welcome_message: string;
   bot_name: string;
   theme_config: any;
+  bot_config: BotConfig;
   is_active: boolean;
   created_at: string;
   stats: { conversations: number; messages: number; knowledgeSources: number };
@@ -252,6 +264,7 @@ export default function SiteEditorPage() {
       <div style={{ padding: 24, maxWidth: 900 }}>
         {activeTab === 'general' && <GeneralTab site={site} onSave={patchSite} saving={saving} />}
         {activeTab === 'knowledge' && <KnowledgeTab siteId={siteId} getAccessToken={getAccessToken} />}
+        {activeTab === 'ai-settings' && <AISettingsTab site={site} onSave={patchSite} saving={saving} />}
         {activeTab === 'widget' && <WidgetTab site={site} siteId={siteId} onSave={patchSite} saving={saving} />}
         {activeTab === 'cta' && <CTATab site={site} onSave={patchSite} saving={saving} />}
         {activeTab === 'stats' && <StatsTab siteId={siteId} site={site} />}
@@ -340,6 +353,250 @@ function GeneralTab({ site, onSave, saving }: { site: Site; onSave: (u: any) => 
         style={{ ...btnPrimary, opacity: saving ? 0.7 : 1 }}
       >
         {saving ? 'Lagrer...' : 'Lagre endringer'}
+      </button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// Tab: AI-innstillinger
+// ═══════════════════════════════════════════════════════
+function AISettingsTab({ site, onSave, saving }: { site: Site; onSave: (u: any) => Promise<void>; saving: boolean }) {
+  const defaults: BotConfig = {
+    system_prompt: '',
+    tone: 'vennlig',
+    response_length: 'medium',
+    temperature: 0.7,
+    include_sources: true,
+    fallback_message: 'Beklager, jeg fant ikke svar på det. Kontakt oss direkte for hjelp.',
+    max_tokens: 500,
+  };
+
+  const bc = site.bot_config || defaults;
+  const [systemPrompt, setSystemPrompt] = useState(bc.system_prompt || '');
+  const [tone, setTone] = useState(bc.tone || defaults.tone);
+  const [responseLength, setResponseLength] = useState(bc.response_length || defaults.response_length);
+  const [temperature, setTemperature] = useState(bc.temperature ?? defaults.temperature);
+  const [includeSources, setIncludeSources] = useState(bc.include_sources ?? defaults.include_sources);
+  const [fallbackMessage, setFallbackMessage] = useState(bc.fallback_message || defaults.fallback_message);
+  const [maxTokens, setMaxTokens] = useState(bc.max_tokens || defaults.max_tokens);
+
+  const handleSave = () => {
+    onSave({
+      bot_config: {
+        system_prompt: systemPrompt,
+        tone,
+        response_length: responseLength,
+        temperature,
+        include_sources: includeSources,
+        fallback_message: fallbackMessage,
+        max_tokens: maxTokens,
+      },
+    });
+  };
+
+  const toneOptions = [
+    { value: 'profesjonell', label: 'Profesjonell' },
+    { value: 'vennlig', label: 'Vennlig' },
+    { value: 'uformell', label: 'Uformell' },
+    { value: 'teknisk', label: 'Teknisk' },
+  ];
+
+  const lengthOptions = [
+    { value: 'kort', label: 'Kort' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'detaljert', label: 'Detaljert' },
+  ];
+
+  const placeholderPrompt = `Du er en hjelpsom assistent for ${site.name}. Svar på norsk.`;
+
+  return (
+    <div>
+      {/* System prompt */}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.text, margin: '0 0 4px' }}>Systeminstruks</h2>
+        <p style={{ fontSize: 13, color: colors.textMuted, margin: '0 0 16px' }}>
+          Tilpassede instruksjoner for hvordan chatboten skal oppføre seg. Hvis feltet er tomt, brukes standardinstruksen.
+        </p>
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Systemprompt</label>
+          <textarea
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+            placeholder={placeholderPrompt}
+            rows={4}
+            style={{ ...inputStyle, height: 'auto', padding: 12, resize: 'vertical' }}
+            onFocus={(e) => (e.target.style.borderColor = colors.blue)}
+            onBlur={(e) => (e.target.style.borderColor = colors.border)}
+          />
+          <p style={{ fontSize: 12, color: colors.textMuted, margin: '6px 0 0' }}>
+            Standard: &quot;{placeholderPrompt}&quot;
+          </p>
+        </div>
+      </div>
+
+      {/* Tone and response length */}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.text, margin: '0 0 16px' }}>Svarstil</h2>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          <div style={{ ...fieldGroup, flex: 1, minWidth: 200 }}>
+            <label style={labelStyle}>Tone</label>
+            <select
+              value={tone}
+              onChange={(e) => setTone(e.target.value)}
+              style={{ ...inputStyle, cursor: 'pointer' }}
+            >
+              {toneOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ ...fieldGroup, flex: 1, minWidth: 200 }}>
+            <label style={labelStyle}>Svarlengde</label>
+            <select
+              value={responseLength}
+              onChange={(e) => setResponseLength(e.target.value)}
+              style={{ ...inputStyle, cursor: 'pointer' }}
+            >
+              {lengthOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Temperature slider */}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.text, margin: '0 0 4px' }}>Kreativitet (temperatur)</h2>
+        <p style={{ fontSize: 13, color: colors.textMuted, margin: '0 0 16px' }}>
+          Lavere verdi gir mer fokuserte og forutsigbare svar. Høyere verdi gir mer kreative svar.
+        </p>
+        <div style={fieldGroup}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 13, color: colors.textMuted, minWidth: 50 }}>Fokusert</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={temperature}
+              onChange={(e) => setTemperature(parseFloat(e.target.value))}
+              style={{ flex: 1, accentColor: colors.blue, cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 13, color: colors.textMuted, minWidth: 50, textAlign: 'right' }}>Kreativ</span>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 8 }}>
+            <span style={{
+              display: 'inline-block',
+              padding: '4px 12px',
+              backgroundColor: '#eff6ff',
+              borderRadius: 6,
+              fontSize: 14,
+              fontWeight: 600,
+              color: colors.blue,
+              fontFamily: 'monospace',
+            }}>
+              {temperature.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Max tokens */}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.text, margin: '0 0 4px' }}>Maks svarlengde (tokens)</h2>
+        <p style={{ fontSize: 13, color: colors.textMuted, margin: '0 0 16px' }}>
+          Begrenser hvor langt hvert svar kan bli. 1 token tilsvarer omtrent 4 tegn.
+        </p>
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Maks tokens</label>
+          <input
+            type="number"
+            min={100}
+            max={2000}
+            step={50}
+            value={maxTokens}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10);
+              if (!isNaN(val)) setMaxTokens(Math.max(100, Math.min(2000, val)));
+            }}
+            style={{ ...inputStyle, width: 160 }}
+            onFocus={(e) => (e.target.style.borderColor = colors.blue)}
+            onBlur={(e) => (e.target.style.borderColor = colors.border)}
+          />
+          <p style={{ fontSize: 12, color: colors.textMuted, margin: '6px 0 0' }}>
+            Standardverdi: 500. Tillatt omrade: 100–2000.
+          </p>
+        </div>
+      </div>
+
+      {/* Include sources toggle */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.text, margin: '0 0 4px' }}>Vis kilder</h2>
+            <p style={{ fontSize: 13, color: colors.textMuted, margin: 0 }}>
+              Om chatboten skal vise referanser til kunnskapsbasen i svarene.
+            </p>
+          </div>
+          <button
+            onClick={() => setIncludeSources(!includeSources)}
+            style={{
+              width: 48,
+              height: 26,
+              borderRadius: 13,
+              border: 'none',
+              backgroundColor: includeSources ? colors.blue : '#cbd5e1',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'background-color 0.2s',
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: includeSources ? 25 : 3,
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                backgroundColor: colors.white,
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Fallback message */}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.text, margin: '0 0 4px' }}>Reservemelding</h2>
+        <p style={{ fontSize: 13, color: colors.textMuted, margin: '0 0 16px' }}>
+          Meldingen som vises nar chatboten ikke finner relevante svar i kunnskapsbasen.
+        </p>
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Reservemelding</label>
+          <input
+            style={inputStyle}
+            value={fallbackMessage}
+            onChange={(e) => setFallbackMessage(e.target.value)}
+            placeholder="Beklager, jeg fant ikke svar pa det. Kontakt oss direkte for hjelp."
+            onFocus={(e) => (e.target.style.borderColor = colors.blue)}
+            onBlur={(e) => (e.target.style.borderColor = colors.border)}
+          />
+        </div>
+      </div>
+
+      {/* Save button */}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        style={{ ...btnPrimary, opacity: saving ? 0.7 : 1 }}
+      >
+        {saving ? 'Lagrer...' : 'Lagre AI-innstillinger'}
       </button>
     </div>
   );
