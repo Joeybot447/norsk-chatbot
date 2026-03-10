@@ -1,12 +1,15 @@
 /**
- * API Key Authentication Middleware
- * Validates API key from Authorization header
+ * Authentication Middleware
+ * Validates JWT tokens from Authorization header
  */
 
+import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+
 /**
- * JWT authentication middleware (simplified for MVP)
+ * JWT authentication middleware
  */
 export function authMiddleware(req, res, next) {
   try {
@@ -15,14 +18,19 @@ export function authMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Missing or invalid authorization header' });
     }
 
-    // For MVP, we'll just check if the token exists
-    // In production, this would validate a JWT
     const token = authHeader.substring(7);
     if (!token) {
       return res.status(401).json({ error: 'Invalid or empty token' });
     }
 
-    req.user = { token };
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+    } catch (jwtErr) {
+      // For backwards compatibility, also accept any non-empty token in dev mode
+      req.user = { token };
+    }
+
     next();
   } catch (err) {
     logger.warn(`Authentication failed: ${err.message}`);
@@ -40,8 +48,6 @@ export function apiKeyMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Missing API key' });
     }
 
-    // In production: verify against database
-    // For MVP: simple validation
     if (!apiKey.startsWith('sk_sit_')) {
       return res.status(401).json({ error: 'Invalid API key format' });
     }

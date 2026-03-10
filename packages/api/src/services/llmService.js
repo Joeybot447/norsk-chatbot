@@ -1,6 +1,6 @@
 /**
  * LLM Service
- * Handles Claude API calls with streaming support
+ * Handles Claude API calls
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -16,12 +16,17 @@ export const llmService = {
    */
   async generateResponse({ userMessage, context, config }) {
     try {
-      const prompt = this.buildPrompt({ userMessage, context });
+      // Build system prompt: system instructions + knowledge context
+      let systemContent = context.systemPrompt;
+      if (context.context) {
+        systemContent += '\n\n' + context.context;
+      }
+      systemContent += '\n\nBruk BARE informasjonen over til å svare. Hvis du ikke finner svaret i kunnskapsbasen, si at du ikke har informasjon om dette og anbefal å kontakte bedriften direkte.';
 
       const response = await client.messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1024,
-        system: context.systemPrompt + '\n\n' + context.context,
+        system: systemContent,
         messages: [
           {
             role: 'user',
@@ -45,23 +50,9 @@ export const llmService = {
   },
 
   /**
-   * Build prompt for LLM
-   */
-  buildPrompt({ userMessage, context }) {
-    return `${context.systemPrompt}
-
-${context.context}
-
----
-
-Brukerspørsmål: ${userMessage}`;
-  },
-
-  /**
    * Calculate token estimate
    */
   estimateTokens(text) {
-    // Rough estimate: 1 token ≈ 4 characters
     return Math.ceil(text.length / 4);
   },
 };

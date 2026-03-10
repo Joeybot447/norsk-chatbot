@@ -46,8 +46,8 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Serve dashboard and landing pages
-app.use('/dashboard', express.static(path.join(__dirname, '../../../dashboard')));
-app.use('/landing', express.static(path.join(__dirname, '../../../landing')));
+app.use('/dashboard', express.static(path.join(__dirname, '../../dashboard')));
+app.use('/landing', express.static(path.join(__dirname, '../../landing')));
 
 // Request logging
 app.use((req, res, next) => {

@@ -141,13 +141,53 @@
     });
 
     // Demo login
-    document.getElementById('loginForm').addEventListener('submit', function(e){
+    document.getElementById('loginForm').addEventListener('submit', async function(e){
         e.preventDefault();
-        window.location.href = 'index.html';
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPass').value;
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Login failed');
+            localStorage.setItem('norskbot_token', data.token);
+            // Get site ID
+            try {
+                const siteRes = await fetch('/api/demo-info');
+                const siteData = await siteRes.json();
+                if (siteData.siteId) localStorage.setItem('norskbot_site_id', siteData.siteId);
+            } catch(_) {}
+            window.location.href = 'index.html';
+        } catch(err) {
+            alert(err.message);
+        }
     });
-    document.getElementById('registerForm').addEventListener('submit', function(e){
+    document.getElementById('registerForm').addEventListener('submit', async function(e){
         e.preventDefault();
-        window.location.href = 'index.html';
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPass').value;
+        const company = document.getElementById('regCompany').value;
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, companyName: company }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Registration failed');
+            localStorage.setItem('norskbot_token', data.token);
+            try {
+                const siteRes = await fetch('/api/demo-info');
+                const siteData = await siteRes.json();
+                if (siteData.siteId) localStorage.setItem('norskbot_site_id', siteData.siteId);
+            } catch(_) {}
+            window.location.href = 'index.html';
+        } catch(err) {
+            alert(err.message);
+        }
     });
 </script>
 </body>

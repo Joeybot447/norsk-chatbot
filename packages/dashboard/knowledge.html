@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NorskBot — Kunnskapsbase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',system-ui,sans-serif;color:#1F2937;background:#F9FAFB;font-size:14px;-webkit-font-smoothing:antialiased}
+        button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+        input,textarea{font-family:inherit;border:none;outline:none}
+        a{text-decoration:none;color:inherit}
+
+        .topnav{display:flex;align-items:center;height:52px;background:#fff;border-bottom:1px solid #E5E7EB;padding:0 20px;position:fixed;top:0;left:0;right:0;z-index:100}
+        .topnav-logo{display:flex;align-items:center;gap:8px;margin-right:auto}
+        .topnav-logo .logo-circle{width:30px;height:30px;background:#3B82F6;border-radius:50%;display:flex;align-items:center;justify-content:center}
+        .topnav-logo .logo-circle svg{width:16px;height:16px;fill:#fff}
+        .topnav-logo span{font-weight:700;font-size:16px;color:#1F2937}
+        .topnav-links{display:flex;align-items:center;gap:6px}
+        .topnav-links a{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:6px;font-size:13px;color:#6B7280;transition:background .15s,color .15s}
+        .topnav-links a:hover{background:#F3F4F6;color:#1F2937}
+        .topnav-links a svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+        .topnav-links .logout{color:#EF4444}
+
+        .shell{display:flex;min-height:calc(100vh - 52px);margin-top:52px}
+
+        .sidebar{width:200px;min-width:200px;background:#fff;border-right:1px solid #E5E7EB;padding:16px 0;position:fixed;top:52px;bottom:0;overflow-y:auto}
+        .sb-item{display:flex;align-items:center;gap:9px;padding:8px 16px;font-size:14px;color:#374151;cursor:pointer;transition:background .12s}
+        .sb-item:hover{background:#F3F4F6}
+        .sb-item.active{color:#3B82F6;background:#EFF6FF}
+        .sb-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:#6B7280;flex-shrink:0}
+        .sb-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+        .sb-section{padding:18px 16px 6px;font-size:11px;font-weight:600;color:#9CA3AF;letter-spacing:1.2px;text-transform:uppercase}
+        .sb-item.active .sb-icon{color:#3B82F6}
+
+        .main{flex:1;margin-left:200px;padding:32px 40px}
+        .page-title{font-size:22px;font-weight:700;margin-bottom:8px}
+        .page-desc{color:#6B7280;margin-bottom:24px}
+
+        .tabs{display:flex;gap:0;border-bottom:2px solid #E5E7EB;margin-bottom:24px}
+        .tab{padding:10px 20px;font-size:14px;font-weight:500;color:#6B7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s}
+        .tab:hover{color:#1F2937}
+        .tab.active{color:#3B82F6;border-bottom-color:#3B82F6}
+
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+
+        .form-card{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:24px;margin-bottom:24px}
+        .form-card h3{font-size:16px;font-weight:600;margin-bottom:16px}
+        .form-group{margin-bottom:16px}
+        .form-group label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px}
+        .form-input{width:100%;padding:10px 14px;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;background:#F9FAFB;transition:border-color .15s}
+        .form-input:focus{border-color:#3B82F6;background:#fff;outline:none}
+        textarea.form-input{min-height:120px;resize:vertical}
+        .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:500;transition:background .15s}
+        .btn-primary{background:#3B82F6;color:#fff}
+        .btn-primary:hover{background:#2563EB}
+        .btn-primary:disabled{background:#93C5FD;cursor:not-allowed}
+        .btn-danger{background:#FEE2E2;color:#DC2626;font-size:12px;padding:6px 12px}
+        .btn-danger:hover{background:#FECACA}
+
+        .sources-list{margin-top:16px}
+        .source-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:8px}
+        .source-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+        .source-icon.url{background:#DBEAFE;color:#3B82F6}
+        .source-icon.file{background:#FEF3C7;color:#D97706}
+        .source-icon.text{background:#D1FAE5;color:#059669}
+        .source-body{flex:1;min-width:0}
+        .source-name{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .source-meta{font-size:12px;color:#9CA3AF;margin-top:2px}
+        .source-actions{flex-shrink:0}
+
+        .empty-state{text-align:center;padding:40px 20px;color:#9CA3AF}
+        .empty-state svg{width:48px;height:48px;stroke:#D1D5DB;fill:none;stroke-width:1.5;margin-bottom:12px}
+        .empty-state p{font-size:15px}
+
+        .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;font-size:14px;color:#fff;z-index:1000;opacity:0;transition:opacity .3s;pointer-events:none}
+        .toast.success{background:#059669}
+        .toast.error{background:#DC2626}
+        .toast.show{opacity:1}
+
+        .spinner{display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+</head>
+<body>
+
+<nav class="topnav">
+    <a href="index.html" class="topnav-logo">
+        <div class="logo-circle"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <span>NorskBot</span>
+    </a>
+    <div class="topnav-links">
+        <a href="index.html"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chatbots</a>
+        <a href="auth.html" class="logout"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logg ut</a>
+    </div>
+</nav>
+
+<div class="shell">
+    <aside class="sidebar">
+        <div class="sb-item" onclick="location.href='index.html'">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+            Dashboard
+        </div>
+        <div class="sb-section">Innhold</div>
+        <div class="sb-item active" data-tab="lenker">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+            Lenker
+        </div>
+        <div class="sb-item" data-tab="filer">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            Filer
+        </div>
+        <div class="sb-item" data-tab="tekst">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></span>
+            Tekst
+        </div>
+        <div class="sb-section">Avansert</div>
+        <div class="sb-item" onclick="location.href='index.html'">
+            <span class="sb-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            Samtalehistorikk
+        </div>
+    </aside>
+
+    <div class="main">
+        <h1 class="page-title">Kunnskapsbase</h1>
+        <p class="page-desc">Legg til innhold som chatboten kan bruke til å svare på spørsmål.</p>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="lenker">🔗 Lenker</div>
+            <div class="tab" data-tab="filer">📄 Filer</div>
+            <div class="tab" data-tab="tekst">✏️ Tekst</div>
+        </div>
+
+        <!-- LENKER TAB -->
+        <div class="tab-content active" id="tab-lenker">
+            <div class="form-card">
+                <h3>Legg til URL</h3>
+                <div class="form-group">
+                    <label for="urlInput">Nettadresse</label>
+                    <input type="url" id="urlInput" class="form-input" placeholder="https://example.no/om-oss">
+                </div>
+                <button class="btn btn-primary" id="btnAddUrl" onclick="submitUrl()">
+                    Legg til lenke
+                </button>
+            </div>
+            <h3 style="margin-bottom:12px">Lenker i kunnskapsbasen</h3>
+            <div id="urlSources" class="sources-list"></div>
+        </div>
+
+        <!-- FILER TAB -->
+        <div class="tab-content" id="tab-filer">
+            <div class="form-card">
+                <h3>Last opp fil</h3>
+                <div class="form-group">
+                    <label for="fileInput">Velg fil (PDF, TXT, DOCX — maks 10MB)</label>
+                    <input type="file" id="fileInput" class="form-input" accept=".pdf,.txt,.docx" style="padding:8px">
+                </div>
+                <button class="btn btn-primary" id="btnUpload" onclick="submitFile()">
+                    Last opp
+                </button>
+            </div>
+            <h3 style="margin-bottom:12px">Filer i kunnskapsbasen</h3>
+            <div id="fileSources" class="sources-list"></div>
+        </div>
+
+        <!-- TEKST TAB -->
+        <div class="tab-content" id="tab-tekst">
+            <div class="form-card">
+                <h3>Legg til tekst</h3>
+                <div class="form-group">
+                    <label for="textName">Navn / etikett</label>
+                    <input type="text" id="textName" class="form-input" placeholder="F.eks. Priser, FAQ, Om oss">
+                </div>
+                <div class="form-group">
+                    <label for="textContent">Innhold</label>
+                    <textarea id="textContent" class="form-input" placeholder="Skriv eller lim inn tekst som chatboten skal bruke..."></textarea>
+                </div>
+                <button class="btn btn-primary" id="btnAddText" onclick="submitText()">
+                    Legg til tekst
+                </button>
+            </div>
+            <h3 style="margin-bottom:12px">Tekst i kunnskapsbasen</h3>
+            <div id="textSources" class="sources-list"></div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = window.location.origin;
+const token = localStorage.getItem('norskbot_token');
+const siteId = localStorage.getItem('norskbot_site_id');
+
+// If no token, redirect to auth
+if (!token) {
+    window.location.href = 'auth.html';
+}
+
+// ─── Tab switching ───────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+
+        // Also update sidebar
+        document.querySelectorAll('.sb-item[data-tab]').forEach(si => si.classList.remove('active'));
+        const sideItem = document.querySelector(`.sb-item[data-tab="${tab.dataset.tab}"]`);
+        if (sideItem) sideItem.classList.add('active');
+    });
+});
+
+document.querySelectorAll('.sb-item[data-tab]').forEach(item => {
+    item.addEventListener('click', () => {
+        const tabName = item.dataset.tab;
+        const tabEl = document.querySelector(`.tab[data-tab="${tabName}"]`);
+        if (tabEl) tabEl.click();
+    });
+});
+
+// ─── Toast ───────────────────────────────────────────
+function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast ' + type + ' show';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// ─── API helpers ─────────────────────────────────────
+function authHeaders(extra = {}) {
+    return {
+        'Authorization': 'Bearer ' + token,
+        ...extra,
+    };
+}
+
+async function fetchSources() {
+    if (!siteId) return;
+    try {
+        const res = await fetch(`${API_BASE}/v1/ingest/sources?siteId=${siteId}`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) throw new Error('Failed to load sources');
+        const sources = await res.json();
+        renderSources(sources);
+    } catch (err) {
+        console.error('Error loading sources:', err);
+    }
+}
+
+function renderSources(sources) {
+    const urlEl = document.getElementById('urlSources');
+    const fileEl = document.getElementById('fileSources');
+    const textEl = document.getElementById('textSources');
+
+    const urlSources = sources.filter(s => s.type === 'url');
+    const fileSources = sources.filter(s => s.type === 'file');
+    const textSources = sources.filter(s => s.type === 'text');
+
+    urlEl.innerHTML = urlSources.length ? urlSources.map(sourceHtml).join('') : emptyHtml('Ingen lenker lagt til ennå');
+    fileEl.innerHTML = fileSources.length ? fileSources.map(sourceHtml).join('') : emptyHtml('Ingen filer lastet opp ennå');
+    textEl.innerHTML = textSources.length ? textSources.map(sourceHtml).join('') : emptyHtml('Ingen tekst lagt til ennå');
+}
+
+function sourceHtml(s) {
+    const iconClass = s.type === 'url' ? 'url' : s.type === 'file' ? 'file' : 'text';
+    const icon = s.type === 'url' ? '🔗' : s.type === 'file' ? '📄' : '✏️';
+    const meta = [];
+    if (s.chunkCount != null) meta.push(s.chunkCount + ' deler');
+    if (s.status) meta.push(s.status);
+    if (s.createdAt) meta.push(new Date(s.createdAt).toLocaleDateString('nb-NO'));
+
+    return `<div class="source-item">
+        <div class="source-icon ${iconClass}">${icon}</div>
+        <div class="source-body">
+            <div class="source-name" title="${escHtml(s.name)}">${escHtml(s.name)}</div>
+            <div class="source-meta">${meta.join(' · ')}</div>
+        </div>
+        <div class="source-actions">
+            <button class="btn btn-danger" onclick="deleteSource('${s.id}')">Slett</button>
+        </div>
+    </div>`;
+}
+
+function emptyHtml(msg) {
+    return `<div class="empty-state"><p>${msg}</p></div>`;
+}
+
+function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Submit handlers ─────────────────────────────────
+async function submitUrl() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) return showToast('Skriv inn en URL', 'error');
+
+    const btn = document.getElementById('btnAddUrl');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Henter...';
+
+    try {
+        const res = await fetch(`${API_BASE}/v1/ingest/url`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ url, siteId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Feil ved innlasting');
+        showToast(`Lenke lagt til! ${data.chunks} deler opprettet.`);
+        document.getElementById('urlInput').value = '';
+        fetchSources();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Legg til lenke';
+    }
+}
+
+async function submitFile() {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files.length) return showToast('Velg en fil først', 'error');
+
+    const btn = document.getElementById('btnUpload');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Laster opp...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('siteId', siteId);
+
+        const res = await fetch(`${API_BASE}/v1/ingest/upload`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Feil ved opplasting');
+        showToast(`Fil lastet opp! ${data.chunks} deler opprettet.`);
+        fileInput.value = '';
+        fetchSources();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Last opp';
+    }
+}
+
+async function submitText() {
+    const name = document.getElementById('textName').value.trim();
+    const text = document.getElementById('textContent').value.trim();
+    if (!text) return showToast('Skriv inn tekst', 'error');
+
+    const btn = document.getElementById('btnAddText');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Lagrer...';
+
+    try {
+        const res = await fetch(`${API_BASE}/v1/ingest/text`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ text, name: name || 'Tekst', siteId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Feil ved lagring');
+        showToast(`Tekst lagt til! ${data.chunks} deler opprettet.`);
+        document.getElementById('textName').value = '';
+        document.getElementById('textContent').value = '';
+        fetchSources();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Legg til tekst';
+    }
+}
+
+async function deleteSource(id) {
+    if (!confirm('Er du sikker på at du vil slette denne kilden?')) return;
+    try {
+        const res = await fetch(`${API_BASE}/v1/ingest/sources/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+        });
+        if (!res.ok) throw new Error('Feil ved sletting');
+        showToast('Kilde slettet');
+        fetchSources();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// ─── Init ────────────────────────────────────────────
+// Try to get siteId if not stored
+async function init() {
+    if (!siteId) {
+        try {
+            const res = await fetch(`${API_BASE}/api/demo-info`);
+            const data = await res.json();
+            if (data.siteId) {
+                localStorage.setItem('norskbot_site_id', data.siteId);
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error('Could not get site ID:', err);
+        }
+        return;
+    }
+    fetchSources();
+}
+
+// Check URL hash for tab
+const hash = window.location.hash.replace('#', '');
+if (['lenker', 'filer', 'tekst'].includes(hash)) {
+    const tabEl = document.querySelector(`.tab[data-tab="${hash}"]`);
+    if (tabEl) tabEl.click();
+}
+
+init();
+</script>
+</body>
+</html>

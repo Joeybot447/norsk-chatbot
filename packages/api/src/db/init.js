@@ -168,6 +168,35 @@ export async function initializeDatabase() {
       )
     `);
 
+    // ===== KNOWLEDGE SOURCES TABLE =====
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS knowledge_sources (
+        id TEXT PRIMARY KEY,
+        site_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        status TEXT DEFAULT 'processing',
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (site_id) REFERENCES sites(id)
+      )
+    `);
+
+    // ===== KNOWLEDGE CHUNKS TABLE =====
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS knowledge_chunks (
+        id TEXT PRIMARY KEY,
+        source_id TEXT NOT NULL,
+        site_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        chunk_index INTEGER,
+        token_count INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (source_id) REFERENCES knowledge_sources(id),
+        FOREIGN KEY (site_id) REFERENCES sites(id)
+      )
+    `);
+
     // Create indexes
     db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key)`);
@@ -183,6 +212,9 @@ export async function initializeDatabase() {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_site_id ON messages(site_id)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_guardrail_rules_site_id ON guardrail_rules(site_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_knowledge_sources_site_id ON knowledge_sources(site_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_site_id ON knowledge_chunks(site_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_source_id ON knowledge_chunks(source_id)`);
 
     logger.info('Database tables initialized successfully');
     return true;
@@ -277,6 +309,23 @@ export async function seedDemoData() {
           [chunkId, docId, siteId, i, chunks[i].trim(), Math.ceil(chunks[i].length / 4)]
         );
       }
+    }
+
+    // Create demo user for dashboard login (fjordtech@demo.no / demo123)
+    const { default: bcrypt } = await import('bcryptjs');
+    const existingUser = getOne('SELECT id FROM users WHERE email = ?', ['fjordtech@demo.no']);
+    if (!existingUser) {
+      const userId = uuid();
+      const passwordHash = bcrypt.hashSync('demo123', 10);
+      query(
+        `INSERT INTO users (id, email, password_hash, company_name, api_key, plan, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [userId, 'fjordtech@demo.no', passwordHash, 'Fjordtech AS',
+         'sk_demo_' + Math.random().toString(36).substr(2, 20), 'starter', 'active']
+      );
+      // Link user to site
+      query('UPDATE sites SET user_id = ? WHERE id = ?', [userId, siteId]);
+      logger.info(`Demo user created: fjordtech@demo.no`);
     }
 
     logger.info(`Demo data seeded for site: ${siteId}`);

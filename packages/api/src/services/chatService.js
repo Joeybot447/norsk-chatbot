@@ -5,7 +5,7 @@
 
 import { getMany } from '../db/client.js';
 import { llmService } from './llmService.js';
-import { ragService } from './ragService.js';
+import { searchKnowledge } from './rag.js';
 import { guardrailsService } from './guardrailsService.js';
 import { logger } from '../utils/logger.js';
 
@@ -30,32 +30,28 @@ export const chatService = {
         };
       }
 
-      // Step 2: Retrieve relevant chunks from knowledge base
-      const chunks = await ragService.retrieveChunks({
-        siteId,
-        query: userMessage,
-        limit: 5,
-      });
+      // Step 2: Search knowledge base using new RAG service
+      const chunks = searchKnowledge(siteId, userMessage, 5);
 
       // Step 3: Build context for LLM
       const context = this.buildContext({
         chunks,
-        conversationId,
         widgetConfig,
       });
 
-      // Step 4: Call LLM with streaming
+      // Step 4: Call LLM
       const llmResponse = await llmService.generateResponse({
         userMessage,
         context,
         config: widgetConfig,
       });
 
-      // Step 5: Extract sources and confidence
-      const sources = this.extractSources(chunks, llmResponse);
+      // Step 5: Extract sources with real names
+      const sources = this.extractSources(chunks);
       const confidence = this.calculateConfidence({
         llmResponse,
-        retrievalScore: chunks.length > 0 ? chunks[0].score : 0,
+        chunkCount: chunks.length,
+        topScore: chunks.length > 0 ? chunks[0].score : 0,
       });
 
       // Step 6: Post-processing guardrails
@@ -87,72 +83,83 @@ export const chatService = {
   },
 
   /**
-   * Build LLM prompt with context
+   * Build LLM prompt context with knowledge chunks
    */
-  buildContext({ chunks, conversationId, widgetConfig }) {
-    const contextStr = chunks
-      .map((chunk, idx) => `[Source ${idx + 1}]\n${chunk.content}`)
-      .join('\n\n');
+  buildContext({ chunks, widgetConfig }) {
+    let contextStr = '';
+
+    if (chunks.length > 0) {
+      contextStr = chunks
+        .map((chunk, idx) => `[Kilde ${idx + 1}: ${chunk.source_name || 'Ukjent'}]\n${chunk.content}`)
+        .join('\n\n');
+    }
 
     return {
-      systemPrompt: this.buildSystemPrompt(widgetConfig),
+      systemPrompt: this.buildSystemPrompt(widgetConfig, chunks.length > 0),
       context: contextStr,
-      sourceMetadata: chunks.map((c) => ({
-        id: c.id,
-        title: c.metadata?.title || 'Unknown',
-        url: c.metadata?.url || '',
-      })),
     };
   },
 
   /**
-   * Build system prompt with company context
+   * Build system prompt with RAG-aware instructions
    */
-  buildSystemPrompt(config) {
-    const tone = config.tone || 'professional';
-    const language = config.language || 'norwegian';
+  buildSystemPrompt(config, hasKnowledge) {
+    const siteName = config?.name || 'bedriften';
 
-    const basePrompt = `Du er en kundeservicebot for et norsk selskap.
+    if (hasKnowledge) {
+      return `Du er en kundeservicebot for ${siteName}.
+Svar alltid på norsk. Vær hjelpsom og profesjonell.
+
+Her er relevant informasjon fra kunnskapsbasen:`;
+    }
+
+    return `Du er en kundeservicebot for ${siteName}.
+Svar alltid på norsk. Vær hjelpsom og profesjonell.
 
 Regler:
-1. Svar BARE basert på informasjonen som er gitt nedenfor.
-2. Hvis spørsmålet ikke er dekket av informasjonen, si: "Jeg har ikke informasjon om det. Vennligst kontakt oss direkte."
-3. Vær alltid vennlig, profesjonell, og hjelpsom.
-4. Gi korte svar (maksimalt 200 ord).
-5. Sitér kilder når relevant: "Basert på [kilde]..."
-6. Gi aldri ut sensibel informasjon (priser, ansattdetaljer, etc.) med mindre den er i kunnskapsbasen.
-
-Tone: ${tone}
-Language: ${language}
+1. Svar basert på informasjonen som er gitt.
+2. Hvis du ikke har nok informasjon, si at du ikke har informasjon om dette og anbefal å kontakte bedriften direkte.
+3. Gi korte, presise svar.
+4. Sitér kilder når relevant.
 
 Kunnskapsbase:`;
-
-    return basePrompt;
   },
 
   /**
-   * Extract sources from chunks and response
+   * Extract source citations with real names/URLs
    */
-  extractSources(chunks, llmResponse) {
-    return chunks.slice(0, 3).map((chunk) => ({
-      title: chunk.metadata?.title || 'Unknown',
-      url: chunk.metadata?.url || '',
-      relevance: chunk.score || 0.8,
-    }));
+  extractSources(chunks) {
+    // Deduplicate by source_id
+    const seen = new Set();
+    const sources = [];
+
+    for (const chunk of chunks) {
+      if (seen.has(chunk.source_id)) continue;
+      seen.add(chunk.source_id);
+
+      sources.push({
+        title: chunk.source_name || 'Ukjent kilde',
+        url: chunk.source_type === 'url' ? chunk.source_name : '',
+        relevance: chunk.score || 0,
+      });
+
+      if (sources.length >= 3) break;
+    }
+
+    return sources;
   },
 
   /**
    * Calculate confidence score
    */
-  calculateConfidence({ llmResponse, retrievalScore }) {
-    // Confidence is a combination of:
-    // - Retrieval quality (did we find relevant docs?)
-    // - Response certainty (does the response sound confident?)
+  calculateConfidence({ llmResponse, chunkCount, topScore }) {
+    if (chunkCount === 0) return 0.3;
 
     const hasUncertaintyPhrases =
       /muligens|kanskje|tror jeg|usikker|vet ikke|antar|omtrent/i.test(llmResponse.content);
 
-    const baseConfidence = retrievalScore * 0.5 + 0.5; // 0.5-1.0
+    const retrievalConfidence = Math.min(1.0, topScore / 3);
+    const baseConfidence = retrievalConfidence * 0.5 + 0.5;
     const adjustedConfidence = hasUncertaintyPhrases ? baseConfidence * 0.7 : baseConfidence;
 
     return Math.min(1.0, Math.max(0.0, adjustedConfidence));
