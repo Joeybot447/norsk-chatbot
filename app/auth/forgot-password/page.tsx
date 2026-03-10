@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { resetPassword } from '@/lib/supabase/auth';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -16,8 +17,7 @@ export default function ForgotPasswordPage() {
     setError('');
     setLoading(true);
     try {
-      // TODO: Replace with actual password reset API call
-      await new Promise((r) => setTimeout(r, 1200));
+      await resetPassword(email);
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Noe gikk galt. Prøv igjen.');

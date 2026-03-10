@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn, signUp } from '@/lib/supabase/auth';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -85,19 +86,7 @@ export default function AuthPage() {
     clearMessages();
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPass }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Innlogging feilet');
-      localStorage.setItem('norskbot_token', data.token);
-      try {
-        const siteRes = await fetch('/api/demo-info');
-        const siteData = await siteRes.json();
-        if (siteData.siteId) localStorage.setItem('norskbot_site_id', siteData.siteId);
-      } catch (_) {}
+      await signIn(loginEmail, loginPass);
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Innlogging feilet');
@@ -123,26 +112,11 @@ export default function AuthPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: regEmail,
-          password: regPass,
-          name: regName,
-          company: regCompany,
-        }),
+      await signUp(regEmail, regPass, {
+        displayName: regName,
+        companyName: regCompany,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Registrering feilet');
-      localStorage.setItem('norskbot_token', data.token);
-      try {
-        const siteRes = await fetch('/api/demo-info');
-        const siteData = await siteRes.json();
-        if (siteData.siteId) localStorage.setItem('norskbot_site_id', siteData.siteId);
-      } catch (_) {}
-      setSuccess('Konto opprettet! Omdirigerer...');
-      setTimeout(() => router.push('/dashboard'), 1000);
+      setSuccess('Konto opprettet! Sjekk e-posten din for å bekrefte kontoen.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registrering feilet');
     } finally {

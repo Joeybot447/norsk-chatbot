@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/supabase/hooks';
+import { signOut } from '@/lib/supabase/auth';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+const planLabels: Record<string, string> = {
+  free: 'Gratis plan',
+  starter: 'Starter plan',
+  professional: 'Profesjonell plan',
+  enterprise: 'Enterprise plan',
+};
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1' },
@@ -19,16 +28,51 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, loading } = useAuth();
   const [sidebarHover, setSidebarHover] = useState('');
 
-  const userName = 'Ola Nordmann';
-  const userInitials = userName.split(' ').map((n) => n[0]).join('').toUpperCase();
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth');
+    }
+  }, [loading, user, router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('norskbot_token');
-    localStorage.removeItem('norskbot_site_id');
+  const handleLogout = async () => {
+    await signOut();
     router.push('/auth');
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f8fafc',
+        fontFamily,
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: 40, height: 40, border: '3px solid #e2e8f0',
+            borderTopColor: '#2563eb', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 16px',
+          }} />
+          <p style={{ color: '#64748b', fontSize: 14, fontFamily }}>Laster...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated — redirect is happening via useEffect
+  if (!user) return null;
+
+  const userName = user.displayName;
+  const userInitials = userName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const userPlanLabel = planLabels[user.plan] || planLabels.free;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily }}>
@@ -132,7 +176,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {userName}
               </div>
               <div style={{ fontSize: 12, color: '#64748b', fontFamily }}>
-                Gratis plan
+                {userPlanLabel}
               </div>
             </div>
           </a>

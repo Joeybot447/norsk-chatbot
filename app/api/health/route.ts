@@ -4,9 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOne, getMany, query } from '../../../lib/db/client';
+import { createServiceClient } from '../../../lib/supabase/client';
 import { logger } from '../../../lib/utils/logger.js';
-import config from '../../../lib/config.js';
 
 /**
  * GET /api/health

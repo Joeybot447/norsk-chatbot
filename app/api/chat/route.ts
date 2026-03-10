@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
-import { getOne, getMany, query } from '../../../lib/db/client';
+import { createServiceClient } from '../../../lib/supabase/client';
 import { logger } from '../../../lib/utils/logger.js';
 
 // Validation schema
