@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '../../../_lib/supabase/client';
 import { useAuth } from '../../../_lib/supabase/hooks';
 
-
+const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 // ── Design tokens ──
 const colors = {
@@ -96,7 +96,7 @@ const inputStyle: React.CSSProperties = {
   border: `1px solid ${colors.border}`,
   borderRadius: 8,
   fontSize: 14,
-
+  fontFamily,
   color: colors.text,
   outline: 'none',
   boxSizing: 'border-box',
@@ -120,7 +120,7 @@ const btnPrimary: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 500,
   fontSize: 14,
-
+  fontFamily,
   transition: 'all 0.15s',
 };
 
@@ -133,7 +133,7 @@ const btnSecondary: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 500,
   fontSize: 14,
-
+  fontFamily,
   transition: 'all 0.15s',
 };
 
@@ -145,7 +145,7 @@ const btnDanger: React.CSSProperties = {
   borderRadius: 6,
   cursor: 'pointer',
   fontSize: 12,
-
+  fontFamily,
   transition: 'all 0.15s',
 };
 
@@ -226,7 +226,7 @@ export default function SiteEditorPage() {
 
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily }}>
         <div style={{
           width: 32, height: 32, borderRadius: '50%',
           border: `3px solid ${colors.border}`, borderTopColor: colors.blue,
@@ -239,7 +239,7 @@ export default function SiteEditorPage() {
 
   if (error || !site) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily }}>
         <div style={{ color: colors.danger, fontSize: 15, fontWeight: 500, marginBottom: 16 }}>{error || 'Nettsted ikke funnet'}</div>
         <button onClick={() => router.push('/dashboard/sites')} style={btnSecondary}>Tilbake til nettsteder</button>
       </div>
@@ -247,14 +247,14 @@ export default function SiteEditorPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: colors.bg }}>
+    <div style={{ fontFamily, minHeight: '100vh', backgroundColor: colors.bg }}>
       {/* Header */}
       <div style={{ backgroundColor: colors.white, borderBottom: `1px solid ${colors.border}`, padding: '16px 32px' }}>
         <button
           onClick={() => router.push('/dashboard/sites')}
           style={{
             background: 'none', border: 'none', color: colors.blue, cursor: 'pointer',
-            fontSize: 14, padding: 0, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 14, fontFamily, padding: 0, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4,
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
@@ -299,7 +299,7 @@ export default function SiteEditorPage() {
               color: activeTab === tab.key ? colors.blue : colors.textMuted,
               background: 'none', border: 'none',
               borderBottom: activeTab === tab.key ? `2px solid ${colors.blue}` : '2px solid transparent',
-              cursor: 'pointer', whiteSpace: 'nowrap',
+              cursor: 'pointer', fontFamily, whiteSpace: 'nowrap',
               transition: 'color 0.15s',
             }}
           >
@@ -950,7 +950,7 @@ function WidgetTab({ site, siteId, onSave, saving }: { site: Site; siteId: strin
         <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
           <code style={{
             flex: 1, display: 'block', backgroundColor: colors.bg, padding: '12px 14px',
-            borderRadius: 8, fontSize: 12: 'SF Mono, Menlo, monospace',
+            borderRadius: 8, fontSize: 12, fontFamily: 'SF Mono, Menlo, monospace',
             color: colors.text, wordBreak: 'break-all', lineHeight: 1.5,
             border: `1px solid ${colors.border}`,
           }}>{embedCode}</code>
@@ -1072,7 +1072,7 @@ function ApiKeysTab({ site, siteId, getAccessToken, onRefresh }: { site: Site; s
           <div style={{ display: 'flex', gap: 8 }}>
             <code style={{
               flex: 1, padding: '10px 14px', backgroundColor: colors.white, borderRadius: 8,
-              fontSize: 13: 'SF Mono, Menlo, monospace', color: colors.text,
+              fontSize: 13, fontFamily: 'SF Mono, Menlo, monospace', color: colors.text,
               wordBreak: 'break-all', border: `1px solid ${colors.border}`,
             }}>{newKey}</code>
             <button onClick={copyKey} style={{ ...btnPrimary, whiteSpace: 'nowrap' }}>
@@ -1109,7 +1109,7 @@ function ApiKeysTab({ site, siteId, getAccessToken, onRefresh }: { site: Site; s
             <tbody>
               {activeKeys.map((k, i) => (
                 <tr key={k.id} style={{ borderBottom: i < activeKeys.length - 1 ? `1px solid ${colors.borderLight}` : 'none' }}>
-                  <td style={{ padding: '12px', fontSize: 13: 'SF Mono, Menlo, monospace', color: colors.text }}>{k.key_prefix}...</td>
+                  <td style={{ padding: '12px', fontSize: 13, fontFamily: 'SF Mono, Menlo, monospace', color: colors.text }}>{k.key_prefix}...</td>
                   <td style={{ padding: '12px', fontSize: 13, color: colors.text }}>{k.name}</td>
                   <td style={{ padding: '12px', fontSize: 13, color: colors.textMuted }}>{new Date(k.created_at).toLocaleDateString('nb-NO')}</td>
                   <td style={{ padding: '12px', fontSize: 13, color: colors.textMuted }}>{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString('nb-NO') : 'Aldri'}</td>

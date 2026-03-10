@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../_lib/supabase/hooks';
 
-
+const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 const colors = {
   blue: '#2563eb',
@@ -43,7 +43,7 @@ const inputStyle: React.CSSProperties = {
   border: `1px solid ${colors.border}`,
   borderRadius: 8,
   fontSize: 14,
- 
+  fontFamily,
   color: colors.text,
   outline: 'none',
   boxSizing: 'border-box',
@@ -139,7 +139,7 @@ export default function NewSitePage() {
   if (createdApiKey) {
     return (
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        display: 'flex', flexDirection: 'column', fontFamily, alignItems: 'center',
         justifyContent: 'center', minHeight: '70vh', padding: 32, backgroundColor: colors.bg,
       }}>
         <div style={{
@@ -164,7 +164,7 @@ export default function NewSitePage() {
             background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 10,
             padding: 16, marginBottom: 16,
           }}>
-            <code style={{ fontSize: 13, color: colors.text, wordBreak: 'break-all': 'SF Mono, Menlo, monospace', lineHeight: 1.5 }}>
+            <code style={{ fontSize: 13, color: colors.text, wordBreak: 'break-all', fontFamily: 'SF Mono, Menlo, monospace', lineHeight: 1.5 }}>
               {createdApiKey}
             </code>
           </div>
@@ -175,7 +175,7 @@ export default function NewSitePage() {
               padding: '12px 24px', width: '100%',
               backgroundColor: copied ? colors.success : colors.blue,
               color: colors.white, border: 'none', borderRadius: 10, cursor: 'pointer',
-              fontWeight: 600, fontSize: 14, marginBottom: 16,
+              fontWeight: 600, fontSize: 14, fontFamily, marginBottom: 16,
               transition: 'background-color 0.2s',
             }}
           >
@@ -200,7 +200,7 @@ export default function NewSitePage() {
             style={{
               display: 'inline-block', padding: '12px 24px',
               backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}`,
-              borderRadius: 10, cursor: 'pointer', fontWeight: 500, fontSize: 14,
+              borderRadius: 10, cursor: 'pointer', fontWeight: 500, fontSize: 14, fontFamily,
               transition: 'all 0.15s',
             }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.borderLight; }}
@@ -215,14 +215,14 @@ export default function NewSitePage() {
 
   // ── Create form ──
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: colors.bg, minHeight: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', fontFamily, backgroundColor: colors.bg, minHeight: '100vh' }}>
       {/* Header */}
       <div style={{ backgroundColor: colors.white, borderBottom: `1px solid ${colors.border}`, padding: '16px 32px' }}>
         <button
           onClick={() => router.push('/dashboard/sites')}
           style={{
             background: 'none', border: 'none', color: colors.blue, cursor: 'pointer',
-            fontSize: 14, padding: 0, marginBottom: 6, display: 'flex',
+            fontSize: 14, fontFamily, padding: 0, marginBottom: 6, display: 'flex',
             alignItems: 'center', gap: 4,
           }}
         >
@@ -321,7 +321,7 @@ export default function NewSitePage() {
               style={{
                 padding: '12px 28px', backgroundColor: submitting ? '#93c5fd' : colors.blue,
                 color: colors.white, border: 'none', borderRadius: 10, cursor: submitting ? 'not-allowed' : 'pointer',
-                fontWeight: 600, fontSize: 15, transition: 'all 0.15s',
+                fontWeight: 600, fontSize: 15, fontFamily, transition: 'all 0.15s',
               }}
               onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
               onMouseLeave={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = colors.blue; }}
