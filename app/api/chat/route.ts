@@ -120,16 +120,62 @@ export async function POST(request: NextRequest) {
       content: m.content,
     }));
 
-    // 6. RAG — search knowledge_chunks for relevant context
+    // 6. RAG — search knowledge_chunks for relevant context (vector or text fallback)
     let ragContext = '';
-    const { data: chunks } = await supabase
-      .from('knowledge_chunks')
-      .select('content')
-      .eq('site_id', siteId)
-      .limit(5);
+    try {
+      let matchedChunks: { content: string }[] | null = null;
 
-    if (chunks && chunks.length > 0) {
-      ragContext = chunks.map((c) => c.content).join('\n\n---\n\n');
+      // Try vector search if OpenAI key is available
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const embResponse = await fetch('https://api.openai.com/v1/embeddings', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model: 'text-embedding-3-small', input: message.trim() }),
+          });
+
+          if (embResponse.ok) {
+            const embData = await embResponse.json();
+            const queryEmbedding = embData.data?.[0]?.embedding;
+
+            if (queryEmbedding) {
+              const { data: vectorChunks } = await supabase.rpc('match_knowledge_chunks', {
+                query_embedding: queryEmbedding,
+                match_site_id: siteId,
+                match_threshold: 0.7,
+                match_count: 5,
+              });
+
+              if (vectorChunks && vectorChunks.length > 0) {
+                matchedChunks = vectorChunks;
+              }
+            }
+          }
+        } catch (embErr) {
+          console.error('Vector search failed, falling back to text search:', embErr);
+        }
+      }
+
+      // Fallback: basic text search if vector search didn't return results
+      if (!matchedChunks || matchedChunks.length === 0) {
+        const { data: textChunks } = await supabase
+          .from('knowledge_chunks')
+          .select('content')
+          .eq('site_id', siteId)
+          .limit(5);
+
+        matchedChunks = textChunks;
+      }
+
+      if (matchedChunks && matchedChunks.length > 0) {
+        ragContext = matchedChunks.map((c) => c.content).join('\n\n---\n\n');
+      }
+    } catch (ragErr) {
+      console.error('RAG context retrieval failed:', ragErr);
+      // Continue without RAG context
     }
 
     // 7. Get site config for system prompt
