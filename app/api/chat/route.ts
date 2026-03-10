@@ -9,8 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 import { getOne, getMany, query } from '../../../lib/db/client';
-import { logger } from '../../../packages/api/src/utils/logger.js';
-import { chatService } from '../../../packages/api/src/services/chatService.js';
+import { logger } from '../../../lib/utils/logger.js';
+import { chatService } from '../../../lib/services/chatService.js';
 
 // Validation schema
 const chatMessageSchema = z.object({

@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOne } from '../../../lib/db/client';
-import { logger } from '../../../packages/api/src/utils/logger.js';
-import config from '../../../packages/api/src/config.js';
+import { logger } from '../../../lib/utils/logger.js';
+import config from '../../../lib/config.js';
 
 // Simple in-memory cache for widget configs (TTL: 5 minutes)
 const widgetConfigCache = new Map<string, { data: any; timestamp: number }>();

@@ -14,8 +14,8 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v4 as uuid } from 'uuid';
 import { query, getOne, getMany } from '../../../lib/db/client';
-import { logger } from '../../../packages/api/src/utils/logger.js';
-import config from '../../../packages/api/src/config.js';
+import { logger } from '../../../lib/utils/logger.js';
+import config from '../../../lib/config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = config.uploadsDir;

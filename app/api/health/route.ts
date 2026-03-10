@@ -5,13 +5,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import { getDb, getOne } from '../../../lib/db/client';
-import { logger } from '../../../packages/api/src/utils/logger.js';
-import config from '../../../packages/api/src/config.js';
+import { logger } from '../../../lib/utils/logger.js';
+import config from '../../../lib/config.js';
 
 /**
  * GET /api/health
  */
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const pathname = request.nextUrl.pathname;
 

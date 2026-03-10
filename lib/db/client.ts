@@ -12,9 +12,9 @@ let dbInstance: any = null;
 let SQL: any = null;
 
 /**
- * Initialize SQL.js
+ * Initialize SQL.js library
  */
-async function initSqlJs() {
+async function initializeSqlJs() {
   if (SQL) return SQL;
   SQL = await initSqlJs();
   return SQL;
@@ -28,7 +28,7 @@ export async function initializeDb() {
 
   try {
     // Initialize SQL.js
-    const SqlJsLib = await initSqlJs();
+    const SqlJsLib = await initializeSqlJs();
 
     // Ensure data directory exists
     if (!fs.existsSync(config.dataDir)) {

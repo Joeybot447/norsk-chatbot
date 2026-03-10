@@ -8,8 +8,8 @@ import { v4 as uuid } from 'uuid';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query, getOne } from '../../../lib/db/client';
-import { logger } from '../../../packages/api/src/utils/logger.js';
-import config from '../../../packages/api/src/config.js';
+import { logger } from '../../../lib/utils/logger.js';
+import config from '../../../lib/config.js';
 
 /**
  * POST /api/auth/register
