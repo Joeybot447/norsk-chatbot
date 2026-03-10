@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../_lib/supabase/client';
 import { useAuth } from '../_lib/supabase/hooks';
 
-const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+/* ─── Types ─── */
 
 interface Conversation {
   id: string;
   visitor_id: string;
   status: string;
   started_at: string;
-  metadata: Record<string, unknown> | null;
+  site_id: string;
   site_name: string;
   last_message: string;
   last_role: string;
@@ -25,32 +25,48 @@ interface Message {
   created_at: string;
 }
 
+interface Stats {
+  totalConversations: number;
+  totalMessages: number;
+  activeSites: number;
+  activeConversations: number;
+}
+
+type StatusFilter = 'all' | 'active' | 'closed';
+
+/* ─── SVG Icon Component ─── */
+
 const Icon = ({ d, size = 18 }: { d: string; size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d={d} />
   </svg>
 );
 
 const icons = {
-  star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
-  check: 'M20 6L9 17l-5-5',
-  dots: 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
-  filter: 'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
-  download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3',
   chevronDown: 'M6 9l6 6 6-6',
-  tag: 'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z M7 7h.01',
-  mail: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6',
-  phone: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z',
-  calendar: 'M16 2v4 M8 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
-  smile: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M8 14s1.5 2 4 2 4-2 4-2',
-  frown: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M16 16s-1.5-2-4-2-4 2-4 2',
-  hash: 'M4 9h16 M4 15h16 M10 3L8 21 M16 3l-2 18',
   msg: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
+  hash: 'M4 9h16 M4 15h16 M10 3L8 21 M16 3l-2 18',
+  calendar: 'M16 2v4 M8 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+  globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
+  barChart: 'M18 20V10 M12 20V4 M6 20v-6',
+  archive: 'M21 8v13H3V8 M1 3h22v5H1z M10 12h4',
+  close: 'M18 6L6 18 M6 6l12 12',
 };
+
+/* ─── Helpers ─── */
 
 function truncateVisitorId(id: string): string {
   if (id.length <= 12) return id;
-  return id.substring(0, 6) + '…' + id.substring(id.length - 4);
+  return id.substring(0, 6) + '\u2026' + id.substring(id.length - 4);
 }
 
 function formatTime(dateStr: string): string {
@@ -61,7 +77,7 @@ function formatTime(dateStr: string): string {
   if (diffDays === 0) {
     return date.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
   } else if (diffDays === 1) {
-    return 'I går';
+    return 'I g\u00e5r';
   } else if (diffDays < 7) {
     return date.toLocaleDateString('nb-NO', { weekday: 'long' });
   }
@@ -69,7 +85,7 @@ function formatTime(dateStr: string): string {
 }
 
 function getVisitorColor(id: string): string {
-  const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#10b981', '#ec4899', '#06b6d4', '#f97316'];
+  const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899', '#06b6d4', '#f97316', '#6366f1'];
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
@@ -79,25 +95,58 @@ function getVisitorInitial(id: string): string {
   return id.charAt(0).toUpperCase();
 }
 
+/* ─── Stat Card ─── */
+
+function StatCard({ label, value, icon }: { label: string; value: string | number; icon: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200/80 p-5 flex items-center gap-4 transition-shadow hover:shadow-sm">
+      <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 flex-shrink-0">
+        <Icon d={icon} size={18} />
+      </div>
+      <div>
+        <div className="text-2xl font-semibold text-slate-900 tracking-tight">{value}</div>
+        <div className="text-xs text-slate-500 font-medium mt-0.5">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Dashboard ─── */
+
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
-  const [hoveredConvo, setHoveredConvo] = useState<string | null>(null);
-  const [windowWidth, setWindowWidth] = useState(1400);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<Stats>({ totalConversations: 0, totalMessages: 0, activeSites: 0, activeConversations: 0 });
+  const [mobileShowChat, setMobileShowChat] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Close filter dropdown on outside click
   useEffect(() => {
-    setWindowWidth(window.innerWidth);
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    function handleClickOutside(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Load conversations
+  // Scroll to bottom of messages when they load
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  // Load conversations and stats
   useEffect(() => {
     if (!user) return;
     setLoading(true);
@@ -108,29 +157,35 @@ export default function DashboardPage() {
         // Get user's sites
         const { data: sites, error: sitesErr } = await supabase
           .from('sites')
-          .select('id')
-          .eq('user_id', user.id);
+          .select('id, is_active')
+          .eq('user_id', (user as any).id);
         if (sitesErr) throw sitesErr;
         if (!sites || sites.length === 0) {
           setConversations([]);
+          setStats({ totalConversations: 0, totalMessages: 0, activeSites: 0, activeConversations: 0 });
           setLoading(false);
           return;
         }
 
         const siteIds = sites.map((s: { id: string }) => s.id);
+        const activeSiteCount = sites.filter((s: { is_active: boolean }) => s.is_active).length;
 
         // Get conversations with latest messages
         const { data: convos, error: convosErr } = await supabase
           .from('conversations')
-          .select('id, visitor_id, status, started_at, metadata, sites(name), messages(content, role, created_at)')
+          .select('id, visitor_id, status, started_at, site_id, metadata, sites(name), messages(content, role, created_at)')
           .in('site_id', siteIds)
           .order('started_at', { ascending: false })
-          .limit(50);
+          .limit(100);
         if (convosErr) throw convosErr;
+
+        let totalMsgCount = 0;
+        let activeConvoCount = 0;
 
         const mapped: Conversation[] = (convos || []).map((c: any) => {
           const msgs = c.messages || [];
-          // Sort messages by created_at descending to get latest
+          totalMsgCount += msgs.length;
+          if (c.status === 'active') activeConvoCount++;
           const sorted = [...msgs].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           const lastMsg = sorted[0];
           return {
@@ -138,7 +193,7 @@ export default function DashboardPage() {
             visitor_id: c.visitor_id || 'ukjent',
             status: c.status || 'active',
             started_at: c.started_at,
-            metadata: c.metadata,
+            site_id: c.site_id,
             site_name: c.sites?.name || 'Ukjent nettsted',
             last_message: lastMsg?.content || '',
             last_role: lastMsg?.role || '',
@@ -146,10 +201,13 @@ export default function DashboardPage() {
           };
         });
 
+        setStats({
+          totalConversations: mapped.length,
+          totalMessages: totalMsgCount,
+          activeSites: activeSiteCount,
+          activeConversations: activeConvoCount,
+        });
         setConversations(mapped);
-        if (mapped.length > 0 && !selectedConvo) {
-          setSelectedConvo(mapped[0].id);
-        }
       } catch (err: any) {
         setError(err.message || 'Kunne ikke laste samtaler');
       } finally {
@@ -183,312 +241,419 @@ export default function DashboardPage() {
     })();
   }, [selectedConvo]);
 
-  const showRightPanel = windowWidth > 1100;
+  // Filter conversations by status
+  const filteredConversations = conversations.filter((c) => {
+    if (statusFilter === 'all') return true;
+    return c.status === statusFilter;
+  });
+
+  // Auto-select first conversation when filter changes
+  useEffect(() => {
+    if (filteredConversations.length > 0 && !filteredConversations.find((c) => c.id === selectedConvo)) {
+      setSelectedConvo(filteredConversations[0].id);
+    } else if (filteredConversations.length === 0) {
+      setSelectedConvo(null);
+    }
+  }, [statusFilter, filteredConversations.length]);
+
   const selectedConversation = conversations.find((c) => c.id === selectedConvo) || null;
 
+  const filterLabels: Record<StatusFilter, string> = {
+    all: 'Alle samtaler',
+    active: 'Aktive',
+    closed: 'Lukket',
+  };
+
+  const filterDotColor: Record<StatusFilter, string> = {
+    all: '#64748b',
+    active: '#22c55e',
+    closed: '#94a3b8',
+  };
+
+  /* ─── Loading State ─── */
   if (authLoading || loading) {
     return (
-      <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-        <div style={{ textAlign: 'center', color: '#64748b' }}>
-          <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Laster...</div>
-          <div style={{ fontSize: 13 }}>Henter samtaler</div>
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-8 h-8 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+          <div className="text-sm text-slate-500 font-medium">Laster samtaler</div>
         </div>
       </div>
     );
   }
 
+  /* ─── Error State ─── */
   if (error) {
     return (
-      <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-        <div style={{ textAlign: 'center', color: '#ef4444', maxWidth: 400, padding: 24 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Feil</div>
-          <div style={{ fontSize: 14, color: '#64748b' }}>{error}</div>
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="text-center max-w-sm px-6">
+          <div className="w-12 h-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4">
+            <Icon d={icons.close} size={20} />
+          </div>
+          <div className="text-base font-semibold text-slate-900 mb-2">Noe gikk galt</div>
+          <div className="text-sm text-slate-500 leading-relaxed">{error}</div>
         </div>
       </div>
     );
   }
 
-  // Empty state
+  /* ─── Empty State ─── */
   if (conversations.length === 0) {
     return (
-      <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-        <div style={{ textAlign: 'center', maxWidth: 420, padding: 24 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
-          <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8, color: '#0f172a' }}>Ingen samtaler ennå</div>
-          <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-            Installer widget-koden på nettstedet ditt for å begynne.
+      <div className="h-full flex items-center justify-center bg-slate-50">
+        <div className="text-center max-w-md px-6">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-5">
+            <span className="text-blue-600"><Icon d={icons.msg} size={24} /></span>
           </div>
-          <a href="/dashboard/sites" style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: '#2563eb', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
-            Gå til nettsteder
+          <div className="text-lg font-semibold text-slate-900 mb-2">Ingen samtaler enn&aring;</div>
+          <div className="text-sm text-slate-500 leading-relaxed mb-6">
+            N&aring;r bes&oslash;kende begynner &aring; chatte med boten din, vil samtalene vises her.
+            Installer widget-koden p&aring; nettstedet ditt for &aring; komme i gang.
+          </div>
+          <a
+            href="/dashboard/sites"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            G&aring; til nettsteder
           </a>
         </div>
       </div>
     );
   }
 
+  /* ─── Main Layout ─── */
   return (
-    <div style={{ fontFamily, color: '#0f172a', fontSize: 14, height: '100vh', display: 'flex', overflow: 'hidden', background: '#f8fafc' }}>
-      {/* Samtaler-liste */}
-      <div style={{ width: 320, background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        {/* Filter bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#0f172a', background: '#ffffff' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-            <span>Åpen</span>
-            <Icon d={icons.chevronDown} size={14} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', cursor: 'pointer', fontSize: 13, color: '#64748b', background: '#ffffff' }}>
-            <Icon d={icons.filter} size={14} />
-            <span>Filter</span>
-          </div>
-          <div style={{ marginLeft: 'auto', color: '#64748b', cursor: 'pointer', padding: 4 }}>
-            <Icon d={icons.download} size={16} />
-          </div>
-        </div>
+    <div className="flex flex-col h-full overflow-hidden bg-slate-50" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
 
-        {/* Conversations */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {conversations.map((convo) => {
-            const isSelected = selectedConvo === convo.id;
-            const isHovered = hoveredConvo === convo.id;
-            const color = getVisitorColor(convo.visitor_id);
-            const initial = getVisitorInitial(convo.visitor_id);
-            const preview = convo.last_role === 'assistant'
-              ? 'Bot: ' + (convo.last_message || '').substring(0, 60)
-              : (convo.last_message || '').substring(0, 60);
-
-            return (
-              <div
-                key={convo.id}
-                onClick={() => setSelectedConvo(convo.id)}
-                onMouseEnter={() => setHoveredConvo(convo.id)}
-                onMouseLeave={() => setHoveredConvo(null)}
-                style={{
-                  display: 'flex',
-                  gap: 12,
-                  padding: '14px 16px',
-                  cursor: 'pointer',
-                  background: isSelected ? '#eff6ff' : isHovered ? '#f8fafc' : 'transparent',
-                  borderBottom: '1px solid #f1f5f9',
-                  borderLeft: isSelected ? '3px solid #2563eb' : '3px solid transparent',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 15, flexShrink: 0 }}>
-                  {initial}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{truncateVisitorId(convo.visitor_id)}</span>
-                    <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>{formatTime(convo.started_at)}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: 13, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flex: 1, marginRight: 8 }}>
-                      {preview || 'Ingen meldinger'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{convo.site_name}</div>
-                </div>
-              </div>
-            );
-          })}
+      {/* ─── Stats Row ─── */}
+      <div className="flex-shrink-0 px-6 pt-6 pb-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Totalt samtaler" value={stats.totalConversations} icon={icons.msg} />
+          <StatCard label="Totalt meldinger" value={stats.totalMessages} icon={icons.barChart} />
+          <StatCard label="Aktive samtaler" value={stats.activeConversations} icon={icons.msg} />
+          <StatCard label="Aktive nettsteder" value={stats.activeSites} icon={icons.globe} />
         </div>
       </div>
 
-      {/* Chat-område */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* Chat header */}
-        {selectedConversation && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: '50%', background: getVisitorColor(selectedConversation.visitor_id), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 15 }}>
-                {getVisitorInitial(selectedConversation.visitor_id)}
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: 16, color: '#0f172a' }}>{truncateVisitorId(selectedConversation.visitor_id)}</span>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedConversation.status === 'active' ? '#22c55e' : '#94a3b8' }} />
-                  <span style={{ fontSize: 12, fontWeight: 500, color: selectedConversation.status === 'active' ? '#22c55e' : '#94a3b8', background: selectedConversation.status === 'active' ? '#f0fdf4' : '#f1f5f9', padding: '2px 10px', borderRadius: 12 }}>
-                    {selectedConversation.status === 'active' ? 'Åpen' : 'Lukket'}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, color: '#94a3b8' }}>{selectedConversation.site_name}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {[icons.star, icons.check, icons.dots].map((iconPath, i) => (
-                <div
-                  key={i}
-                  style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', transition: 'all 0.15s' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#f1f5f9'; (e.currentTarget as HTMLDivElement).style.color = '#0f172a'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; (e.currentTarget as HTMLDivElement).style.color = '#64748b'; }}
-                >
-                  <Icon d={iconPath} size={18} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* ─── Conversation Area ─── */}
+      <div className="flex flex-1 min-h-0 px-6 pb-6 pt-3 gap-4">
 
-        {/* Chat messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', background: '#f9fafb', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {messagesLoading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#64748b', fontSize: 14 }}>Laster meldinger...</div>
-          ) : messages.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#64748b', fontSize: 14 }}>Ingen meldinger i denne samtalen</div>
-          ) : (
-            <>
-              {/* Date separator */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 16px' }}>
-                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
-                  {messages.length > 0 ? new Date(messages[0].created_at).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+        {/* ─── Conversation List ─── */}
+        <div className={`bg-white rounded-xl border border-slate-200/80 flex flex-col flex-shrink-0 overflow-hidden ${mobileShowChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-[340px]`}>
+
+          {/* Filter Bar */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+            <div className="relative" ref={filterRef}>
+              <button
+                onClick={() => setFilterOpen(!filterOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: filterDotColor[statusFilter] }}
+                />
+                {filterLabels[statusFilter]}
+                <span className="text-slate-400">
+                  <Icon d={icons.chevronDown} size={14} />
                 </span>
-                <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-              </div>
+              </button>
 
-              {messages.map((msg) => {
-                if (msg.role === 'system') {
-                  return (
-                    <div key={msg.id} style={{ textAlign: 'center' as const, padding: '8px 0' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.03em', textTransform: 'uppercase' as const }}>
-                        {msg.content}
+              {filterOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-lg py-1 z-50 min-w-[160px]">
+                  {(['all', 'active', 'closed'] as StatusFilter[]).map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => { setStatusFilter(status); setFilterOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-slate-50 transition-colors ${statusFilter === status ? 'text-blue-600 font-medium' : 'text-slate-600'}`}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: filterDotColor[status] }}
+                      />
+                      {filterLabels[status]}
+                      <span className="ml-auto text-xs text-slate-400">
+                        {status === 'all' ? conversations.length
+                          : conversations.filter((c) => c.status === status).length}
                       </span>
-                    </div>
-                  );
-                }
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-                const isBot = msg.role === 'assistant';
+            <span className="ml-auto text-xs text-slate-400 font-medium tabular-nums">
+              {filteredConversations.length} samtale{filteredConversations.length !== 1 ? 'r' : ''}
+            </span>
+          </div>
+
+          {/* Conversation Items */}
+          <div className="flex-1 overflow-y-auto">
+            {filteredConversations.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+                Ingen {statusFilter === 'active' ? 'aktive' : statusFilter === 'closed' ? 'lukkede' : ''} samtaler
+              </div>
+            ) : (
+              filteredConversations.map((convo) => {
+                const isSelected = selectedConvo === convo.id;
+                const color = getVisitorColor(convo.visitor_id);
+                const initial = getVisitorInitial(convo.visitor_id);
+                const preview = convo.last_role === 'assistant'
+                  ? 'Bot: ' + (convo.last_message || '').substring(0, 55)
+                  : (convo.last_message || '').substring(0, 55);
 
                 return (
-                  <div
-                    key={msg.id}
-                    style={{
-                      display: 'flex',
-                      flexDirection: isBot ? 'row-reverse' : 'row',
-                      alignItems: 'flex-start',
-                      gap: 10,
-                      maxWidth: '85%',
-                      alignSelf: isBot ? 'flex-end' : 'flex-start',
-                    }}
+                  <button
+                    key={convo.id}
+                    onClick={() => { setSelectedConvo(convo.id); setMobileShowChat(true); }}
+                    className={`w-full text-left flex gap-3 px-4 py-3.5 border-b border-slate-50 transition-colors ${isSelected ? 'bg-blue-50/60' : 'hover:bg-slate-50/60'}`}
                   >
-                    {!isBot && selectedConversation && (
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: getVisitorColor(selectedConversation.visitor_id), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 12, flexShrink: 0 }}>
-                        {getVisitorInitial(selectedConversation.visitor_id)}
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+                      style={{ background: color }}
+                    >
+                      {initial}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-sm font-semibold truncate ${isSelected ? 'text-blue-900' : 'text-slate-900'}`}>
+                          {truncateVisitorId(convo.visitor_id)}
+                        </span>
+                        <span className="text-[11px] text-slate-400 flex-shrink-0 ml-2 tabular-nums">
+                          {formatTime(convo.started_at)}
+                        </span>
                       </div>
-                    )}
-
-                    {isBot && (
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                        N
+                      <div className="text-xs text-slate-500 truncate leading-relaxed">
+                        {preview || 'Ingen meldinger'}
                       </div>
-                    )}
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${convo.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ background: convo.status === 'active' ? '#22c55e' : '#94a3b8' }}
+                          />
+                          {convo.status === 'active' ? 'Aktiv' : 'Lukket'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{convo.site_name}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isBot ? 'flex-end' : 'flex-start' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4, paddingLeft: isBot ? 0 : 2, paddingRight: isBot ? 2 : 0 }}>
-                        {isBot ? 'Bot' : (selectedConversation ? truncateVisitorId(selectedConversation.visitor_id) : 'Besøkende')}
+        {/* ─── Chat Panel ─── */}
+        <div className={`flex-1 bg-white rounded-xl border border-slate-200/80 flex flex-col min-w-0 overflow-hidden ${!mobileShowChat ? 'hidden md:flex' : 'flex'}`}>
+          {!selectedConversation ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-slate-400">
+                <div className="mb-3"><Icon d={icons.msg} size={32} /></div>
+                <div className="text-sm font-medium">Velg en samtale</div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Chat Header */}
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  {/* Mobile back button */}
+                  <button
+                    onClick={() => setMobileShowChat(false)}
+                    className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors"
+                  >
+                    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                    style={{ background: getVisitorColor(selectedConversation.visitor_id) }}
+                  >
+                    {getVisitorInitial(selectedConversation.visitor_id)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-slate-900">
+                        {truncateVisitorId(selectedConversation.visitor_id)}
                       </span>
-                      <div
-                        style={{
-                          padding: '12px 16px',
-                          borderRadius: isBot ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                          background: isBot ? '#1e293b' : '#ffffff',
-                          color: isBot ? '#ffffff' : '#0f172a',
-                          border: isBot ? 'none' : '1px solid #e2e8f0',
-                          fontSize: 14,
-                          lineHeight: 1.6,
-                          whiteSpace: 'pre-line' as const,
-                          boxShadow: isBot ? 'none' : '0 1px 2px rgba(0,0,0,0.04)',
-                          maxWidth: '100%',
-                        }}
-                      >
-                        {msg.content}
-                      </div>
-                      <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, paddingLeft: isBot ? 0 : 2, paddingRight: isBot ? 2 : 0 }}>
-                        {new Date(msg.created_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${selectedConversation.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ background: selectedConversation.status === 'active' ? '#22c55e' : '#94a3b8' }}
+                        />
+                        {selectedConversation.status === 'active' ? 'Aktiv' : 'Lukket'}
                       </span>
                     </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{selectedConversation.site_name}</div>
                   </div>
-                );
-              })}
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto px-5 py-5 bg-slate-50/50">
+                {messagesLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="w-6 h-6 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="flex items-center justify-center h-32 text-sm text-slate-400">
+                    Ingen meldinger i denne samtalen
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 max-w-2xl mx-auto">
+                    {/* Date header */}
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex-1 h-px bg-slate-200" />
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                        {new Date(messages[0].created_at).toLocaleDateString('nb-NO', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      <div className="flex-1 h-px bg-slate-200" />
+                    </div>
+
+                    {messages.map((msg) => {
+                      if (msg.role === 'system') {
+                        return (
+                          <div key={msg.id} className="text-center py-2">
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                              {msg.content}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      const isBot = msg.role === 'assistant';
+
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex gap-2.5 ${isBot ? 'flex-row-reverse' : 'flex-row'} items-end max-w-[85%] ${isBot ? 'self-end' : 'self-start'}`}
+                        >
+                          {!isBot && selectedConversation && (
+                            <div
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-white font-semibold text-[10px] flex-shrink-0"
+                              style={{ background: getVisitorColor(selectedConversation.visitor_id) }}
+                            >
+                              {getVisitorInitial(selectedConversation.visitor_id)}
+                            </div>
+                          )}
+                          {isBot && (
+                            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px] flex-shrink-0">
+                              N
+                            </div>
+                          )}
+                          <div className={`flex flex-col ${isBot ? 'items-end' : 'items-start'}`}>
+                            <div
+                              className={`px-4 py-2.5 text-sm leading-relaxed whitespace-pre-line ${isBot
+                                ? 'bg-slate-900 text-white rounded-2xl rounded-br-sm'
+                                : 'bg-white text-slate-900 border border-slate-200 rounded-2xl rounded-bl-sm shadow-sm'
+                                }`}
+                            >
+                              {msg.content}
+                            </div>
+                            <span className="text-[10px] text-slate-400 mt-1 px-1 tabular-nums">
+                              {new Date(msg.created_at).toLocaleTimeString('nb-NO', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
+
+              {/* Read-only footer */}
+              <div className="flex-shrink-0 px-5 py-3 border-t border-slate-100 bg-white">
+                <div className="text-xs text-slate-400 text-center">
+                  Samtalevisning &mdash; kun lesemodus
+                </div>
+              </div>
             </>
           )}
         </div>
 
-        {/* Message input (read-only view for now) */}
-        <div style={{ padding: '16px 24px', background: '#ffffff', borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', padding: '10px 16px' }}>
-            <input
-              type="text"
-              placeholder="Skriv en melding..."
-              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: '#0f172a', fontFamily }}
-            />
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Detaljpanel */}
-      {showRightPanel && selectedConversation && (
-        <div style={{ width: 300, background: '#ffffff', borderLeft: '1px solid #e2e8f0', overflowY: 'auto', flexShrink: 0 }}>
-          <div style={{ padding: 24 }}>
-            {/* Tags section */}
-            <div style={{ marginBottom: 28 }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ color: '#64748b' }}><Icon d={icons.tag} size={15} /></span>
-                Tagger
-              </h3>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 10 }}>
-                <span style={{ fontSize: 12, background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: 6, fontWeight: 500 }}>
-                  {selectedConversation.site_name}
-                </span>
-              </div>
-              <button style={{ fontSize: 12, color: '#2563eb', background: 'none', border: '1px dashed #cbd5e1', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 500, width: '100%', fontFamily }}>
-                + Legg til tagger
-              </button>
-            </div>
-
-            {/* Conversation details */}
-            <div style={{ marginBottom: 28 }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>Samtaledetaljer</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[
-                  { icon: icons.msg, label: 'Totale meldinger', value: String(messages.length) },
-                  { icon: icons.hash, label: 'ID', value: '#' + selectedConversation.id.substring(0, 8) },
-                  { icon: icons.calendar, label: 'Startet', value: new Date(selectedConversation.started_at).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' }) },
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
-                      <Icon d={item.icon} size={15} />
-                      <span style={{ fontSize: 13 }}>{item.label}</span>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{item.value}</span>
+        {/* ─── Detail Panel (desktop only) ─── */}
+        {selectedConversation && (
+          <div className="hidden xl:flex w-72 bg-white rounded-xl border border-slate-200/80 flex-col flex-shrink-0 overflow-y-auto">
+            <div className="p-5">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-6 pb-5 border-b border-slate-100">
+                <div
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-base"
+                  style={{ background: getVisitorColor(selectedConversation.visitor_id) }}
+                >
+                  {getVisitorInitial(selectedConversation.visitor_id)}
+                </div>
+                <div>
+                  <div className="font-semibold text-sm text-slate-900">
+                    {truncateVisitorId(selectedConversation.visitor_id)}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Visitor details */}
-            <div>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>Besøkende</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#64748b' }}><Icon d={icons.hash} size={15} /></span>
-                  <span style={{ fontSize: 13, color: '#475569' }}>{selectedConversation.visitor_id}</span>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {selectedConversation.status === 'active' ? 'Aktiv samtale' : 'Avsluttet samtale'}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#64748b' }}><Icon d={icons.msg} size={15} /></span>
-                  <span style={{ fontSize: 13, color: '#475569' }}>{selectedConversation.status === 'active' ? 'Aktiv samtale' : 'Avsluttet'}</span>
+              </div>
+
+              {/* Conversation Details */}
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Samtaledetaljer</h3>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { icon: icons.msg, label: 'Meldinger', value: String(messages.length) },
+                    { icon: icons.hash, label: 'ID', value: '#' + selectedConversation.id.substring(0, 8) },
+                    { icon: icons.globe, label: 'Nettsted', value: selectedConversation.site_name },
+                    {
+                      icon: icons.calendar,
+                      label: 'Startet',
+                      value: new Date(selectedConversation.started_at).toLocaleDateString('nb-NO', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      }),
+                    },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <Icon d={item.icon} size={14} />
+                        <span className="text-xs">{item.label}</span>
+                      </div>
+                      <span className="text-xs font-medium text-slate-900 truncate ml-2 max-w-[120px]">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Visitor Info */}
+              <div>
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Bes&oslash;kende</h3>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500"><Icon d={icons.hash} size={14} /></span>
+                    <span className="text-xs text-slate-600 truncate">{selectedConversation.visitor_id}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: selectedConversation.status === 'active' ? '#22c55e' : '#94a3b8' }}
+                    />
+                    <span className="text-xs text-slate-600">
+                      {selectedConversation.status === 'active' ? 'Aktiv' : 'Avsluttet'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
