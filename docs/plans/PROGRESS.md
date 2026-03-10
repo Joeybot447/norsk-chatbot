@@ -1,10 +1,12 @@
 # NorskBot Commercial Product — Progress Tracker
 
-## Phase A: URL Scraping (Day 1) — BUILT, TESTING
+## Phase A: URL Scraping (Day 1) — COMPLETE ✅
 - [x] A1: `POST /api/ingest/scrape` endpoint (ScrapingBee + cheerio + OpenAI embeddings)
 - [x] A2: `GET /api/ingest/scrape/status` endpoint
-- [x] A3: UI in site editor Knowledge tab (URL input + progress)
-- [ ] A4: End-to-end test (scrape → widget answers from content) — FIXED schema bugs (fd487ab), ready to test
+- [x] A3: UI in site editor Knowledge tab (URL input + progress polling)
+- [x] A4: End-to-end test (scrape → widget answers from content) — TESTED: autolx.no scraped successfully
+- [x] RLS policies applied (24 policies, all 9 tables) — Batch 4 complete
+- [x] Knowledge page fixed (API route for sites instead of direct supabase client)
 
 ## Phase B: Lead Capture & Quick Prompts (Day 2) — NOT STARTED
 - [ ] B1: Lead capture form in widget (name/email/company)
@@ -31,5 +33,5 @@
 - [ ] E6: Performance audit
 
 ---
-*Last updated: March 10, 2026 17:52 UTC*
-*Status: Phase A LIVE (commit ba5343a) — async scraping with live progress polling. UX fixed after user feedback.*
+*Last updated: March 10, 2026 18:00 UTC*
+*Status: Phase A COMPLETE (commits ba5343a, e409f35) — URL scraping fully working. RLS policies applied. Knowledge page fixed.*
