@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --watch --inspect=0.0.0.0:9229 src/index.js",
     "start": "node src/index.js",
-    "build": "tsc",
+    "build": "mkdir -p dist && cp -r src/* dist/",
     "test": "node --test src/**/*.test.js",
     "lint": "eslint src/"
   },
