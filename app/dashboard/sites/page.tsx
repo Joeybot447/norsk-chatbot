@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../_lib/supabase/client';
 import { useAuth } from '../../_lib/supabase/hooks';
 
@@ -16,6 +17,7 @@ interface Site {
 }
 
 export default function SitesPage() {
+  const router = useRouter();
   const { user, loading: authLoading, getAccessToken } = useAuth();
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +187,7 @@ export default function SitesPage() {
                               fontFamily,
                               transition: 'all 0.2s',
                             }}
+                            onClick={() => router.push('/dashboard/sites/' + site.id)}
                             onMouseEnter={(e) => {
                               (e.currentTarget as HTMLElement).style.backgroundColor = '#eff6ff';
                             }}
