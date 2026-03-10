@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import { useAuth } from '@/lib/supabase/hooks';
+import { supabase } from '../_lib/supabase/client';
+import { useAuth } from '../_lib/supabase/hooks';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 

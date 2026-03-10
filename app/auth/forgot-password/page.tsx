@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { resetPassword } from '@/lib/supabase/auth';
+import { resetPassword } from '../../_lib/supabase/auth';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 

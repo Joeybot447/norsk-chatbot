@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from '@/lib/supabase/hooks';
-import { signOut } from '@/lib/supabase/auth';
+import { useAuth } from '../_lib/supabase/hooks';
+import { signOut } from '../_lib/supabase/auth';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
