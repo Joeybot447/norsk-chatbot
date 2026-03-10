@@ -1,14 +1,16 @@
 /**
  * Test Chat API Route
  * POST /api/chat/test — Send message, get AI response (Supabase session auth)
- * 
+ *
  * This endpoint is identical to /api/chat but authenticates via Supabase
  * session token instead of API key. Used by the dashboard Chat Playground.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { createServiceClient } from '../../../../lib/supabase/client';
+
+const DEFAULT_MODEL = 'gpt-4o-mini';
 
 async function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -125,7 +127,7 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(20);
 
-    const history = (historyRows || []).map((m: any) => ({
+    const history: OpenAI.Chat.ChatCompletionMessageParam[] = (historyRows || []).map((m: any) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     }));
@@ -138,30 +140,24 @@ export async function POST(request: NextRequest) {
 
       if (process.env.OPENAI_API_KEY) {
         try {
-          const embResponse = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ model: 'text-embedding-3-small', input: message.trim() }),
+          const openaiEmb = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          const embResponse = await openaiEmb.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: message.trim(),
           });
 
-          if (embResponse.ok) {
-            const embData = await embResponse.json();
-            const queryEmbedding = embData.data?.[0]?.embedding;
+          const queryEmbedding = embResponse.data?.[0]?.embedding;
 
-            if (queryEmbedding) {
-              const { data: vectorChunks } = await supabase.rpc('match_knowledge_chunks', {
-                query_embedding: queryEmbedding,
-                match_site_id: siteId,
-                match_threshold: 0.7,
-                match_count: 5,
-              });
+          if (queryEmbedding) {
+            const { data: vectorChunks } = await supabase.rpc('match_knowledge_chunks', {
+              query_embedding: queryEmbedding,
+              match_site_id: siteId,
+              match_threshold: 0.7,
+              match_count: 5,
+            });
 
-              if (vectorChunks && vectorChunks.length > 0) {
-                matchedChunks = vectorChunks;
-              }
+            if (vectorChunks && vectorChunks.length > 0) {
+              matchedChunks = vectorChunks;
             }
           }
         } catch (embErr) {
@@ -195,6 +191,7 @@ export async function POST(request: NextRequest) {
     const botConfig = site.bot_config || {};
     const configuredTemp = typeof botConfig.temperature === 'number' ? botConfig.temperature : 0.7;
     const configuredMaxTokens = typeof botConfig.max_tokens === 'number' ? Math.max(100, Math.min(2000, botConfig.max_tokens)) : 1024;
+    const configuredModel = botConfig.model || DEFAULT_MODEL;
 
     // Tone instructions
     const toneMap: Record<string, string> = {
@@ -239,30 +236,59 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 9. Call Claude with bot_config settings
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    // 9. Call OpenAI with bot_config settings
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const claudeResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: configuredMaxTokens,
-      temperature: configuredTemp,
-      system: systemPrompt,
-      messages: history,
-    });
+    const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      ...history,
+    ];
 
-    const assistantContent =
-      claudeResponse.content[0].type === 'text'
-        ? claudeResponse.content[0].text
-        : '';
-    const assistantTokens = claudeResponse.usage?.output_tokens || Math.ceil(assistantContent.length / 4);
-    const totalTokens = (claudeResponse.usage?.input_tokens || 0) + assistantTokens;
+    let completion: OpenAI.Chat.ChatCompletion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: configuredModel,
+        max_tokens: configuredMaxTokens,
+        temperature: configuredTemp,
+        messages: chatMessages,
+      });
+    } catch (apiErr: any) {
+      // Handle OpenAI API errors with Norwegian messages
+      if (apiErr?.status === 429) {
+        console.error('OpenAI API rate limited');
+        return NextResponse.json(
+          { error: 'For mange forespørsler. Vennligst vent litt og prøv igjen.' },
+          { status: 429 }
+        );
+      }
+      if (apiErr?.status === 401 || apiErr?.status === 403) {
+        console.error('OpenAI API authentication error');
+        return NextResponse.json(
+          { error: 'Tjenesten er midlertidig utilgjengelig. Vennligst prøv igjen senere.' },
+          { status: 503 }
+        );
+      }
+      if (apiErr?.code === 'context_length_exceeded') {
+        console.error('OpenAI context length exceeded');
+        return NextResponse.json(
+          { error: 'Samtalen er for lang. Vennligst start en ny samtale.' },
+          { status: 400 }
+        );
+      }
+      throw apiErr; // Re-throw unexpected errors
+    }
+
+    const assistantContent = completion.choices[0]?.message?.content || '';
+    const promptTokens = completion.usage?.prompt_tokens || 0;
+    const completionTokens = completion.usage?.completion_tokens || 0;
+    const totalTokens = promptTokens + completionTokens;
 
     // 10. Store assistant message
     await supabase.from('messages').insert({
       conversation_id: convId,
       role: 'assistant',
       content: assistantContent,
-      tokens_used: assistantTokens,
+      tokens_used: completionTokens,
     });
 
     // 11. Log usage
@@ -272,7 +298,7 @@ export async function POST(request: NextRequest) {
       action_type: 'chat_message',
       tokens_used: totalTokens,
       metadata: {
-        model: 'claude-sonnet-4-20250514',
+        model: configuredModel,
         conversation_id: convId,
         source: 'dashboard-test',
       },

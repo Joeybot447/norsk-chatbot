@@ -536,7 +536,7 @@ export default function HomePage() {
             >
               NYHET
             </span>
-            Nå med Claude AI &amp; RAG-kunnskapsbase
+            Nå med GPT-4o AI &amp; RAG-kunnskapsbase
           </div>
 
           <h1
@@ -763,8 +763,8 @@ export default function HomePage() {
           >
             <FeatureCard
               icon="brain"
-              title="Claude AI-motor"
-              description="Drevet av Anthropic Claude — verdens sikreste og mest kapable AI-modell. Forstår norsk kontekst og nyanser."
+              title="GPT-4o AI-motor"
+              description="Drevet av OpenAI GPT-4o — verdens mest avanserte AI-modell. Forstår norsk kontekst og nyanser."
             />
             <FeatureCard
               icon="book"

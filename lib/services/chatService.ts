@@ -5,11 +5,13 @@
 
 import { getMany, getOne, query } from '../db/client';
 import { v4 as uuid } from 'uuid';
-import { Anthropic } from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { config } from '../config';
 
-const client = new Anthropic({
-  apiKey: config.anthropicApiKey,
+const DEFAULT_MODEL = 'gpt-4o-mini';
+
+const client = new OpenAI({
+  apiKey: config.openaiApiKey || process.env.OPENAI_API_KEY,
 });
 
 export interface Message {
@@ -114,16 +116,8 @@ export async function generateResponse(
 
   const context = chunks.map((c) => c.content).join('\n\n');
 
-  // Build messages for Claude
-  const messages = conversationHistory.map((msg) => ({
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
-  }));
-
-  messages.push({
-    role: 'user',
-    content: userMessage,
-  });
+  // Build messages for OpenAI
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
 
   const systemPrompt = `Du er en kundeservicechatbot for en norsk bedrift. 
 Svar på norsk, vær høflig og profesjonell.
@@ -133,14 +127,27 @@ ${context || 'Ingen kontekst tilgjengelig'}
 
 Hvis du ikke vet svaret, si at du ikke kan hjelpe med det spørsmålet.`;
 
-  const response = await client.messages.create({
-    model: 'claude-opus-4-1-20250805',
+  messages.push({ role: 'system', content: systemPrompt });
+
+  for (const msg of conversationHistory) {
+    messages.push({
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+    });
+  }
+
+  messages.push({
+    role: 'user',
+    content: userMessage,
+  });
+
+  const completion = await client.chat.completions.create({
+    model: DEFAULT_MODEL,
     max_tokens: 2048,
-    system: systemPrompt,
     messages,
   });
 
-  const assistantMessage = response.content[0].type === 'text' ? response.content[0].text : '';
+  const assistantMessage = completion.choices[0]?.message?.content || '';
   const sourceIds = chunks.map((c) => c.metadata || 'unknown').filter(Boolean);
 
   return {

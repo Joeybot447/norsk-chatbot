@@ -98,7 +98,7 @@ export default function PersonvernPage() {
             følgende kategorier av mottakere, under strenge databehandleravtaler:
           </p>
           <ul style={ulStyle}>
-            <li style={liStyle}><strong>AI-modell-leverandører:</strong> Chatmeldinger sendes til Anthropic (Claude) for å generere svar. Data behandles i henhold til Anthropics databehandleravtale og slettes etter behandling</li>
+            <li style={liStyle}><strong>AI-modell-leverandører:</strong> Chatmeldinger sendes til OpenAI for å generere svar. Data behandles i henhold til OpenAIs databehandleravtale og slettes etter behandling</li>
             <li style={liStyle}><strong>Hosting- og infrastrukturleverandører:</strong> Våre servere og databaser hostes hos pålitelige skyleverandører innenfor EØS eller med tilstrekkelig beskyttelsesnivå</li>
             <li style={liStyle}><strong>Analyseverktøy:</strong> Vi bruker anonymiserte analyser for å forstå bruksmønstre og forbedre tjenesten</li>
             <li style={liStyle}><strong>Myndigheter:</strong> Når vi er rettslig forpliktet til å utlevere opplysninger</li>
