@@ -1,40 +1,156 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../../_lib/supabase/client';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../../_lib/supabase/hooks';
+import { supabase } from '../../../_lib/supabase/client';
+import Link from 'next/link';
 
-const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 interface Site {
   id: string;
   name: string;
 }
 
-interface UploadedDoc {
-  id: string;
+type UploadMode = 'text' | 'url' | 'file';
+
+interface ScrapeStatus {
+  sourceId: string;
+  status: 'processing' | 'ready' | 'error';
   title: string;
-  type: string;
-  status: string;
-  chunk_count: number | null;
-  file_size: number | null;
-  created_at: string;
+  chunksCreated: number;
+  progressText?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Icons
+// ---------------------------------------------------------------------------
+function IconArrowLeft({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </svg>
+  );
+}
+
+function IconText({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="4 7 4 4 20 4 20 7" />
+      <line x1="9" y1="20" x2="15" y2="20" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+    </svg>
+  );
+}
+
+function IconGlobe({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
+function IconUpload({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  );
+}
+
+function IconCheck({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function IconLock({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Upload mode selector
+// ---------------------------------------------------------------------------
+function ModeTab({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  disabled,
+  badge,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: typeof IconText;
+  label: string;
+  disabled?: boolean;
+  badge?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        relative flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all border
+        ${active
+          ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
+          : disabled
+            ? 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'
+            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+        }
+      `}
+    >
+      <Icon className="w-[18px] h-[18px]" />
+      {label}
+      {badge && (
+        <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 export default function UploadKnowledgePage() {
   const { user, loading: authLoading, getAccessToken } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadResult, setUploadResult] = useState<{ chunks: number; title: string } | null>(null);
-  const [sites, setSites] = useState<Site[]>([]);
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<UploadedDoc[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Load user's sites
+  // Shared state
+  const [sites, setSites] = useState<Site[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [mode, setMode] = useState<UploadMode>('text');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Text mode
+  const [textTitle, setTextTitle] = useState('');
+  const [textContent, setTextContent] = useState('');
+  const [textSubmitting, setTextSubmitting] = useState(false);
+
+  // URL mode
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [scrapeSubmitting, setScrapeSubmitting] = useState(false);
+  const [scrapeStatus, setScrapeStatus] = useState<ScrapeStatus | null>(null);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load sites
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -45,384 +161,383 @@ export default function UploadKnowledgePage() {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         if (error) throw error;
-        const siteList = (data || []) as Site[];
-        setSites(siteList);
-        if (siteList.length > 0 && !selectedSiteId) {
-          setSelectedSiteId(siteList[0].id);
-        }
-      } catch (err: any) {
-        console.error('Failed to load sites:', err);
+        const list = (data || []) as Site[];
+        setSites(list);
+        if (list.length > 0) setSelectedSiteId(list[0].id);
+      } catch {
+        // silent
       } finally {
         setLoading(false);
       }
     })();
   }, [user]);
 
-  // Load existing documents for selected site
+  // Cleanup polling on unmount
   useEffect(() => {
-    if (!selectedSiteId || !user) {
-      setDocuments([]);
-      return;
-    }
-    (async () => {
-      try {
-        const token = await getAccessToken();
-        const response = await fetch('/api/ingest?siteId=' + selectedSiteId, {
-          headers: { 'Authorization': 'Bearer ' + (token || '') },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setDocuments(data.sources || data || []);
-        }
-      } catch (err: any) {
-        console.error('Failed to load documents:', err);
-      }
-    })();
-  }, [selectedSiteId, user]);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = () => setIsDragging(false);
+  // ---------------------------------------------------------------------------
+  // Text submit
+  // ---------------------------------------------------------------------------
+  const handleTextSubmit = async () => {
+    if (!selectedSiteId) { setError('Velg et nettsted først.'); return; }
+    if (!textTitle.trim()) { setError('Gi innholdet en tittel.'); return; }
+    if (!textContent.trim()) { setError('Lim inn innholdet du vil legge til.'); return; }
 
-  const handleUpload = async (file: File) => {
-    if (!selectedSiteId) {
-      setUploadError('Velg et nettsted først');
-      return;
-    }
-
-    setUploadProgress(0);
-    setUploadError(null);
-    setUploadResult(null);
-
-    // Simulate progress while uploading
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev === null || prev >= 90) return prev;
-        return prev + 10;
-      });
-    }, 300);
+    setTextSubmitting(true);
+    setError(null);
+    setSuccess(null);
 
     try {
       const token = await getAccessToken();
-      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
+      if (!token) throw new Error('Ikke autentisert');
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('siteId', selectedSiteId);
-
-      const response = await fetch('/api/ingest', {
+      const res = await fetch('/api/ingest', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: formData,
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          siteId: selectedSiteId,
+          title: textTitle.trim(),
+          type: 'text',
+          text: textContent.trim(),
+        }),
       });
 
-      clearInterval(progressInterval);
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || 'Opplasting feilet');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Kunne ikke lagre teksten');
       }
 
-      const data = await response.json();
-      setUploadProgress(100);
-      setUploadResult({
-        chunks: data.chunkCount || data.chunk_count || 0,
-        title: data.title || file.name,
-      });
-
-      // Refresh document list
-      setTimeout(async () => {
-        setUploadProgress(null);
-        try {
-          const refreshResponse = await fetch('/api/ingest?siteId=' + selectedSiteId, {
-            headers: { 'Authorization': 'Bearer ' + token },
-          });
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            setDocuments(refreshData.sources || refreshData || []);
-          }
-        } catch {} // silent refresh failure
-      }, 1500);
+      const data = await res.json();
+      setSuccess(`«${data.title || textTitle}» ble lagt til med ${data.chunks || 0} deler.`);
+      setTextTitle('');
+      setTextContent('');
     } catch (err: any) {
-      clearInterval(progressInterval);
-      setUploadProgress(null);
-      setUploadError(err.message || 'Noe gikk galt under opplasting');
+      setError(err.message || 'Noe gikk galt');
+    } finally {
+      setTextSubmitting(false);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleUpload(file);
-  };
+  // ---------------------------------------------------------------------------
+  // URL scrape
+  // ---------------------------------------------------------------------------
+  const pollScrapeStatus = useCallback(async (sourceId: string, token: string) => {
+    try {
+      const res = await fetch('/api/ingest/scrape?sourceId=' + sourceId, {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setScrapeStatus({
+        sourceId: data.sourceId,
+        status: data.status,
+        title: data.title,
+        chunksCreated: data.chunksCreated || 0,
+        progressText: data.progressText,
+      });
 
-  const handleFileSelect = () => {
-    fileInputRef.current?.click();
-  };
+      if (data.status === 'ready' || data.status === 'error') {
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+        if (data.status === 'ready') {
+          setSuccess(`Nettsiden «${data.title}» ble skannet. ${data.chunksCreated || 0} deler opprettet.`);
+        } else {
+          setError('Skanning feilet. Sjekk at URLen er tilgjengelig.');
+        }
+        setScrapeSubmitting(false);
+      }
+    } catch {
+      // Silent polling failure
+    }
+  }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleUpload(file);
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  const handleUrlSubmit = async () => {
+    if (!selectedSiteId) { setError('Velg et nettsted først.'); return; }
+    if (!scrapeUrl.trim()) { setError('Skriv inn en URL.'); return; }
 
-  const handleDelete = async (docId: string) => {
-    if (!confirm('Slett dette dokumentet?')) return;
-    setDeleting(docId);
+    // Basic URL validation
+    try {
+      const url = new URL(scrapeUrl.trim().startsWith('http') ? scrapeUrl.trim() : 'https://' + scrapeUrl.trim());
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('bad');
+    } catch {
+      setError('Ugyldig URL. Bruk formatet https://example.com');
+      return;
+    }
+
+    setScrapeSubmitting(true);
+    setError(null);
+    setSuccess(null);
+    setScrapeStatus(null);
+
     try {
       const token = await getAccessToken();
-      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
-      const response = await fetch('/api/ingest?sourceId=' + docId, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token },
+      if (!token) throw new Error('Ikke autentisert');
+
+      const fullUrl = scrapeUrl.trim().startsWith('http') ? scrapeUrl.trim() : 'https://' + scrapeUrl.trim();
+
+      const res = await fetch('/api/ingest/scrape', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          siteId: selectedSiteId,
+          url: fullUrl,
+        }),
       });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || 'Kunne ikke slette');
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Kunne ikke starte skanning');
       }
-      setDocuments((docs) => docs.filter((d) => d.id !== docId));
+
+      const data = await res.json();
+      const sourceId = data.sourceId;
+
+      setScrapeStatus({
+        sourceId,
+        status: 'processing',
+        title: fullUrl,
+        chunksCreated: 0,
+        progressText: 'Starter skanning...',
+      });
+
+      // Start polling every 3 seconds
+      pollRef.current = setInterval(() => {
+        pollScrapeStatus(sourceId, token);
+      }, 3000);
     } catch (err: any) {
-      alert(err.message || 'Feil ved sletting');
-    } finally {
-      setDeleting(null);
+      setError(err.message || 'Noe gikk galt');
+      setScrapeSubmitting(false);
     }
   };
 
-  const statusConfig = (status: string) => {
-    const map: Record<string, { bg: string; color: string; dotColor: string; label: string }> = {
-      ready: { bg: '#d1fae5', color: '#065f46', dotColor: '#22c55e', label: 'Klar' },
-      processing: { bg: '#fef3c7', color: '#92400e', dotColor: '#f59e0b', label: 'Behandler' },
-      error: { bg: '#fee2e2', color: '#991b1b', dotColor: '#dc2626', label: 'Feil' },
-      pending: { bg: '#e0f2fe', color: '#075985', dotColor: '#3b82f6', label: 'Venter' },
-    };
-    return map[status] || { bg: '#f1f5f9', color: '#64748b', dotColor: '#94a3b8', label: status };
-  };
-
-  const fileTypeBadge = (type: string) => {
-    const upper = type.toUpperCase();
-    const colors: Record<string, { bg: string; color: string }> = {
-      PDF: { bg: '#fee2e2', color: '#991b1b' },
-      TXT: { bg: '#e0f2fe', color: '#075985' },
-      DOCX: { bg: '#ede9fe', color: '#5b21b6' },
-      DOCUMENT: { bg: '#fee2e2', color: '#991b1b' },
-      WEBPAGE: { bg: '#e0f2fe', color: '#075985' },
-      TEXT: { bg: '#f1f5f9', color: '#64748b' },
-    };
-    return colors[upper] || { bg: '#f1f5f9', color: '#64748b' };
-  };
-
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', fontFamily: fontStack, alignItems: 'center', justifyContent: 'center', padding: 60 }}>
-        <div style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Laster...</div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-8 h-8 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-slate-400 text-sm">Laster...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', fontFamily: fontStack }}>
-      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <a href="/dashboard/knowledge" style={{ color: '#64748b', textDecoration: 'none', fontSize: '13px' }}>Tilbake til kunnskapsbase</a>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '4px 0 0 0' }}>Last opp dokumenter</h1>
+    <div className="min-h-full">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="px-6 py-5 sm:px-8">
+          <Link
+            href="/dashboard/knowledge"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-3"
+          >
+            <IconArrowLeft className="w-3.5 h-3.5" />
+            Tilbake til kunnskapsbase
+          </Link>
+          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Legg til kunnskap</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Velg en metode for å gi chatboten ny kunnskap.
+          </p>
         </div>
       </div>
 
-      <main style={{ padding: '24px', flex: 1, overflow: 'auto', maxWidth: '900px' }}>
-        {/* Site Selector */}
-        {sites.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px' }}>Velg nettsted</label>
-            <select
-              value={selectedSiteId || ''}
-              onChange={(e) => setSelectedSiteId(e.target.value)}
-              style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', fontFamily: fontStack, backgroundColor: '#fff', minWidth: 200 }}
-            >
-              {sites.map((site) => (
-                <option key={site.id} value={site.id}>{site.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
+      {/* Main content */}
+      <div className="px-6 py-6 sm:px-8 max-w-2xl">
+        {/* No sites */}
         {sites.length === 0 ? (
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '60px 24px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>Ingen nettsteder</div>
-            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>Opprett et nettsted først for å laste opp dokumenter.</div>
-            <a href="/dashboard/sites/new" style={{ display: 'inline-block', padding: '10px 20px', background: '#2563eb', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
-              + Legg til nettsted
-            </a>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+            <h2 className="text-base font-semibold text-slate-900 mb-2">Ingen nettsteder</h2>
+            <p className="text-sm text-slate-500 mb-5">
+              Du trenger minst ett nettsted for å legge til kunnskap.
+            </p>
+            <Link
+              href="/dashboard/sites/new"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Opprett nettsted
+            </Link>
           </div>
         ) : (
           <>
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.txt,.docx,.doc,.csv"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
+            {/* Site selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Nettsted
+              </label>
+              <select
+                value={selectedSiteId}
+                onChange={(e) => setSelectedSiteId(e.target.value)}
+                className="w-full max-w-xs px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              >
+                {sites.map((site) => (
+                  <option key={site.id} value={site.id}>{site.name}</option>
+                ))}
+              </select>
+            </div>
 
-            {/* Drop Zone */}
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={handleFileSelect}
-              style={{
-                backgroundColor: isDragging ? '#eff6ff' : 'white',
-                borderRadius: '12px',
-                border: isDragging ? '2px dashed #2563eb' : '2px dashed #cbd5e1',
-                padding: '48px 32px',
-                textAlign: 'center' as const,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                marginBottom: '24px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              }}
-            >
-              <div style={{ marginBottom: '12px' }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <path d="M17 8l-5-5-5 5" />
-                  <path d="M12 3v12" />
-                </svg>
-              </div>
-              <p style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 8px 0' }}>
-                Dra og slipp filer her
-              </p>
-              <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 16px 0' }}>
-                eller klikk for å velge filer
-              </p>
-              <div style={{ display: 'inline-flex', gap: '8px' }}>
-                {['PDF', 'TXT', 'DOCX'].map((fmt) => {
-                  const badge = fileTypeBadge(fmt);
-                  return (
-                    <span key={fmt} style={{ padding: '4px 12px', backgroundColor: badge.bg, borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: badge.color }}>
-                      {fmt}
-                    </span>
-                  );
-                })}
+            {/* Mode selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Kildetype</label>
+              <div className="grid grid-cols-3 gap-3">
+                <ModeTab
+                  active={mode === 'text'}
+                  onClick={() => { setMode('text'); setError(null); setSuccess(null); }}
+                  icon={IconText}
+                  label="Tekst"
+                />
+                <ModeTab
+                  active={mode === 'url'}
+                  onClick={() => { setMode('url'); setError(null); setSuccess(null); }}
+                  icon={IconGlobe}
+                  label="Nettside"
+                />
+                <ModeTab
+                  active={mode === 'file'}
+                  onClick={() => { setMode('file'); setError(null); setSuccess(null); }}
+                  icon={IconUpload}
+                  label="Fil"
+                  disabled
+                  badge="Snart"
+                />
               </div>
             </div>
 
-            {/* Upload Error */}
-            {uploadError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 16px', marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: '#dc2626', margin: 0 }}>{uploadError}</p>
+            {/* Error / Success messages */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-6">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+            {success && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 mb-6 flex items-center gap-2.5">
+                <IconCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <p className="text-sm text-emerald-700">{success}</p>
               </div>
             )}
 
-            {/* Upload Result */}
-            {uploadResult && uploadProgress === null && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 16px', marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: '#166534', margin: 0, fontWeight: 500 }}>
-                  ✓ «{uploadResult.title}» lastet opp — {uploadResult.chunks} chunks opprettet
-                </p>
-              </div>
-            )}
-
-            {/* Upload Progress */}
-            {uploadProgress !== null && (
-              <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#0f172a' }}>Laster opp...</span>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>{Math.min(uploadProgress, 100)}%</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${Math.min(uploadProgress, 100)}%`, height: '100%', backgroundColor: '#2563eb', borderRadius: '4px', transition: 'width 0.15s ease' }} />
-                </div>
-              </div>
-            )}
-
-            {/* Supported Formats Info */}
-            <div style={{ backgroundColor: '#eff6ff', borderRadius: '12px', border: '1px solid #bfdbfe', padding: '16px 20px', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
-              <div>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#1e40af', margin: '0 0 4px 0' }}>Støttede formater</p>
-                <p style={{ fontSize: '13px', color: '#1e40af', margin: 0 }}>
-                  <strong>PDF</strong> — Produktkataloger, manualer, rapporter |
-                  <strong> TXT</strong> — Vanlige tekstfiler, FAQ-er |
-                  <strong> DOCX</strong> — Word-dokumenter, retningslinjer
-                </p>
-                <p style={{ fontSize: '12px', color: '#3b82f6', margin: '6px 0 0 0' }}>Maks filstørrelse: 25 MB per fil</p>
-              </div>
-            </div>
-
-            {/* Documents List */}
-            <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-              <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Opplastede dokumenter ({documents.length})</h3>
-              </div>
-
-              {documents.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center' as const, color: '#64748b' }}>
-                  <p style={{ fontSize: '14px' }}>Ingen dokumenter lastet opp ennå</p>
-                </div>
-              ) : (
+            {/* Text mode */}
+            {mode === 'text' && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
                 <div>
-                  {documents.map((doc, i) => {
-                    const st = statusConfig(doc.status);
-                    const badge = fileTypeBadge(doc.type);
-                    const fileSize = doc.file_size ? (doc.file_size > 1048576 ? (doc.file_size / 1048576).toFixed(1) + ' MB' : (doc.file_size / 1024).toFixed(0) + ' KB') : '';
-                    return (
-                      <div
-                        key={doc.id}
-                        style={{
-                          padding: '16px 20px',
-                          borderBottom: i < documents.length - 1 ? '1px solid #f1f5f9' : 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: badge.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: badge.color }}>
-                            {doc.type.substring(0, 4).toUpperCase()}
-                          </div>
-                          <div>
-                            <p style={{ fontSize: '14px', fontWeight: '500', color: '#0f172a', margin: 0 }}>{doc.title}</p>
-                            <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0 0' }}>
-                              {fileSize}{fileSize ? ' — ' : ''}{doc.type}{doc.chunk_count ? ' — ' + doc.chunk_count + ' chunks' : ''} — {new Date(doc.created_at).toLocaleDateString('nb-NO')}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '500', backgroundColor: st.bg, color: st.color, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: st.dotColor, display: 'inline-block' }} />
-                            {st.label}
-                          </span>
-                          <button
-                            onClick={() => handleDelete(doc.id)}
-                            disabled={deleting === doc.id}
-                            style={{
-                              padding: '6px 12px', backgroundColor: 'transparent', color: deleting === doc.id ? '#94a3b8' : '#ef4444',
-                              border: '1px solid #fecaca', borderRadius: '6px', cursor: deleting === doc.id ? 'not-allowed' : 'pointer',
-                              fontSize: '12px', fontFamily: fontStack, transition: 'all 0.2s',
-                            }}
-                            onMouseEnter={(e) => { if (deleting !== doc.id) e.currentTarget.style.backgroundColor = '#fef2f2'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                          >
-                            {deleting === doc.id ? 'Sletter...' : 'Slett'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Tittel</label>
+                  <input
+                    type="text"
+                    value={textTitle}
+                    onChange={(e) => setTextTitle(e.target.value)}
+                    placeholder="F.eks. Returpolicy, Prisliste 2026"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
                 </div>
-              )}
-            </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Innhold</label>
+                  <textarea
+                    value={textContent}
+                    onChange={(e) => setTextContent(e.target.value)}
+                    placeholder="Lim inn teksten chatboten skal lære fra..."
+                    rows={10}
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-y"
+                  />
+                  {textContent.length > 0 && (
+                    <p className="text-xs text-slate-400 mt-1.5 tabular-nums">
+                      {textContent.length.toLocaleString('nb-NO')} tegn
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleTextSubmit}
+                  disabled={textSubmitting || !textTitle.trim() || !textContent.trim()}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {textSubmitting ? 'Lagrer...' : 'Legg til tekst'}
+                </button>
+              </div>
+            )}
+
+            {/* URL mode */}
+            {mode === 'url' && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nettadresse</label>
+                  <input
+                    type="url"
+                    value={scrapeUrl}
+                    onChange={(e) => setScrapeUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    disabled={scrapeSubmitting}
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                  <p className="text-xs text-slate-400 mt-1.5">
+                    Vi skanner nettsiden og henter ut tekst automatisk.
+                  </p>
+                </div>
+
+                {/* Scrape progress */}
+                {scrapeStatus && scrapeStatus.status === 'processing' && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin flex-shrink-0" />
+                      <span className="text-sm font-medium text-blue-900">Skanner nettside...</span>
+                    </div>
+                    {scrapeStatus.progressText && (
+                      <p className="text-xs text-blue-700 mb-2">{scrapeStatus.progressText}</p>
+                    )}
+                    <div className="flex items-center gap-4 text-xs text-blue-600">
+                      <span className="tabular-nums">{scrapeStatus.chunksCreated} deler opprettet</span>
+                    </div>
+                    {/* Indeterminate progress bar */}
+                    <div className="mt-3 w-full h-1 bg-blue-100 rounded-full overflow-hidden">
+                      <div className="h-full w-1/3 bg-blue-500 rounded-full animate-pulse" style={{ animation: 'indeterminate 1.5s ease-in-out infinite' }} />
+                    </div>
+                    <style jsx>{`
+                      @keyframes indeterminate {
+                        0% { transform: translateX(-100%); }
+                        100% { transform: translateX(400%); }
+                      }
+                    `}</style>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleUrlSubmit}
+                  disabled={scrapeSubmitting || !scrapeUrl.trim()}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {scrapeSubmitting ? 'Skanner...' : 'Start skanning'}
+                </button>
+              </div>
+            )}
+
+            {/* File mode (placeholder) */}
+            {mode === 'file' && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-10 text-center">
+                <div className="text-slate-300 mb-4 flex justify-center">
+                  <IconLock className="w-12 h-12" />
+                </div>
+                <h3 className="text-base font-semibold text-slate-900 mb-2">Filopplasting kommer snart</h3>
+                <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                  Støtte for direkte opplasting av PDF, DOCX og CSV-filer er under utvikling. Bruk tekstmetoden for nå, eller lim inn innholdet direkte.
+                </p>
+              </div>
+            )}
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }
