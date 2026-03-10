@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import './globals.css';
 
 export const metadata: Metadata = {
   title: 'NorskBot - AI Chatbot for Norwegian Businesses',

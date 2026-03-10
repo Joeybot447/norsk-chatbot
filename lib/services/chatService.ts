@@ -134,8 +134,8 @@ ${context || 'Ingen kontekst tilgjengelig'}
 Hvis du ikke vet svaret, si at du ikke kan hjelpe med det spørsmålet.`;
 
   const response = await client.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 1024,
+    model: 'claude-opus-4-1-20250805',
+    max_tokens: 2048,
     system: systemPrompt,
     messages,
   });
