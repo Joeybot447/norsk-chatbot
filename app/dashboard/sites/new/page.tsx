@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '../../../_lib/supabase/client';
 import { useAuth } from '../../../_lib/supabase/hooks';
 
 const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -18,7 +17,7 @@ const themeColors = [
 ];
 
 export default function NewSitePage() {
-  const { user } = useAuth();
+  const { user, getAccessToken } = useAuth();
   const [siteName, setSiteName] = useState('');
   const [domain, setDomain] = useState('');
   const [welcomeMessage, setWelcomeMessage] = useState('Hei! Hvordan kan jeg hjelpe deg i dag?');
@@ -37,12 +36,13 @@ export default function NewSitePage() {
     setSubmitting(true);
     setError(null);
     try {
-      const { data: session } = await supabase.auth.getSession();
+      const token = await getAccessToken();
+      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
       const response = await fetch('/api/sites', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + session?.session?.access_token,
+          'Authorization': 'Bearer ' + token,
         },
         body: JSON.stringify({
           name: siteName,

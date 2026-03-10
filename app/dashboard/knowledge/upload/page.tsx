@@ -22,7 +22,7 @@ interface UploadedDoc {
 }
 
 export default function UploadKnowledgePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getAccessToken } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -66,10 +66,9 @@ export default function UploadKnowledgePage() {
     }
     (async () => {
       try {
-        const { data: session } = await supabase.auth.getSession();
-        const token = session?.session?.access_token;
+        const token = await getAccessToken();
         const response = await fetch('/api/ingest?siteId=' + selectedSiteId, {
-          headers: { 'Authorization': 'Bearer ' + token },
+          headers: { 'Authorization': 'Bearer ' + (token || '') },
         });
         if (response.ok) {
           const data = await response.json();
@@ -103,8 +102,8 @@ export default function UploadKnowledgePage() {
     }, 300);
 
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session?.session?.access_token;
+      const token = await getAccessToken();
+      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
 
       const formData = new FormData();
       formData.append('file', file);
@@ -172,8 +171,8 @@ export default function UploadKnowledgePage() {
     if (!confirm('Slett dette dokumentet?')) return;
     setDeleting(docId);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session?.session?.access_token;
+      const token = await getAccessToken();
+      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
       const response = await fetch('/api/ingest?sourceId=' + docId, {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token },

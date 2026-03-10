@@ -22,7 +22,7 @@ interface KnowledgeSource {
 }
 
 export default function KnowledgePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getAccessToken } = useAuth();
   const [activeTab, setActiveTab] = useState('sources');
   const [sites, setSites] = useState<Site[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -67,10 +67,9 @@ export default function KnowledgePage() {
     setError(null);
     (async () => {
       try {
-        const { data: session } = await supabase.auth.getSession();
-        const token = session?.session?.access_token;
+        const token = await getAccessToken();
         const response = await fetch('/api/ingest?siteId=' + selectedSiteId, {
-          headers: { 'Authorization': 'Bearer ' + token },
+          headers: { 'Authorization': 'Bearer ' + (token || '') },
         });
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
@@ -90,8 +89,8 @@ export default function KnowledgePage() {
     if (!confirm('Er du sikker på at du vil slette denne kilden?')) return;
     setDeleting(sourceId);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session?.session?.access_token;
+      const token = await getAccessToken();
+      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
       const response = await fetch('/api/ingest?sourceId=' + sourceId, {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token },

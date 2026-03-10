@@ -16,7 +16,7 @@ interface Site {
 }
 
 export default function SitesPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, getAccessToken } = useAuth();
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +49,8 @@ export default function SitesPage() {
     if (!confirm('Er du sikker på at du vil slette dette nettstedet? Alle samtaler og data vil bli slettet.')) return;
     setDeleting(siteId);
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session?.session?.access_token;
+      const token = await getAccessToken();
+      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
       const response = await fetch('/api/sites/' + siteId, {
         method: 'DELETE',
         headers: { Authorization: 'Bearer ' + token },
