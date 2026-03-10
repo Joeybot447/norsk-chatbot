@@ -359,6 +359,13 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
   const [submittingText, setSubmittingText] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // URL scrape state
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeStatus, setScrapeStatus] = useState<string | null>(null);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
+  const [scrapeResult, setScrapeResult] = useState<{ pagesCrawled: number; chunksCreated: number } | null>(null);
+
   const fetchSources = useCallback(async () => {
     try {
       const token = await getAccessToken();
@@ -451,6 +458,37 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
     }
   };
 
+  const handleScrape = async () => {
+    if (!scrapeUrl.trim()) return;
+    setScraping(true);
+    setScrapeError(null);
+    setScrapeResult(null);
+    setScrapeStatus('Starter skanning...');
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error('Ikke autentisert');
+      const res = await fetch('/api/ingest/scrape', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: scrapeUrl, siteId }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Skanning feilet');
+      }
+      const data = await res.json();
+      setScrapeResult({ pagesCrawled: data.pagesCrawled, chunksCreated: data.chunksCreated });
+      setScrapeStatus(null);
+      setScrapeUrl('');
+      await fetchSources();
+    } catch (err: any) {
+      setScrapeError(err.message);
+      setScrapeStatus(null);
+    } finally {
+      setScraping(false);
+    }
+  };
+
   const typeBadge = (type: string) => {
     const map: Record<string, { label: string; bg: string; color: string }> = {
       document: { label: 'PDF', bg: '#fef3c7', color: '#92400e' },
@@ -495,6 +533,48 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
 
   return (
     <div>
+      {/* URL Scrape section */}
+      <div style={cardStyle}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, margin: '0 0 12px' }}>Importer fra nettside</h3>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <label style={labelStyle}>Nettadresse</label>
+            <input
+              style={inputStyle}
+              value={scrapeUrl}
+              onChange={(e) => setScrapeUrl(e.target.value)}
+              placeholder="https://dinbedrift.no"
+              disabled={scraping}
+              onFocus={(e) => (e.target.style.borderColor = colors.blue)}
+              onBlur={(e) => (e.target.style.borderColor = colors.border)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !scraping) handleScrape(); }}
+            />
+          </div>
+          <button
+            onClick={handleScrape}
+            disabled={scraping || !scrapeUrl.trim()}
+            style={{ ...btnPrimary, opacity: scraping || !scrapeUrl.trim() ? 0.7 : 1, whiteSpace: 'nowrap' }}
+          >
+            {scraping ? 'Skanner...' : 'Skann nettside'}
+          </button>
+        </div>
+        {scrapeStatus && (
+          <div style={{ marginTop: 12, padding: '10px 14px', backgroundColor: '#eff6ff', borderRadius: 8, fontSize: 13, color: colors.blue, fontWeight: 500 }}>
+            {scrapeStatus}
+          </div>
+        )}
+        {scrapeError && (
+          <div style={{ marginTop: 12, padding: '10px 14px', backgroundColor: colors.dangerBg, borderRadius: 8, fontSize: 13, color: colors.danger, fontWeight: 500 }}>
+            {scrapeError}
+          </div>
+        )}
+        {scrapeResult && (
+          <div style={{ marginTop: 12, padding: '10px 14px', backgroundColor: colors.successBg, borderRadius: 8, fontSize: 13, color: colors.success, fontWeight: 500 }}>
+            Ferdig! {scrapeResult.pagesCrawled} sider skannet, {scrapeResult.chunksCreated} kunnskapsdeler opprettet.
+          </div>
+        )}
+      </div>
+
       <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.text, margin: 0 }}>Kunnskapsbase</h2>
         <div style={{ display: 'flex', gap: 8 }}>
