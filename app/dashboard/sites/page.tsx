@@ -7,35 +7,91 @@ import { useAuth } from '../../_lib/supabase/hooks';
 
 const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
+const colors = {
+  blue: '#2563eb',
+  blueHover: '#1d4ed8',
+  blueBg: '#eff6ff',
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+  bg: '#f8fafc',
+  text: '#0f172a',
+  textMuted: '#64748b',
+  success: '#16a34a',
+  successBg: '#dcfce7',
+  danger: '#dc2626',
+  dangerBg: '#fef2f2',
+  white: '#ffffff',
+};
+
 interface Site {
   id: string;
   name: string;
   domain: string;
+  bot_name: string;
   is_active: boolean;
   created_at: string;
-  conversations: { count: number }[];
+  updated_at: string;
+}
+
+interface SiteWithStats extends Site {
+  conversationCount: number;
+  knowledgeCount: number;
+  lastActivity: string | null;
 }
 
 export default function SitesPage() {
   const router = useRouter();
-  const { user, loading: authLoading, getAccessToken } = useAuth();
-  const [sites, setSites] = useState<Site[]>([]);
+  const { user, loading: authLoading } = useAuth();
+  const [sites, setSites] = useState<SiteWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const loadSites = async () => {
     if (!user) return;
     setLoading(true);
     setError(null);
     try {
-      const { data, error: err } = await supabase
+      // Fetch sites
+      const { data: sitesData, error: sitesErr } = await supabase
         .from('sites')
-        .select('id, name, domain, is_active, created_at, conversations(count)')
+        .select('id, name, domain, bot_name, is_active, created_at, updated_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      if (err) throw err;
-      setSites((data || []) as Site[]);
+      if (sitesErr) throw sitesErr;
+
+      const result: SiteWithStats[] = [];
+      for (const site of (sitesData || [])) {
+        // Conversation count
+        const { count: convCount } = await supabase
+          .from('conversations')
+          .select('*', { count: 'exact', head: true })
+          .eq('site_id', site.id);
+
+        // Knowledge sources count
+        const { count: knowledgeCount } = await supabase
+          .from('knowledge_sources')
+          .select('*', { count: 'exact', head: true })
+          .eq('site_id', site.id);
+
+        // Last activity (most recent conversation)
+        const { data: lastConv } = await supabase
+          .from('conversations')
+          .select('started_at')
+          .eq('site_id', site.id)
+          .order('started_at', { ascending: false })
+          .limit(1);
+
+        result.push({
+          ...site,
+          conversationCount: convCount || 0,
+          knowledgeCount: knowledgeCount || 0,
+          lastActivity: lastConv?.[0]?.started_at || null,
+        });
+      }
+
+      setSites(result);
     } catch (err: any) {
       setError(err.message || 'Kunne ikke laste nettsteder');
     } finally {
@@ -48,20 +104,12 @@ export default function SitesPage() {
   }, [user]);
 
   const handleDelete = async (siteId: string) => {
-    if (!confirm('Er du sikker på at du vil slette dette nettstedet? Alle samtaler og data vil bli slettet.')) return;
     setDeleting(siteId);
+    setDeleteConfirm(null);
     try {
-      const token = await getAccessToken();
-      if (!token) throw new Error('Ikke autentisert — prøv å logge inn på nytt');
-      const response = await fetch('/api/sites/' + siteId, {
-        method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token },
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || 'Kunne ikke slette nettstedet');
-      }
-      await loadSites();
+      const { error: delErr } = await supabase.from('sites').delete().eq('id', siteId);
+      if (delErr) throw delErr;
+      setSites((prev) => prev.filter((s) => s.id !== siteId));
     } catch (err: any) {
       alert(err.message || 'Feil ved sletting');
     } finally {
@@ -69,164 +117,239 @@ export default function SitesPage() {
     }
   };
 
+  const formatRelativeTime = (dateStr: string | null) => {
+    if (!dateStr) return 'Ingen aktivitet';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Akkurat na';
+    if (minutes < 60) return `${minutes} min siden`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} t siden`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} d siden`;
+    return new Date(dateStr).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' });
+  };
+
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', fontFamily, alignItems: 'center', justifyContent: 'center', padding: 60 }}>
-        <div style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Laster...</div>
+      <div style={{ display: 'flex', flexDirection: 'column', fontFamily, alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%',
+          border: `3px solid ${colors.border}`, borderTopColor: colors.blue,
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ color: colors.textMuted, fontSize: 14, fontWeight: 500, marginTop: 16 }}>Laster nettsteder...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', fontFamily, alignItems: 'center', justifyContent: 'center', padding: 60 }}>
-        <div style={{ color: '#ef4444', fontSize: 16, fontWeight: 500 }}>{error}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', fontFamily, alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+        <div style={{ color: colors.danger, fontSize: 15, fontWeight: 500, marginBottom: 16 }}>{error}</div>
+        <button
+          onClick={loadSites}
+          style={{
+            padding: '10px 20px', backgroundColor: colors.white, color: colors.text,
+            border: `1px solid ${colors.border}`, borderRadius: 8, cursor: 'pointer',
+            fontSize: 14, fontWeight: 500, fontFamily,
+          }}
+        >
+          Prov igjen
+        </button>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', fontFamily }}>
-      {/* Top Bar */}
-      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Nettsteder</h1>
-        <a
-          href="/dashboard/sites/new"
+    <div style={{ display: 'flex', flexDirection: 'column', fontFamily, minHeight: '100vh', backgroundColor: colors.bg }}>
+      {/* Header */}
+      <div style={{
+        backgroundColor: colors.white, borderBottom: `1px solid ${colors.border}`,
+        padding: '20px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0, letterSpacing: '-0.02em' }}>Nettsteder</h1>
+          <p style={{ fontSize: 14, color: colors.textMuted, margin: '4px 0 0' }}>
+            Administrer chatbotene dine og se ytelsen til hvert nettsted.
+          </p>
+        </div>
+        <button
+          onClick={() => router.push('/dashboard/sites/new')}
           style={{
-            padding: '8px 16px',
-            backgroundColor: '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '500',
-            fontSize: '14px',
-            textDecoration: 'none',
-            display: 'inline-block',
-            fontFamily,
+            padding: '10px 20px', backgroundColor: colors.blue, color: colors.white,
+            border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600,
+            fontSize: 14, fontFamily, transition: 'all 0.15s', display: 'flex',
+            alignItems: 'center', gap: 6,
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1d4ed8'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.blue; e.currentTarget.style.transform = 'none'; }}
         >
-          + Legg til nettsted
-        </a>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M8 2v12M2 8h12" /></svg>
+          Nytt nettsted
+        </button>
       </div>
 
-      {/* Main Content */}
-      <main style={{ padding: '24px', flex: 1, overflow: 'auto' }}>
+      {/* Content */}
+      <main style={{ padding: 32, flex: 1 }}>
         {sites.length === 0 ? (
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '60px 24px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🌐</div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>Ingen nettsteder ennå</div>
-            <div style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>Opprett ditt første nettsted for å komme i gang med chatboten.</div>
-            <a href="/dashboard/sites/new" style={{ display: 'inline-block', padding: '10px 20px', background: '#2563eb', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
-              + Legg til nettsted
-            </a>
+          <div style={{
+            backgroundColor: colors.white, borderRadius: 16, border: `1px solid ${colors.border}`,
+            padding: '80px 32px', textAlign: 'center', maxWidth: 520, margin: '40px auto',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 14, backgroundColor: colors.blueBg,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: colors.text, marginBottom: 8 }}>Ingen nettsteder enna</div>
+            <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24, lineHeight: 1.6 }}>
+              Opprett ditt forste nettsted for a komme i gang med chatboten.
+            </div>
+            <button
+              onClick={() => router.push('/dashboard/sites/new')}
+              style={{
+                padding: '12px 24px', backgroundColor: colors.blue, color: colors.white,
+                border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily,
+              }}
+            >
+              Opprett nettsted
+            </button>
           </div>
         ) : (
-          /* Sites Table */
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-            <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: 0 }}>Dine nettsteder ({sites.length})</h3>
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                    <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>Nettstedsnavn</th>
-                    <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>Domene</th>
-                    <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>Status</th>
-                    <th style={{ padding: '12px 20px', textAlign: 'center', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>Samtaler</th>
-                    <th style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>Opprettet</th>
-                    <th style={{ padding: '12px 20px', textAlign: 'center', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>Handlinger</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sites.map((site, i) => {
-                    const convCount = site.conversations?.[0]?.count ?? 0;
-                    const status = site.is_active ? 'active' : 'inactive';
-                    return (
-                      <tr key={site.id} style={{ borderBottom: i < sites.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                        <td style={{ padding: '16px 20px', color: '#0f172a', fontSize: '14px', fontWeight: '500' }}>{site.name}</td>
-                        <td style={{ padding: '16px 20px', color: '#64748b', fontSize: '14px' }}>{site.domain}</td>
-                        <td style={{ padding: '16px 20px' }}>
-                          <span style={{
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            backgroundColor: status === 'active' ? '#d1fae5' : '#f1f5f9',
-                            color: status === 'active' ? '#065f46' : '#64748b',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                          }}>
-                            <span style={{
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              backgroundColor: status === 'active' ? '#22c55e' : '#94a3b8',
-                              display: 'inline-block',
-                            }} />
-                            {status === 'active' ? 'Aktiv' : 'Inaktiv'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center', color: '#0f172a', fontSize: '14px' }}>{convCount}</td>
-                        <td style={{ padding: '16px 20px', color: '#64748b', fontSize: '14px' }}>
-                          {new Date(site.created_at).toLocaleDateString('nb-NO')}
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <button
-                            style={{
-                              padding: '4px 12px',
-                              marginRight: '8px',
-                              backgroundColor: 'transparent',
-                              color: '#2563eb',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontFamily,
-                              transition: 'all 0.2s',
-                            }}
-                            onClick={() => router.push('/dashboard/sites/' + site.id)}
-                            onMouseEnter={(e) => {
-                              (e.currentTarget as HTMLElement).style.backgroundColor = '#eff6ff';
-                            }}
-                            onMouseLeave={(e) => {
-                              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                            }}
-                          >
-                            Rediger
-                          </button>
-                          <button
-                            onClick={() => handleDelete(site.id)}
-                            disabled={deleting === site.id}
-                            style={{
-                              padding: '4px 12px',
-                              backgroundColor: 'transparent',
-                              color: deleting === site.id ? '#94a3b8' : '#ef4444',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '6px',
-                              cursor: deleting === site.id ? 'not-allowed' : 'pointer',
-                              fontSize: '12px',
-                              fontFamily,
-                              transition: 'all 0.2s',
-                            }}
-                            onMouseEnter={(e) => {
-                              if (deleting !== site.id) (e.currentTarget as HTMLElement).style.backgroundColor = '#fef2f2';
-                            }}
-                            onMouseLeave={(e) => {
-                              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                            }}
-                          >
-                            {deleting === site.id ? 'Sletter...' : 'Slett'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+            {sites.map((site) => (
+              <div
+                key={site.id}
+                style={{
+                  backgroundColor: colors.white, borderRadius: 14, border: `1px solid ${colors.border}`,
+                  overflow: 'hidden', transition: 'all 0.2s', cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)', position: 'relative',
+                }}
+                onClick={() => router.push('/dashboard/sites/' + site.id)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+                  e.currentTarget.style.borderColor = colors.border;
+                }}
+              >
+                {/* Card header */}
+                <div style={{ padding: '20px 20px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {site.name}
+                      </h3>
+                      <p style={{ fontSize: 13, color: colors.textMuted, margin: '4px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {site.domain || 'Ingen domene satt'}
+                      </p>
+                    </div>
+                    <span style={{
+                      padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                      backgroundColor: site.is_active ? colors.successBg : colors.borderLight,
+                      color: site.is_active ? colors.success : colors.textMuted,
+                      display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0, marginLeft: 12,
+                    }}>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        backgroundColor: site.is_active ? colors.success : '#94a3b8',
+                      }} />
+                      {site.is_active ? 'Aktiv' : 'Inaktiv'}
+                    </span>
+                  </div>
+
+                  {/* Stats row */}
+                  <div style={{ display: 'flex', gap: 20, paddingTop: 12, borderTop: `1px solid ${colors.borderLight}` }}>
+                    <div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>{site.conversationCount}</div>
+                      <div style={{ fontSize: 12, color: colors.textMuted }}>Samtaler</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>{site.knowledgeCount}</div>
+                      <div style={{ fontSize: 12, color: colors.textMuted }}>Kunnskapskilder</div>
+                    </div>
+                    <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted }}>{formatRelativeTime(site.lastActivity)}</div>
+                      <div style={{ fontSize: 12, color: colors.textMuted }}>Siste aktivitet</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card footer */}
+                <div style={{
+                  padding: '12px 20px', borderTop: `1px solid ${colors.borderLight}`,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  backgroundColor: colors.bg,
+                }}>
+                  <span style={{ fontSize: 12, color: colors.textMuted }}>
+                    Opprettet {new Date(site.created_at).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                  <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push('/dashboard/sites/' + site.id);
+                      }}
+                      style={{
+                        padding: '5px 14px', backgroundColor: 'transparent', color: colors.blue,
+                        border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
+                        fontSize: 12, fontWeight: 500, fontFamily, transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.blueBg; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      Rediger
+                    </button>
+                    {deleteConfirm === site.id ? (
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(site.id); }}
+                          disabled={deleting === site.id}
+                          style={{
+                            padding: '5px 10px', backgroundColor: colors.danger, color: colors.white,
+                            border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+                            fontWeight: 500, fontFamily, opacity: deleting === site.id ? 0.6 : 1,
+                          }}
+                        >
+                          {deleting === site.id ? '...' : 'Bekreft'}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm(null); }}
+                          style={{
+                            padding: '5px 10px', backgroundColor: 'transparent', color: colors.textMuted,
+                            border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
+                            fontSize: 12, fontFamily,
+                          }}
+                        >
+                          Avbryt
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm(site.id); }}
+                        style={{
+                          padding: '5px 14px', backgroundColor: 'transparent', color: colors.danger,
+                          border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
+                          fontSize: 12, fontWeight: 500, fontFamily, transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.dangerBg; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        Slett
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </main>
