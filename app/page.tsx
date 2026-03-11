@@ -1,1346 +1,595 @@
-'use client';
+import Link from "next/link";
+import {
+  MessageSquare,
+  BookOpen,
+  BarChart3,
+  Code2,
+  ArrowRight,
+  Check,
+  Zap,
+  Shield,
+  Globe,
+} from "lucide-react";
+import { Button } from "./components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./components/ui/card";
+import { Badge } from "./components/ui/badge";
+import { Separator } from "./components/ui/separator";
 
-import React, { useState, useEffect } from 'react';
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Navigation                                                               */
+/* ────────────────────────────────────────────────────────────────────────── */
 
-// ─── Style Constants ────────────────────────────────────────────────────────
-
-const BLUE = '#2563eb';
-const BLUE_DARK = '#1d4ed8';
-const BLUE_LIGHT = '#dbeafe';
-const DARK = '#0f172a';
-const GRAY_50 = '#f8fafc';
-const GRAY_100 = '#f1f5f9';
-const GRAY_200 = '#e2e8f0';
-const GRAY_300 = '#cbd5e1';
-const GRAY_400 = '#94a3b8';
-const GRAY_500 = '#64748b';
-const GRAY_600 = '#475569';
-const GRAY_700 = '#334155';
-const GRAY_800 = '#1e293b';
-const WHITE = '#ffffff';
-const GREEN = '#10b981';
-const PURPLE = '#7c3aed';
-const ORANGE = '#f59e0b';
-
-const SHADOW_SM = '0 1px 2px 0 rgba(0,0,0,0.05)';
-const SHADOW = '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)';
-const SHADOW_MD = '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)';
-const SHADOW_LG = '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)';
-const SHADOW_XL = '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)';
-
-// ─── Reusable Button Component ──────────────────────────────────────────────
-function Button({
-  children,
-  variant = 'primary',
-  size = 'md',
-  href,
-  style: extraStyle,
-}: {
-  children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
-  href?: string;
-  style?: React.CSSProperties;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  const sizes: Record<string, React.CSSProperties> = {
-    sm: { padding: '8px 16px', fontSize: 14 },
-    md: { padding: '12px 24px', fontSize: 16 },
-    lg: { padding: '16px 32px', fontSize: 18 },
-  };
-
-  const base: React.CSSProperties = {
-    
-    fontWeight: 600,
-    borderRadius: 8,
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    textDecoration: 'none',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    lineHeight: 1.5,
-    ...sizes[size],
-  };
-
-  const variants: Record<string, React.CSSProperties> = {
-    primary: {
-      background: hovered ? BLUE_DARK : BLUE,
-      color: WHITE,
-      boxShadow: hovered ? SHADOW_MD : SHADOW_SM,
-      transform: hovered ? 'translateY(-1px)' : 'none',
-    },
-    secondary: {
-      background: hovered ? GRAY_100 : WHITE,
-      color: DARK,
-      border: `1px solid ${GRAY_200}`,
-      boxShadow: hovered ? SHADOW_MD : SHADOW_SM,
-      transform: hovered ? 'translateY(-1px)' : 'none',
-    },
-    outline: {
-      background: hovered ? 'rgba(37,99,235,0.05)' : 'transparent',
-      color: BLUE,
-      border: `1.5px solid ${BLUE}`,
-    },
-  };
-
-  const s = { ...base, ...variants[variant], ...extraStyle };
-
-  const Tag = href ? 'a' : 'button';
+function Navbar() {
   return (
-    <Tag
-      href={href}
-      style={s}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {children}
-    </Tag>
-  );
-}
+    <header className="sticky top-0 z-50 w-full border-b border-[#e2e8f0] bg-white/80 backdrop-blur-lg">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2563eb]">
+            <MessageSquare className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-xl font-bold text-[#0f172a]">NorskBot</span>
+        </Link>
 
-// ─── SVG Icons ──────────────────────────────────────────────────────────────
-const icons: Record<string, React.ReactNode> = {
-  brain: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2a5 5 0 0 1 5 5c0 1.5-.5 2.5-1.5 3.5L12 14l-3.5-3.5C7.5 9.5 7 8.5 7 7a5 5 0 0 1 5-5z" />
-      <path d="M12 14v8" />
-      <path d="M9 18h6" />
-      <path d="M7 7C4.8 7 3 8.8 3 11c0 1.5.8 2.8 2 3.5" />
-      <path d="M17 7c2.2 0 4 1.8 4 4 0 1.5-.8 2.8-2 3.5" />
-    </svg>
-  ),
-  book: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      <path d="M8 7h8" />
-      <path d="M8 11h6" />
-    </svg>
-  ),
-  building: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      <path d="M9 22v-4h6v4" />
-      <path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
-    </svg>
-  ),
-  lightning: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
-  ),
-  lock: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      <circle cx="12" cy="16" r="1" />
-    </svg>
-  ),
-  rocket: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-      <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-    </svg>
-  ),
-};
-
-// ─── Feature Card ───────────────────────────────────────────────────────────
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: WHITE,
-        borderRadius: 16,
-        padding: '32px 28px',
-        border: `1px solid ${hovered ? BLUE : GRAY_200}`,
-        boxShadow: hovered ? SHADOW_LG : SHADOW,
-        transition: 'all 0.25s ease',
-        transform: hovered ? 'translateY(-4px)' : 'none',
-        cursor: 'default',
-      }}
-    >
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 12,
-          background: `linear-gradient(135deg, ${BLUE_LIGHT}, ${WHITE})`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 20,
-        }}
-      >
-        {icons[icon] || <div style={{ width: 4, height: 24, borderRadius: 2, background: BLUE }} />}
-      </div>
-      <h3
-        style={{
-          
-          fontSize: 20,
-          fontWeight: 700,
-          color: DARK,
-          margin: '0 0 10px 0',
-          lineHeight: 1.3,
-        }}
-      >
-        {title}
-      </h3>
-      <p
-        style={{
-          
-          fontSize: 15,
-          color: GRAY_600,
-          margin: 0,
-          lineHeight: 1.65,
-        }}
-      >
-        {description}
-      </p>
-    </div>
-  );
-}
-
-// ─── Step Card ──────────────────────────────────────────────────────────────
-function StepCard({
-  number,
-  title,
-  description,
-}: {
-  number: number;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div style={{ textAlign: 'center', flex: '1 1 280px', maxWidth: 360, padding: '0 16px' }}>
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: '50%',
-          background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})`,
-          color: WHITE,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 24,
-          fontWeight: 800,
-          margin: '0 auto 20px',
-          
-        }}
-      >
-        {number}
-      </div>
-      <h3
-        style={{
-          
-          fontSize: 22,
-          fontWeight: 700,
-          color: DARK,
-          margin: '0 0 10px 0',
-        }}
-      >
-        {title}
-      </h3>
-      <p
-        style={{
-          
-          fontSize: 16,
-          color: GRAY_500,
-          margin: 0,
-          lineHeight: 1.65,
-        }}
-      >
-        {description}
-      </p>
-    </div>
-  );
-}
-
-// ─── API Endpoint Badge ─────────────────────────────────────────────────────
-function EndpointBadge({
-  method,
-  path,
-  description,
-}: {
-  method: string;
-  path: string;
-  description: string;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const methodColors: Record<string, string> = {
-    GET: GREEN,
-    POST: BLUE,
-    PUT: ORANGE,
-    DELETE: '#ef4444',
-  };
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: '14px 20px',
-        background: hovered ? GRAY_50 : WHITE,
-        borderRadius: 10,
-        border: `1px solid ${GRAY_200}`,
-        transition: 'all 0.15s ease',
-        flexWrap: 'wrap',
-      }}
-    >
-      <span
-        style={{
-          fontFamily: '"SF Mono", "Fira Code", "Consolas", monospace',
-          fontSize: 12,
-          fontWeight: 700,
-          color: WHITE,
-          background: methodColors[method] || GRAY_500,
-          padding: '4px 10px',
-          borderRadius: 6,
-          letterSpacing: 0.5,
-          flexShrink: 0,
-        }}
-      >
-        {method}
-      </span>
-      <code
-        style={{
-          fontFamily: '"SF Mono", "Fira Code", "Consolas", monospace',
-          fontSize: 14,
-          color: DARK,
-          fontWeight: 500,
-          flexShrink: 0,
-        }}
-      >
-        {path}
-      </code>
-      <span
-        style={{
-          fontSize: 14,
-          color: GRAY_500,
-          
-          marginLeft: 'auto',
-        }}
-      >
-        {description}
-      </span>
-    </div>
-  );
-}
-
-// ─── Nav Link ───────────────────────────────────────────────────────────────
-function NavLink({ children, href }: { children: React.ReactNode; href: string }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <a
-      href={href}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        
-        fontSize: 15,
-        fontWeight: 500,
-        color: hovered ? BLUE : GRAY_700,
-        textDecoration: 'none',
-        transition: 'color 0.15s ease',
-        padding: '6px 12px',
-        borderRadius: 6,
-        background: hovered ? GRAY_50 : 'transparent',
-      }}
-    >
-      {children}
-    </a>
-  );
-}
-
-// ─── Main Page ──────────────────────────────────────────────────────────────
-export default function HomePage() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const sectionPadding: React.CSSProperties = {
-    padding: '100px 24px',
-    maxWidth: 1200,
-    margin: '0 auto',
-  };
-
-  return (
-    <div style={{  color: DARK, background: WHITE, overflowX: 'hidden' as const }}>
-      {/* ═══ NAV ═══ */}
-      <nav
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          background: scrolled ? 'rgba(255,255,255,0.85)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? `1px solid ${GRAY_200}` : '1px solid transparent',
-          transition: 'all 0.3s ease',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '0 24px',
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          {/* Logo */}
+        {/* Nav Links — hidden on mobile */}
+        <nav className="hidden items-center gap-8 md:flex">
           <a
-            href="/"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              textDecoration: 'none',
-            }}
+            href="#funksjoner"
+            className="text-sm font-medium text-[#64748b] transition-colors hover:text-[#0f172a]"
           >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: WHITE,
-                fontSize: 18,
-                fontWeight: 800,
-                
-              }}
-            >
-              N
-            </div>
-            <span
-              style={{
-                
-                fontSize: 20,
-                fontWeight: 700,
-                color: DARK,
-                letterSpacing: -0.5,
-              }}
-            >
-              NorskBot
-            </span>
+            Funksjoner
           </a>
+          <a
+            href="#priser"
+            className="text-sm font-medium text-[#64748b] transition-colors hover:text-[#0f172a]"
+          >
+            Priser
+          </a>
+          <a
+            href="#slik-fungerer-det"
+            className="text-sm font-medium text-[#64748b] transition-colors hover:text-[#0f172a]"
+          >
+            Om oss
+          </a>
+        </nav>
 
-          {/* Links */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <NavLink href="/dashboard">Kontrollpanel</NavLink>
-            <NavLink href="#api">API</NavLink>
-            <NavLink href="#priser">Priser</NavLink>
-            <Button variant="primary" size="sm" href="/auth">
-              Logg inn
-            </Button>
-          </div>
+        {/* Right side */}
+        <div className="flex items-center gap-4">
+          <Link
+            href="/auth"
+            className="hidden text-sm font-medium text-[#64748b] transition-colors hover:text-[#0f172a] sm:inline-block"
+          >
+            Logg inn
+          </Link>
+          <Button asChild size="sm" className="bg-[#2563eb] hover:bg-[#1d4ed8]">
+            <Link href="/auth">Kom i gang</Link>
+          </Button>
         </div>
-      </nav>
+      </div>
+    </header>
+  );
+}
 
-      {/* ═══ HERO ═══ */}
-      <section
-        style={{
-          background: `linear-gradient(135deg, ${GRAY_50} 0%, ${BLUE_LIGHT} 50%, ${WHITE} 100%)`,
-          paddingTop: 140,
-          paddingBottom: 100,
-          textAlign: 'center',
-          position: 'relative',
-        }}
-      >
-        {/* Decorative gradient orbs */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 80,
-            left: '10%',
-            width: 400,
-            height: 400,
-            borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: 200,
-            right: '5%',
-            width: 300,
-            height: 300,
-            borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          }}
-        />
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Hero                                                                     */
+/* ────────────────────────────────────────────────────────────────────────── */
 
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px', position: 'relative' }}>
-          {/* Badge */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              background: WHITE,
-              border: `1px solid ${GRAY_200}`,
-              borderRadius: 100,
-              padding: '6px 16px 6px 8px',
-              fontSize: 13,
-              fontWeight: 500,
-              color: GRAY_600,
-              marginBottom: 32,
-              boxShadow: SHADOW_SM,
-            }}
+function Hero() {
+  return (
+    <section className="relative overflow-hidden bg-white">
+      {/* Subtle gradient backdrop */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#dbeafe]/40 to-transparent" />
+
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-24 pt-20 md:grid-cols-2 md:items-center md:pb-32 md:pt-28 lg:gap-16">
+        {/* Copy */}
+        <div className="max-w-xl">
+          <Badge
+            variant="secondary"
+            className="mb-6 border border-[#e2e8f0] bg-[#f1f5f9] text-[#64748b]"
           >
-            <span
-              style={{
-                background: `linear-gradient(135deg, ${GREEN}, #059669)`,
-                color: WHITE,
-                fontSize: 11,
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 100,
-                letterSpacing: 0.5,
-              }}
-            >
-              NYHET
-            </span>
-            Nå med GPT-4o AI &amp; RAG-kunnskapsbase
-          </div>
-
-          <h1
-            style={{
-              
-              fontSize: 56,
-              fontWeight: 800,
-              color: DARK,
-              lineHeight: 1.1,
-              margin: '0 0 24px 0',
-              letterSpacing: -1.5,
-            }}
-          >
-            AI-chatbot for{' '}
-            <span
-              style={{
-                background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              norske bedrifter
-            </span>
+            Bygget for norske bedrifter
+          </Badge>
+          <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-[#0f172a] sm:text-5xl lg:text-6xl">
+            AI-drevet kundeservice som aldri sover
           </h1>
-
-          <p
-            style={{
-              
-              fontSize: 20,
-              color: GRAY_500,
-              lineHeight: 1.6,
-              margin: '0 0 40px 0',
-              maxWidth: 600,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-            }}
-          >
-            Bygg intelligente chatbots med norsk språkstøtte. Integrer kunnskapsbasen din,
-            tilpass merkevaren, og gi kundene svar på sekunder — ikke timer.
+          <p className="mt-6 text-lg leading-relaxed text-[#64748b]">
+            Gi kundene dine umiddelbare, presise svar — 24 timer i dognet.
+            NorskBot larer fra ditt innhold og svarer pa norsk, automatisk.
           </p>
-
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <Button variant="primary" size="lg" href="/auth">
-              Kom i gang gratis →
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Button
+              asChild
+              size="lg"
+              className="bg-[#2563eb] text-base hover:bg-[#1d4ed8]"
+            >
+              <Link href="/auth">
+                Prov gratis
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
             </Button>
-            <Button variant="secondary" size="lg" href="#api">
-              Se API-dokumentasjon
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="border-[#e2e8f0] text-base text-[#0f172a] hover:bg-[#f8fafc]"
+            >
+              <a href="#slik-fungerer-det">Se hvordan det fungerer</a>
             </Button>
           </div>
+        </div>
 
-          {/* Terminal preview */}
-          <div
-            style={{
-              marginTop: 60,
-              background: GRAY_800,
-              borderRadius: 16,
-              padding: 0,
-              boxShadow: SHADOW_XL,
-              textAlign: 'left',
-              overflow: 'hidden',
-              maxWidth: 640,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-              border: `1px solid ${GRAY_700}`,
-            }}
-          >
-            <div
-              style={{
-                padding: '12px 16px',
-                background: GRAY_700,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }} />
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: ORANGE }} />
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: GREEN }} />
-              <span
-                style={{
-                  color: GRAY_400,
-                  fontSize: 13,
-                  fontFamily: '"SF Mono", monospace',
-                  marginLeft: 8,
-                }}
-              >
-                terminal
-              </span>
+        {/* Chat widget mockup */}
+        <div className="relative mx-auto w-full max-w-md md:mx-0">
+          <div className="overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-xl">
+            {/* Widget header */}
+            <div className="flex items-center gap-3 border-b border-[#e2e8f0] bg-[#2563eb] px-5 py-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+                <MessageSquare className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">NorskBot</p>
+                <p className="text-xs text-white/70">Svarer vanligvis umiddelbart</p>
+              </div>
             </div>
-            <div style={{ padding: '20px 24px' }}>
-              <code
-                style={{
-                  fontFamily: '"SF Mono", "Fira Code", "Consolas", monospace',
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                  color: GRAY_300,
-                }}
-              >
-                <span style={{ color: GRAY_500 }}>$</span>{' '}
-                <span style={{ color: GREEN }}>curl</span>{' '}
-                <span style={{ color: GRAY_400 }}>-X POST</span> https://api.norskbot.no/v1/chat
-                <br />
-                <span style={{ color: GRAY_500 }}>{'  '}-H</span>{' '}
-                <span style={{ color: ORANGE }}>{'"Authorization: Bearer sk-..."'}</span>
-                <br />
-                <span style={{ color: GRAY_500 }}>{'  '}-d</span>{' '}
-                <span style={{ color: ORANGE }}>
-                  {"'{\"message\": \"Hva er returpolicyen?\"}'"}
-                </span>
-                <br />
-                <br />
-                <span style={{ color: GRAY_500 }}>{'// '}</span>
-                <span style={{ color: GREEN }}>✓ 200 OK</span>
-                <span style={{ color: GRAY_500 }}> — 120ms</span>
-              </code>
+            {/* Messages */}
+            <div className="space-y-4 bg-[#f8fafc] p-5">
+              {/* Bot message */}
+              <div className="max-w-[80%]">
+                <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 text-sm leading-relaxed text-[#0f172a] shadow-sm">
+                  Hei! Hvordan kan jeg hjelpe deg i dag?
+                </div>
+              </div>
+              {/* User message */}
+              <div className="ml-auto max-w-[80%]">
+                <div className="rounded-2xl rounded-tr-sm bg-[#2563eb] px-4 py-3 text-sm leading-relaxed text-white">
+                  Hva koster bedriftsabonnementet?
+                </div>
+              </div>
+              {/* Bot reply */}
+              <div className="max-w-[80%]">
+                <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 text-sm leading-relaxed text-[#0f172a] shadow-sm">
+                  Pro-planen koster 599 kr/mnd og inkluderer 5 nettsteder, 10 000 meldinger og
+                  prioritert stotte. Skal jeg hjelpe deg med a komme i gang?
+                </div>
+              </div>
+            </div>
+            {/* Input bar */}
+            <div className="border-t border-[#e2e8f0] bg-white px-4 py-3">
+              <div className="flex items-center gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2">
+                <span className="flex-1 text-sm text-[#94a3b8]">Skriv en melding...</span>
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#2563eb]">
+                  <ArrowRight className="h-3 w-3 text-white" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      {/* ═══ SOCIAL PROOF ═══ */}
-      <section style={{ background: WHITE, borderBottom: `1px solid ${GRAY_100}` }}>
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '40px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 48,
-            flexWrap: 'wrap',
-          }}
-        >
-          {[
-            { number: '50+', label: 'Norske organisasjoner' },
-            { number: '100K+', label: 'Meldinger håndtert' },
-            { number: '99.9%', label: 'Oppetid' },
-            { number: '<200ms', label: 'Svartid' },
-          ].map((stat) => (
-            <div key={stat.label} style={{ textAlign: 'center', minWidth: 140 }}>
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Trust Bar                                                                */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+function TrustBar() {
+  return (
+    <section className="border-y border-[#e2e8f0] bg-[#f8fafc] py-10">
+      <div className="mx-auto max-w-6xl px-6">
+        <p className="text-center text-sm font-medium text-[#64748b]">
+          Brukt av over 100 norske bedrifter innen e-handel, helse, finans og offentlig sektor
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
+          {["E-handel", "Helsevesen", "Finans", "Offentlig", "Teknologi", "Utdanning"].map(
+            (industry) => (
               <div
-                style={{
-                  fontSize: 28,
-                  fontWeight: 800,
-                  color: BLUE,
-                  
-                  letterSpacing: -0.5,
-                }}
+                key={industry}
+                className="flex items-center gap-2 text-sm font-medium text-[#94a3b8]"
               >
-                {stat.number}
+                <Globe className="h-4 w-4" />
+                {industry}
               </div>
-              <div style={{ fontSize: 14, color: GRAY_500,  marginTop: 4 }}>
-                {stat.label}
+            )
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Features                                                                 */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+const features = [
+  {
+    icon: MessageSquare,
+    title: "AI-chatbot",
+    description:
+      "Intelligent samtalerobot som forstår norsk og svarer presist basert på ditt innhold. Tilgjengelig 24/7.",
+  },
+  {
+    icon: BookOpen,
+    title: "Kunnskapsbase",
+    description:
+      "Last opp dokumenter, nettsider og FAQ-er. Chatboten larer automatisk og holder seg oppdatert.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analyse og innsikt",
+    description:
+      "Detaljert statistikk over samtaler, kundetilfredshet og vanlige sporsmål. Ta datadrevne beslutninger.",
+  },
+  {
+    icon: Code2,
+    title: "Enkel installasjon",
+    description:
+      "Legg til en enkel kodebit pa nettsiden din. Widgeten er klar pa minutter — ingen teknisk kompetanse krevd.",
+  },
+];
+
+function Features() {
+  return (
+    <section id="funksjoner" className="bg-white py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
+            Alt du trenger for smartere kundeservice
+          </h2>
+          <p className="mt-4 text-lg text-[#64748b]">
+            Kraftige verktoy som gjor det enkelt a automatisere og forbedre kundeopplevelsen.
+          </p>
+        </div>
+
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => (
+            <Card
+              key={feature.title}
+              className="border-[#e2e8f0] bg-white transition-shadow hover:shadow-md"
+            >
+              <CardHeader>
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-[#dbeafe]">
+                  <feature.icon className="h-5 w-5 text-[#2563eb]" />
+                </div>
+                <CardTitle className="text-lg text-[#0f172a]">{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-relaxed text-[#64748b]">
+                  {feature.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  How It Works                                                             */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+const steps = [
+  {
+    number: "1",
+    title: "Registrer deg",
+    description: "Opprett en gratis konto pa under ett minutt. Ingen kredittkort krevd.",
+  },
+  {
+    number: "2",
+    title: "Last opp innhold",
+    description:
+      "Last opp dokumenter, FAQ-er eller koble til nettsiden din. AI-en larer automatisk.",
+  },
+  {
+    number: "3",
+    title: "Installer widgeten",
+    description:
+      "Kopier en enkel kodebit og lim inn pa nettsiden. Chatboten er klar umiddelbart.",
+  },
+];
+
+function HowItWorks() {
+  return (
+    <section id="slik-fungerer-det" className="bg-[#f8fafc] py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
+            Kom i gang pa tre enkle steg
+          </h2>
+          <p className="mt-4 text-lg text-[#64748b]">
+            Fra registrering til live chatbot pa nettsiden din — pa under 10 minutter.
+          </p>
+        </div>
+
+        <div className="mt-16 grid gap-8 md:grid-cols-3">
+          {steps.map((step) => (
+            <div key={step.number} className="relative text-center">
+              <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#2563eb] bg-white text-xl font-bold text-[#2563eb]">
+                {step.number}
               </div>
+              <h3 className="text-lg font-semibold text-[#0f172a]">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[#64748b]">
+                {step.description}
+              </p>
             </div>
           ))}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      {/* ═══ FEATURES ═══ */}
-      <section style={{ background: GRAY_50 }}>
-        <div style={sectionPadding}>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <p
-              style={{
-                
-                fontSize: 14,
-                fontWeight: 600,
-                color: BLUE,
-                textTransform: 'uppercase' as const,
-                letterSpacing: 1.5,
-                margin: '0 0 12px 0',
-              }}
-            >
-              Funksjoner
-            </p>
-            <h2
-              style={{
-                
-                fontSize: 40,
-                fontWeight: 800,
-                color: DARK,
-                margin: '0 0 16px 0',
-                letterSpacing: -1,
-                lineHeight: 1.2,
-              }}
-            >
-              Alt du trenger for intelligent
-              <br />
-              kundeservice
-            </h2>
-            <p
-              style={{
-                
-                fontSize: 18,
-                color: GRAY_500,
-                margin: 0,
-                maxWidth: 560,
-                marginLeft: 'auto',
-                marginRight: 'auto',
-                lineHeight: 1.6,
-              }}
-            >
-              Kraftige verktøy bygget for norske bedrifter som vil automatisere
-              kundedialog med AI.
-            </p>
-          </div>
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Pricing                                                                  */
+/* ────────────────────────────────────────────────────────────────────────── */
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: 24,
-            }}
-          >
-            <FeatureCard
-              icon="brain"
-              title="GPT-4o AI-motor"
-              description="Drevet av OpenAI GPT-4o — verdens mest avanserte AI-modell. Forstår norsk kontekst og nyanser."
-            />
-            <FeatureCard
-              icon="book"
-              title="RAG Kunnskapsbase"
-              description="Last opp dokumenter, PDF-er og nettsider. AI-en svarer basert på din egen kunnskapsbase med kildehenvisninger."
-            />
-            <FeatureCard
-              icon="building"
-              title="Flertenant-arkitektur"
-              description="Administrer flere chatbots fra ett kontrollpanel. Perfekt for byråer og bedrifter med flere merkevarer."
-            />
-            <FeatureCard
-              icon="lightning"
-              title="Sanntidschat"
-              description="Lynrask responstid under 200ms. Streaming-svar gir en naturlig samtaleopplevelse for brukerne."
-            />
-            <FeatureCard
-              icon="lock"
-              title="Sikkerhet & GDPR"
-              description="Data lagres i Norge. Fullstendig GDPR-kompatibel med kryptering, tilgangskontroll og dataminimering."
-            />
-            <FeatureCard
-              icon="rocket"
-              title="Produksjonsklar"
-              description="Enterprise-grade infrastruktur med 99.9% oppetid, automatisk skalering, og profesjonell support."
-            />
-          </div>
-        </div>
-      </section>
+const plans = [
+  {
+    name: "Starter",
+    price: "299",
+    description: "Perfekt for sma bedrifter som vil komme i gang.",
+    features: [
+      "1 nettsted",
+      "1 000 meldinger / mnd",
+      "E-poststotte",
+      "Standard kunnskapsbase",
+      "Grunnleggende analyse",
+    ],
+    cta: "Velg plan",
+    popular: false,
+  },
+  {
+    name: "Pro",
+    price: "599",
+    description: "For voksende bedrifter med hoyere krav.",
+    features: [
+      "5 nettsteder",
+      "10 000 meldinger / mnd",
+      "Prioritert stotte",
+      "Avansert analyse",
+      "Tilpasset chatbot-design",
+      "API-tilgang",
+    ],
+    cta: "Kom i gang",
+    popular: true,
+  },
+  {
+    name: "Enterprise",
+    price: "1 499",
+    description: "For store organisasjoner med sarskilte behov.",
+    features: [
+      "Ubegrenset nettsteder",
+      "Ubegrenset meldinger",
+      "Dedikert stotte",
+      "Tilpasset integrasjon",
+      "SLA-avtale",
+      "On-premise mulighet",
+      "SSO / SAML",
+    ],
+    cta: "Kontakt oss",
+    popular: false,
+  },
+];
 
-      {/* ═══ HOW IT WORKS ═══ */}
-      <section style={{ background: WHITE }}>
-        <div style={sectionPadding}>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <p
-              style={{
-                
-                fontSize: 14,
-                fontWeight: 600,
-                color: BLUE,
-                textTransform: 'uppercase' as const,
-                letterSpacing: 1.5,
-                margin: '0 0 12px 0',
-              }}
-            >
-              Slik fungerer det
-            </p>
-            <h2
-              style={{
-                
-                fontSize: 40,
-                fontWeight: 800,
-                color: DARK,
-                margin: 0,
-                letterSpacing: -1,
-                lineHeight: 1.2,
-              }}
-            >
-              I gang på minutter, ikke uker
-            </h2>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 48,
-              flexWrap: 'wrap',
-            }}
-          >
-            <StepCard
-              number={1}
-              title="Opprett konto"
-              description="Registrer deg gratis og sett opp din første chatbot med egendefinert navn, farger og velkomstmelding."
-            />
-            <StepCard
-              number={2}
-              title="Last opp kunnskap"
-              description="Last opp dokumenter, FAQ-er og nettsider. AI-en indekserer innholdet og lærer å svare på dine kunders spørsmål."
-            />
-            <StepCard
-              number={3}
-              title="Integrer og lanser"
-              description="Legg til én linje JavaScript på nettsiden din, eller bruk REST-API-et for full kontroll. Klar på sekunder."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ API SECTION ═══ */}
-      <section id="api" style={{ background: GRAY_50 }}>
-        <div style={sectionPadding}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-              gap: 64,
-              alignItems: 'center',
-            }}
-          >
-            {/* Left: text */}
-            <div>
-              <p
-                style={{
-                  
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: BLUE,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: 1.5,
-                  margin: '0 0 12px 0',
-                }}
-              >
-                Utvikler-API
-              </p>
-              <h2
-                style={{
-                  
-                  fontSize: 36,
-                  fontWeight: 800,
-                  color: DARK,
-                  margin: '0 0 16px 0',
-                  letterSpacing: -0.5,
-                  lineHeight: 1.2,
-                }}
-              >
-                Bygget for utviklere
-              </h2>
-              <p
-                style={{
-                  
-                  fontSize: 17,
-                  color: GRAY_500,
-                  margin: '0 0 32px 0',
-                  lineHeight: 1.65,
-                }}
-              >
-                Enkelt REST-API med full dokumentasjon. Integrer chatbot-funksjonalitet
-                direkte i dine eksisterende systemer med få linjer kode.
-              </p>
-              <Button variant="primary" href="/dashboard">
-                Utforsk API-dokumentasjonen →
-              </Button>
-            </div>
-
-            {/* Right: endpoints */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <EndpointBadge
-                method="POST"
-                path="/api/chat"
-                description="Send melding til chatbot"
-              />
-              <EndpointBadge
-                method="POST"
-                path="/api/ingest"
-                description="Last opp dokumenter"
-              />
-              <EndpointBadge
-                method="GET"
-                path="/api/health"
-                description="Sjekk systemstatus"
-              />
-              <EndpointBadge
-                method="POST"
-                path="/api/auth/login"
-                description="Autentisering"
-              />
-              <EndpointBadge
-                method="GET"
-                path="/api/widget/:id"
-                description="Hent widget-konfig"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ PRICING / CTA ═══ */}
-      <section
-        id="priser"
-        style={{
-          background: `linear-gradient(135deg, ${DARK} 0%, ${GRAY_800} 100%)`,
-        }}
-      >
-        <div
-          style={{
-            ...sectionPadding,
-            padding: '100px 24px',
-            textAlign: 'center',
-          }}
-        >
-          <p
-            style={{
-              
-              fontSize: 14,
-              fontWeight: 600,
-              color: BLUE,
-              textTransform: 'uppercase' as const,
-              letterSpacing: 1.5,
-              margin: '0 0 12px 0',
-            }}
-          >
-            Kom i gang
-          </p>
-          <h2
-            style={{
-              
-              fontSize: 44,
-              fontWeight: 800,
-              color: WHITE,
-              margin: '0 0 20px 0',
-              letterSpacing: -1,
-              lineHeight: 1.2,
-            }}
-          >
-            Klar til å transformere
-            <br />
-            kundeservicen din?
+function Pricing() {
+  return (
+    <section id="priser" className="bg-white py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
+            Enkle, forutsigbare priser
           </h2>
-          <p
-            style={{
-              
-              fontSize: 18,
-              color: GRAY_400,
-              margin: '0 0 48px 0',
-              maxWidth: 520,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-              lineHeight: 1.6,
-            }}
-          >
-            Start gratis i dag. Ingen kredittkort kreves. Oppgrader når du er klar
-            til å skalere.
+          <p className="mt-4 text-lg text-[#64748b]">
+            Ingen skjulte kostnader. Oppgrader eller nedgrader nar som helst.
           </p>
-
-          {/* Pricing cards */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: 24,
-              maxWidth: 900,
-              margin: '0 auto 48px',
-            }}
-          >
-            {/* Free */}
-            <div
-              style={{
-                background: GRAY_800,
-                border: `1px solid ${GRAY_700}`,
-                borderRadius: 16,
-                padding: '36px 28px',
-                textAlign: 'left',
-              }}
-            >
-              <p style={{  fontSize: 14, color: GRAY_400, margin: '0 0 8px 0', fontWeight: 500 }}>
-                Gratis
-              </p>
-              <p style={{  fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
-                0 kr
-                <span style={{ fontSize: 16, fontWeight: 400, color: GRAY_500 }}> /mnd</span>
-              </p>
-              <p style={{  fontSize: 14, color: GRAY_500, margin: '0 0 24px 0' }}>
-                Perfekt for testing
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
-                {['1 chatbot', '100 meldinger/mnd', 'Grunnleggende kunnskapsbase', 'Community-support'].map(
-                  (f) => (
-                    <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ color: GREEN, fontSize: 16 }}>✓</span>
-                      <span style={{  fontSize: 14, color: GRAY_300 }}>{f}</span>
-                    </div>
-                  )
-                )}
-              </div>
-              <Button variant="outline" style={{ width: '100%' }} href="/auth">
-                Start gratis
-              </Button>
-            </div>
-
-            {/* Pro */}
-            <div
-              style={{
-                background: `linear-gradient(135deg, ${BLUE}, ${BLUE_DARK})`,
-                borderRadius: 16,
-                padding: '36px 28px',
-                textAlign: 'left',
-                position: 'relative',
-                border: `1px solid rgba(255,255,255,0.2)`,
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: -12,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: WHITE,
-                  color: BLUE,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: '4px 14px',
-                  borderRadius: 100,
-                  
-                  letterSpacing: 0.5,
-                }}
-              >
-                POPULÆR
-              </div>
-              <p style={{  fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: '0 0 8px 0', fontWeight: 500 }}>
-                Pro
-              </p>
-              <p style={{  fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
-                990 kr
-                <span style={{ fontSize: 16, fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}> /mnd</span>
-              </p>
-              <p style={{  fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: '0 0 24px 0' }}>
-                For voksende bedrifter
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
-                {[
-                  '5 chatbots',
-                  '10 000 meldinger/mnd',
-                  'Avansert RAG-kunnskapsbase',
-                  'Widget-tilpasning',
-                  'Prioritert support',
-                ].map((f) => (
-                  <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ color: WHITE, fontSize: 16 }}>✓</span>
-                    <span style={{  fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>{f}</span>
-                  </div>
-                ))}
-              </div>
-              <Button
-                variant="secondary"
-                style={{ width: '100%', background: WHITE, color: BLUE, fontWeight: 700 }}
-                href="/auth"
-              >
-                Start 14-dagers prøveperiode
-              </Button>
-            </div>
-
-            {/* Enterprise */}
-            <div
-              style={{
-                background: GRAY_800,
-                border: `1px solid ${GRAY_700}`,
-                borderRadius: 16,
-                padding: '36px 28px',
-                textAlign: 'left',
-              }}
-            >
-              <p style={{  fontSize: 14, color: GRAY_400, margin: '0 0 8px 0', fontWeight: 500 }}>
-                Enterprise
-              </p>
-              <p style={{  fontSize: 40, fontWeight: 800, color: WHITE, margin: '0 0 4px 0' }}>
-                Tilpasset
-              </p>
-              <p style={{  fontSize: 14, color: GRAY_500, margin: '0 0 24px 0' }}>
-                For store organisasjoner
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
-                {[
-                  'Ubegrenset chatbots',
-                  'Ubegrenset meldinger',
-                  'Dedikert infrastruktur',
-                  'SSO & rollestyring',
-                  'SLA & dedikert support',
-                ].map((f) => (
-                  <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ color: GREEN, fontSize: 16 }}>✓</span>
-                    <span style={{  fontSize: 14, color: GRAY_300 }}>{f}</span>
-                  </div>
-                ))}
-              </div>
-              <Button variant="outline" style={{ width: '100%' }} href="mailto:hei@norskbot.no">
-                Kontakt salg
-              </Button>
-            </div>
-          </div>
         </div>
-      </section>
 
-      {/* ═══ FOOTER ═══ */}
-      <footer style={{ background: DARK, borderTop: `1px solid ${GRAY_800}` }}>
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '64px 24px 40px',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 48,
-              marginBottom: 48,
-            }}
-          >
-            {/* Brand */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: WHITE,
-                    fontSize: 16,
-                    fontWeight: 800,
-                    
-                  }}
-                >
-                  N
+        <div className="mt-16 grid gap-6 md:grid-cols-3">
+          {plans.map((plan) => (
+            <Card
+              key={plan.name}
+              className={`relative flex flex-col border-[#e2e8f0] bg-white ${
+                plan.popular
+                  ? "border-2 border-[#2563eb] shadow-lg"
+                  : "hover:shadow-md"
+              } transition-shadow`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-[#2563eb] text-white hover:bg-[#2563eb]">
+                    Populaer
+                  </Badge>
                 </div>
-                <span style={{  fontSize: 18, fontWeight: 700, color: WHITE }}>
-                  NorskBot
-                </span>
-              </div>
-              <p style={{  fontSize: 14, color: GRAY_500, lineHeight: 1.6, margin: 0 }}>
-                AI-drevet kundeservice for norske bedrifter. Bygget med sikkerhet og personvern i fokus.
-              </p>
-            </div>
-
-            {/* Product */}
-            <div>
-              <h4
-                style={{
-                  
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: GRAY_400,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: 1,
-                  margin: '0 0 16px 0',
-                }}
-              >
-                Produkt
-              </h4>
-              {['Funksjoner', 'Priser', 'API-dokumentasjon', 'Integrasjoner', 'Endringslogg'].map(
-                (link) => (
-                  <a
-                    key={link}
-                    href="#"
-                    style={{
-                      display: 'block',
-                      
-                      fontSize: 14,
-                      color: GRAY_500,
-                      textDecoration: 'none',
-                      marginBottom: 10,
-                      transition: 'color 0.15s',
-                    }}
-                  >
-                    {link}
-                  </a>
-                )
               )}
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4
-                style={{
-                  
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: GRAY_400,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: 1,
-                  margin: '0 0 16px 0',
-                }}
-              >
-                Selskap
-              </h4>
-              {['Om oss', 'Blogg', 'Karriere', 'Kontakt', 'Partnere'].map((link) => (
-                <a
-                  key={link}
-                  href="#"
-                  style={{
-                    display: 'block',
-                    
-                    fontSize: 14,
-                    color: GRAY_500,
-                    textDecoration: 'none',
-                    marginBottom: 10,
-                    transition: 'color 0.15s',
-                  }}
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl text-[#0f172a]">{plan.name}</CardTitle>
+                <CardDescription className="text-[#64748b]">
+                  {plan.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <div className="mb-6">
+                  <span className="text-4xl font-extrabold text-[#0f172a]">
+                    {plan.price}
+                  </span>
+                  <span className="ml-1 text-base text-[#64748b]">kr / mnd</span>
+                </div>
+                <Separator className="mb-6 bg-[#e2e8f0]" />
+                <ul className="space-y-3">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3 text-sm text-[#0f172a]">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#2563eb]" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  asChild
+                  className={`w-full ${
+                    plan.popular
+                      ? "bg-[#2563eb] hover:bg-[#1d4ed8]"
+                      : "border-[#e2e8f0] bg-white text-[#0f172a] hover:bg-[#f8fafc]"
+                  }`}
+                  variant={plan.popular ? "default" : "outline"}
                 >
-                  {link}
-                </a>
-              ))}
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4
-                style={{
-                  
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: GRAY_400,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: 1,
-                  margin: '0 0 16px 0',
-                }}
-              >
-                Juridisk
-              </h4>
-              {[
-                { label: 'Personvern', href: '/personvern' },
-                { label: 'Brukervilkår', href: '/brukervilkar' },
-                { label: 'Informasjonskapsler', href: '/cookies' },
-                { label: 'GDPR', href: '#' },
-                { label: 'Sikkerhet', href: '#' },
-              ].map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    style={{
-                      display: 'block',
-                      
-                      fontSize: 14,
-                      color: GRAY_500,
-                      textDecoration: 'none',
-                      marginBottom: 10,
-                      transition: 'color 0.15s',
-                    }}
-                  >
-                    {link.label}
-                  </a>
-                )
-              )}
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div
-            style={{
-              borderTop: `1px solid ${GRAY_800}`,
-              paddingTop: 24,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 16,
-            }}
-          >
-            <p style={{  fontSize: 13, color: GRAY_600, margin: 0 }}>
-              © {new Date().getFullYear()} NorskBot AI. Alle rettigheter reservert.
-            </p>
-            <div style={{ display: 'flex', gap: 20 }}>
-              {['GitHub', 'LinkedIn', 'Twitter'].map((s) => (
-                <a
-                  key={s}
-                  href="#"
-                  style={{
-                    
-                    fontSize: 13,
-                    color: GRAY_600,
-                    textDecoration: 'none',
-                    transition: 'color 0.15s',
-                  }}
-                >
-                  {s}
-                </a>
-              ))}
-            </div>
-          </div>
+                  <Link href={plan.name === "Enterprise" ? "mailto:josef@plagiatkontroll.no" : "/auth"}>
+                    {plan.cta}
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
-      </footer>
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Final CTA                                                                */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+function FinalCTA() {
+  return (
+    <section className="bg-[#dbeafe] py-24">
+      <div className="mx-auto max-w-3xl px-6 text-center">
+        <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
+          Klar til a automatisere kundeservicen?
+        </h2>
+        <p className="mt-4 text-lg text-[#64748b]">
+          Kom i gang gratis i dag. Ingen kredittkort krevd — opprett konto pa under ett minutt.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
+          <Button
+            asChild
+            size="lg"
+            className="bg-[#2563eb] text-base hover:bg-[#1d4ed8]"
+          >
+            <Link href="/auth">
+              Prov gratis
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Footer                                                                   */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+const footerColumns = [
+  {
+    title: "Produkt",
+    links: [
+      { label: "Funksjoner", href: "#funksjoner" },
+      { label: "Priser", href: "#priser" },
+      { label: "Kontrollpanel", href: "/dashboard" },
+      { label: "API-dokumentasjon", href: "#" },
+    ],
+  },
+  {
+    title: "Selskap",
+    links: [
+      { label: "Om oss", href: "#slik-fungerer-det" },
+      { label: "Kontakt", href: "mailto:josef@plagiatkontroll.no" },
+    ],
+  },
+  {
+    title: "Juridisk",
+    links: [
+      { label: "Personvern", href: "/personvern" },
+      { label: "Brukervilkar", href: "/brukervilkar" },
+      { label: "Informasjonskapsler", href: "/cookies" },
+    ],
+  },
+];
+
+function Footer() {
+  return (
+    <footer className="border-t border-[#e2e8f0] bg-white py-16">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+          {/* Brand column */}
+          <div>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2563eb]">
+                <MessageSquare className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-lg font-bold text-[#0f172a]">NorskBot</span>
+            </Link>
+            <p className="mt-4 text-sm leading-relaxed text-[#64748b]">
+              AI-drevet kundeservice for norske bedrifter. Smartere, raskere, alltid tilgjengelig.
+            </p>
+            <p className="mt-3 text-sm text-[#64748b]">
+              <a
+                href="mailto:josef@plagiatkontroll.no"
+                className="transition-colors hover:text-[#2563eb]"
+              >
+                josef@plagiatkontroll.no
+              </a>
+            </p>
+          </div>
+
+          {/* Link columns */}
+          {footerColumns.map((column) => (
+            <div key={column.title}>
+              <p className="mb-4 text-sm font-semibold text-[#0f172a]">{column.title}</p>
+              <ul className="space-y-3">
+                {column.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-[#64748b] transition-colors hover:text-[#0f172a]"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <Separator className="my-10 bg-[#e2e8f0]" />
+
+        <p className="text-center text-sm text-[#64748b]">
+          2026 NorskBot. Alle rettigheter reservert.
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Page                                                                     */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+export default function HomePage() {
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      <Hero />
+      <TrustBar />
+      <Features />
+      <HowItWorks />
+      <Pricing />
+      <FinalCTA />
+      <Footer />
     </div>
   );
 }

@@ -1,213 +1,257 @@
-'use client';
-
 import Link from 'next/link';
-import {
-  navStyle, logoStyle, navLinksStyle, navLinkStyle,
-  containerStyle, h1Style, h2Style, h3Style,
-  sectionStyle, lastSectionStyle, updatedStyle,
-  ulStyle, liStyle, linkStyle,
-  footerStyle, footerInnerStyle, footerColStyle,
-  footerLabelStyle, footerLinkStyle, footerCopyStyle,
-} from '../styles/legalPageStyles';
+import { LegalLayout } from '../components/legal-layout';
+import { Separator } from '../components/ui/separator';
 
 export default function PersonvernPage() {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
-      <nav style={navStyle}>
-        <Link href="/" style={logoStyle}>NorskBot</Link>
-        <div style={navLinksStyle}>
-          <Link href="/" style={navLinkStyle}>Hjem</Link>
-          <Link href="/dashboard" style={navLinkStyle}>Kontrollpanel</Link>
-          <Link href="/auth" style={navLinkStyle}>Logg inn</Link>
-        </div>
-      </nav>
+    <LegalLayout title="Personvernerklaering" lastUpdated="10. mars 2026">
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">1. Hvem vi er</h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          NorskBot AI (&laquo;NorskBot&raquo;, &laquo;vi&raquo;, &laquo;oss&raquo; eller
+          &laquo;var&raquo;) er et norsk teknologiselskap som leverer AI-drevne
+          chatbot-losninger til bedrifter. Vi er behandlingsansvarlig for personopplysninger som
+          samles inn gjennom var plattform og nettside.
+        </p>
+        <p className="text-sm text-[#64748b]">
+          <strong className="text-[#0f172a]">Kontaktinformasjon:</strong>
+          <br />
+          E-post:{' '}
+          <a
+            href="mailto:josef@plagiatkontroll.no"
+            className="text-[#2563eb] hover:underline"
+          >
+            josef@plagiatkontroll.no
+          </a>
+        </p>
+      </section>
 
-      <main style={containerStyle}>
-        <h1 style={h1Style}>Personvernerklæring</h1>
-        <p style={updatedStyle}>Sist oppdatert: 10. mars 2026</p>
+      <Separator className="my-8 bg-[#e2e8f0]" />
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>1. Hvem vi er</h2>
-          <p>
-            NorskBot AI («NorskBot», «vi», «oss» eller «vår») er et norsk teknologiselskap som
-            leverer AI-drevne chatbot-løsninger til bedrifter. Vi er behandlingsansvarlig for
-            personopplysninger som samles inn gjennom vår plattform og nettside.
-          </p>
-          <p style={{ marginTop: '12px' }}>
-            <strong>Kontaktinformasjon:</strong><br />
-            E-post: <a href="mailto:josef@plagiatkontroll.no" style={linkStyle}>josef@plagiatkontroll.no</a>
-          </p>
-        </div>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">
+          2. Hvilke personopplysninger vi samler inn
+        </h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          Vi samler inn folgende kategorier av personopplysninger:
+        </p>
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>2. Hvilke personopplysninger vi samler inn</h2>
-          <p>Vi samler inn følgende kategorier av personopplysninger:</p>
+        <h3 className="text-base font-semibold text-[#0f172a]">Kontoinformasjon</h3>
+        <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
+          <li>Navn og kontaktinformasjon (e-postadresse, telefonnummer)</li>
+          <li>Bedriftsinformasjon (firmanavn, organisasjonsnummer, bransje)</li>
+          <li>Paloggingsinformasjon og kontoinnstillinger</li>
+        </ul>
 
-          <h3 style={h3Style}>Kontoinformasjon</h3>
-          <ul style={ulStyle}>
-            <li style={liStyle}>Navn og kontaktinformasjon (e-postadresse, telefonnummer)</li>
-            <li style={liStyle}>Bedriftsinformasjon (firmanavn, organisasjonsnummer, bransje)</li>
-            <li style={liStyle}>Påloggingsinformasjon og kontoinnstillinger</li>
-          </ul>
+        <h3 className="text-base font-semibold text-[#0f172a]">Bruksdata</h3>
+        <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
+          <li>Chatlogger og samtalehistorikk mellom chatboten og sluttbrukere</li>
+          <li>Opplastede dokumenter og kunnskapsbasemateriale</li>
+          <li>Bruksmonster, funksjonsinteraksjoner og tidsbruk i plattformen</li>
+        </ul>
 
-          <h3 style={h3Style}>Bruksdata</h3>
-          <ul style={ulStyle}>
-            <li style={liStyle}>Chatlogger og samtalehistorikk mellom chatboten og sluttbrukere</li>
-            <li style={liStyle}>Opplastede dokumenter og kunnskapsbasemateriale</li>
-            <li style={liStyle}>Bruksmønstre, funksjonsinteraksjoner og tidsbruk i plattformen</li>
-          </ul>
+        <h3 className="text-base font-semibold text-[#0f172a]">Tekniske data</h3>
+        <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
+          <li>IP-adresse, nettlesertype og operativsystem</li>
+          <li>Enhetsinformasjon og skjermopplosning</li>
+          <li>Informasjonskapsler og lignende sporingsteknologier</li>
+        </ul>
+      </section>
 
-          <h3 style={h3Style}>Tekniske data</h3>
-          <ul style={ulStyle}>
-            <li style={liStyle}>IP-adresse, nettlesertype og operativsystem</li>
-            <li style={liStyle}>Enhetsinformasjon og skjermoppløsning</li>
-            <li style={liStyle}>Informasjonskapsler og lignende sporingsteknologier</li>
-          </ul>
-        </div>
+      <Separator className="my-8 bg-[#e2e8f0]" />
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>3. Hvorfor vi samler inn personopplysninger</h2>
-          <p>Vi behandler personopplysninger for følgende formål:</p>
-          <ul style={ulStyle}>
-            <li style={liStyle}><strong>Tjenesteleveranse:</strong> For å levere, vedlikeholde og forbedre vår AI chatbot-plattform, inkludert kunnskapsbase og API-tilgang</li>
-            <li style={liStyle}><strong>Forbedring av tjenesten:</strong> For å analysere bruksmønstre, feilsøke tekniske problemer og utvikle nye funksjoner</li>
-            <li style={liStyle}><strong>Sikkerhet:</strong> For å beskytte plattformen mot misbruk, svindel og uautorisert tilgang</li>
-            <li style={liStyle}><strong>Kommunikasjon:</strong> For å sende servicerelaterte meldinger, oppdateringer og svar på henvendelser</li>
-            <li style={liStyle}><strong>Juridiske forpliktelser:</strong> For å oppfylle krav i gjeldende lovgivning, inkludert regnskap og skatt</li>
-          </ul>
-        </div>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">
+          3. Hvorfor vi samler inn personopplysninger
+        </h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          Vi behandler personopplysninger for folgende formal:
+        </p>
+        <ul className="list-inside list-disc space-y-2 text-[#0f172a]">
+          <li>
+            <strong>Tjenesteleveranse:</strong> For a levere, vedlikeholde og forbedre var AI
+            chatbot-plattform, inkludert kunnskapsbase og API-tilgang
+          </li>
+          <li>
+            <strong>Forbedring av tjenesten:</strong> For a analysere bruksmonster, feilsoke
+            tekniske problemer og utvikle nye funksjoner
+          </li>
+          <li>
+            <strong>Sikkerhet:</strong> For a beskytte plattformen mot misbruk, svindel og
+            uautorisert tilgang
+          </li>
+          <li>
+            <strong>Kommunikasjon:</strong> For a sende servicerelaterte meldinger, oppdateringer
+            og svar pa henvendelser
+          </li>
+          <li>
+            <strong>Juridiske forpliktelser:</strong> For a oppfylle krav i gjeldende lovgivning,
+            inkludert regnskap og skatt
+          </li>
+        </ul>
+      </section>
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>4. Rettslig grunnlag for behandlingen</h2>
-          <p>
-            I henhold til personvernforordningen (GDPR) artikkel 6, behandler vi personopplysninger
-            basert på følgende rettslige grunnlag:
-          </p>
-          <ul style={ulStyle}>
-            <li style={liStyle}><strong>Samtykke (art. 6 nr. 1 bokstav a):</strong> Når du aktivt samtykker til behandling, for eksempel ved aksept av informasjonskapsler eller påmelding til nyhetsbrev</li>
-            <li style={liStyle}><strong>Oppfyllelse av avtale (art. 6 nr. 1 bokstav b):</strong> Når behandlingen er nødvendig for å oppfylle en avtale med deg, herunder levering av våre tjenester</li>
-            <li style={liStyle}><strong>Berettiget interesse (art. 6 nr. 1 bokstav f):</strong> Når vi har en legitim interesse i behandlingen, for eksempel for å forbedre tjenesten, forhindre misbruk eller drive markedsføring til eksisterende kunder</li>
-            <li style={liStyle}><strong>Rettslig forpliktelse (art. 6 nr. 1 bokstav c):</strong> Når behandlingen er påkrevd etter norsk lov eller EU/EØS-regelverk</li>
-          </ul>
-        </div>
+      <Separator className="my-8 bg-[#e2e8f0]" />
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>5. Deling av personopplysninger</h2>
-          <p>
-            Vi selger aldri personopplysninger til tredjeparter. Vi kan dele opplysninger med
-            følgende kategorier av mottakere, under strenge databehandleravtaler:
-          </p>
-          <ul style={ulStyle}>
-            <li style={liStyle}><strong>AI-modell-leverandører:</strong> Chatmeldinger sendes til OpenAI for å generere svar. Data behandles i henhold til OpenAIs databehandleravtale og slettes etter behandling</li>
-            <li style={liStyle}><strong>Hosting- og infrastrukturleverandører:</strong> Våre servere og databaser hostes hos pålitelige skyleverandører innenfor EØS eller med tilstrekkelig beskyttelsesnivå</li>
-            <li style={liStyle}><strong>Analyseverktøy:</strong> Vi bruker anonymiserte analyser for å forstå bruksmønstre og forbedre tjenesten</li>
-            <li style={liStyle}><strong>Myndigheter:</strong> Når vi er rettslig forpliktet til å utlevere opplysninger</li>
-          </ul>
-        </div>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">
+          4. Rettslig grunnlag for behandlingen
+        </h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          I henhold til personvernforordningen (GDPR) artikkel 6, behandler vi
+          personopplysninger basert pa folgende rettslige grunnlag:
+        </p>
+        <ul className="list-inside list-disc space-y-2 text-[#0f172a]">
+          <li>
+            <strong>Samtykke (art. 6 nr. 1 bokstav a):</strong> Nar du aktivt samtykker til
+            behandling, for eksempel ved aksept av informasjonskapsler
+          </li>
+          <li>
+            <strong>Oppfyllelse av avtale (art. 6 nr. 1 bokstav b):</strong> Nar behandlingen er
+            nodvendig for a oppfylle en avtale med deg
+          </li>
+          <li>
+            <strong>Berettiget interesse (art. 6 nr. 1 bokstav f):</strong> Nar vi har en
+            legitim interesse i behandlingen
+          </li>
+          <li>
+            <strong>Rettslig forpliktelse (art. 6 nr. 1 bokstav c):</strong> Nar behandlingen er
+            pakrevd etter norsk lov eller EU/EOS-regelverk
+          </li>
+        </ul>
+      </section>
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>6. Lagring og sletting</h2>
-          <p>
-            Vi lagrer personopplysninger kun så lenge det er nødvendig for formålet de ble samlet
-            inn for, eller så lenge vi er pålagt ved lov.
-          </p>
-          <ul style={ulStyle}>
-            <li style={liStyle}><strong>Kontoinformasjon:</strong> Lagres så lenge du har en aktiv konto, og i inntil 12 måneder etter kontosletting</li>
-            <li style={liStyle}><strong>Chatlogger:</strong> Lagres i henhold til kundens valgte oppbevaringsperiode, standard 12 måneder</li>
-            <li style={liStyle}><strong>Bruksdata og logger:</strong> Lagres i inntil 24 måneder</li>
-            <li style={liStyle}><strong>Regnskapsdata:</strong> Lagres i 5 år i henhold til bokføringsloven</li>
-          </ul>
-          <p style={{ marginTop: '12px' }}>
-            Når lagringsperioden utløper, slettes eller anonymiseres opplysningene. Du kan når som
-            helst be om sletting av dine opplysninger ved å kontakte oss.
-          </p>
-        </div>
+      <Separator className="my-8 bg-[#e2e8f0]" />
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>7. Dine rettigheter</h2>
-          <p>
-            I henhold til GDPR har du følgende rettigheter knyttet til dine personopplysninger:
-          </p>
-          <ul style={ulStyle}>
-            <li style={liStyle}><strong>Rett til innsyn:</strong> Du kan be om en kopi av alle personopplysninger vi har registrert om deg</li>
-            <li style={liStyle}><strong>Rett til retting:</strong> Du kan be om at uriktige eller ufullstendige opplysninger korrigeres</li>
-            <li style={liStyle}><strong>Rett til sletting:</strong> Du kan be om at dine personopplysninger slettes, med mindre vi har lovpålagt plikt til å beholde dem</li>
-            <li style={liStyle}><strong>Rett til begrensning:</strong> Du kan be om at behandlingen av dine opplysninger begrenses i visse situasjoner</li>
-            <li style={liStyle}><strong>Rett til dataportabilitet:</strong> Du kan be om å motta dine opplysninger i et strukturert, maskinlesbart format</li>
-            <li style={liStyle}><strong>Rett til å protestere:</strong> Du kan protestere mot behandling basert på berettiget interesse</li>
-            <li style={liStyle}><strong>Rett til å trekke tilbake samtykke:</strong> Dersom behandlingen er basert på samtykke, kan du når som helst trekke dette tilbake</li>
-          </ul>
-          <p style={{ marginTop: '12px' }}>
-            For å utøve dine rettigheter, kontakt oss på{' '}
-            <a href="mailto:josef@plagiatkontroll.no" style={linkStyle}>josef@plagiatkontroll.no</a>.
-            Vi vil besvare henvendelsen din innen 30 dager.
-          </p>
-          <p style={{ marginTop: '12px' }}>
-            Dersom du mener at vår behandling av personopplysninger ikke er i samsvar med
-            gjeldende regelverk, har du rett til å klage til{' '}
-            <strong>Datatilsynet</strong> (
-            <a href="https://www.datatilsynet.no" style={linkStyle} target="_blank" rel="noopener noreferrer">
-              www.datatilsynet.no
-            </a>
-            ).
-          </p>
-        </div>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">
+          5. Deling av personopplysninger
+        </h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          Vi selger aldri personopplysninger til tredjeparter. Vi kan dele opplysninger med
+          folgende kategorier av mottakere, under strenge databehandleravtaler:
+        </p>
+        <ul className="list-inside list-disc space-y-2 text-[#0f172a]">
+          <li>
+            <strong>AI-modell-leverandorer:</strong> Chatmeldinger sendes til OpenAI for a
+            generere svar
+          </li>
+          <li>
+            <strong>Hosting- og infrastrukturleverandorer:</strong> Vare servere og databaser
+            hostes hos palitelige skyleverandorer innenfor EOS
+          </li>
+          <li>
+            <strong>Analyseverktoy:</strong> Vi bruker anonymiserte analyser for a forsta
+            bruksmonster
+          </li>
+          <li>
+            <strong>Myndigheter:</strong> Nar vi er rettslig forpliktet til a utlevere
+            opplysninger
+          </li>
+        </ul>
+      </section>
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>8. Informasjonskapsler</h2>
-          <p>
-            Vi bruker informasjonskapsler (cookies) og lignende teknologier på vår nettside. For
-            detaljert informasjon om hvilke informasjonskapsler vi bruker og hvordan du kan
-            administrere dem, se vår{' '}
-            <Link href="/cookies" style={linkStyle}>retningslinje for informasjonskapsler</Link>.
-          </p>
-        </div>
+      <Separator className="my-8 bg-[#e2e8f0]" />
 
-        <div style={sectionStyle}>
-          <h2 style={h2Style}>9. Sikkerhet</h2>
-          <p>
-            Vi tar sikkerheten til dine personopplysninger på alvor og har implementert tekniske
-            og organisatoriske tiltak for å beskytte dem mot uautorisert tilgang, endring,
-            utlevering eller sletting. Dette inkluderer kryptering av data under overføring og
-            lagring, tilgangskontroll, regelmessige sikkerhetsgjennomganger og opplæring av ansatte.
-          </p>
-        </div>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">6. Lagring og sletting</h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          Vi lagrer personopplysninger kun sa lenge det er nodvendig for formalet de ble samlet
+          inn for, eller sa lenge vi er palagt ved lov.
+        </p>
+        <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
+          <li>
+            <strong>Kontoinformasjon:</strong> Lagres sa lenge du har en aktiv konto, og i inntil
+            12 maneder etter kontosletting
+          </li>
+          <li>
+            <strong>Chatlogger:</strong> Lagres i henhold til kundens valgte oppbevaringsperiode,
+            standard 12 maneder
+          </li>
+          <li>
+            <strong>Bruksdata og logger:</strong> Lagres i inntil 24 maneder
+          </li>
+          <li>
+            <strong>Regnskapsdata:</strong> Lagres i 5 ar i henhold til bokforingsloven
+          </li>
+        </ul>
+      </section>
 
-        <div style={lastSectionStyle}>
-          <h2 style={h2Style}>10. Endringer i personvernerklæringen</h2>
-          <p>
-            Vi kan oppdatere denne personvernerklæringen fra tid til annen. Vesentlige endringer
-            vil bli varslet via e-post eller gjennom en melding i plattformen. Vi anbefaler at du
-            gjennomgår denne erklæringen jevnlig. Den gjeldende versjonen vil alltid være
-            tilgjengelig på denne siden.
-          </p>
-          <p style={{ marginTop: '16px' }}>
-            <strong>Kontakt oss:</strong><br />
-            E-post: <a href="mailto:josef@plagiatkontroll.no" style={linkStyle}>josef@plagiatkontroll.no</a>
-          </p>
-        </div>
-      </main>
+      <Separator className="my-8 bg-[#e2e8f0]" />
 
-      <footer style={footerStyle}>
-        <div style={footerInnerStyle}>
-          <div style={footerColStyle}>
-            <span style={footerLabelStyle}>NorskBot AI</span>
-            <Link href="/" style={footerLinkStyle}>Hjem</Link>
-            <Link href="/dashboard" style={footerLinkStyle}>Kontrollpanel</Link>
-          </div>
-          <div style={footerColStyle}>
-            <span style={footerLabelStyle}>Juridisk</span>
-            <Link href="/personvern" style={footerLinkStyle}>Personvernerklæring</Link>
-            <Link href="/cookies" style={footerLinkStyle}>Informasjonskapsler</Link>
-            <Link href="/brukervilkar" style={footerLinkStyle}>Brukervilkår</Link>
-          </div>
-          <div style={footerColStyle}>
-            <span style={footerLabelStyle}>Kontakt</span>
-            <a href="mailto:josef@plagiatkontroll.no" style={footerLinkStyle}>josef@plagiatkontroll.no</a>
-          </div>
-          <p style={footerCopyStyle}>© 2026 NorskBot AI. Alle rettigheter reservert.</p>
-        </div>
-      </footer>
-    </div>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">7. Dine rettigheter</h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          I henhold til GDPR har du folgende rettigheter knyttet til dine personopplysninger:
+        </p>
+        <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
+          <li>Rett til innsyn</li>
+          <li>Rett til retting</li>
+          <li>Rett til sletting</li>
+          <li>Rett til begrensning</li>
+          <li>Rett til dataportabilitet</li>
+          <li>Rett til a protestere</li>
+          <li>Rett til a trekke tilbake samtykke</li>
+        </ul>
+        <p className="text-sm text-[#64748b]">
+          For a utove dine rettigheter, kontakt oss pa{' '}
+          <a
+            href="mailto:josef@plagiatkontroll.no"
+            className="text-[#2563eb] hover:underline"
+          >
+            josef@plagiatkontroll.no
+          </a>
+          . Vi vil besvare henvendelsen din innen 30 dager.
+        </p>
+      </section>
+
+      <Separator className="my-8 bg-[#e2e8f0]" />
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">8. Informasjonskapsler</h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          Vi bruker informasjonskapsler (cookies) og lignende teknologier pa var nettside. Se
+          var{' '}
+          <Link href="/cookies" className="text-[#2563eb] hover:underline">
+            retningslinje for informasjonskapsler
+          </Link>{' '}
+          for detaljer.
+        </p>
+      </section>
+
+      <Separator className="my-8 bg-[#e2e8f0]" />
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">9. Sikkerhet</h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          Vi tar sikkerheten til dine personopplysninger pa alvor og har implementert tekniske og
+          organisatoriske tiltak for a beskytte dem mot uautorisert tilgang, endring, utlevering
+          eller sletting.
+        </p>
+      </section>
+
+      <Separator className="my-8 bg-[#e2e8f0]" />
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#0f172a]">
+          10. Endringer i personvernerkleringen
+        </h2>
+        <p className="leading-relaxed text-[#0f172a]">
+          Vi kan oppdatere denne personvernerkleringen fra tid til annen. Vesentlige endringer
+          vil bli varslet via e-post eller gjennom en melding i plattformen.
+        </p>
+        <p className="text-sm text-[#64748b]">
+          <strong className="text-[#0f172a]">Kontakt oss:</strong>
+          <br />
+          E-post:{' '}
+          <a
+            href="mailto:josef@plagiatkontroll.no"
+            className="text-[#2563eb] hover:underline"
+          >
+            josef@plagiatkontroll.no
+          </a>
+        </p>
+      </section>
+    </LegalLayout>
   );
 }
