@@ -3,17 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../_lib/supabase/client';
 import { useAuth } from '../../_lib/supabase/hooks';
-
-// ---------------------------------------------------------------------------
-// Design tokens
-// ---------------------------------------------------------------------------
-const font = 'inherit';
-const blue = '#2563eb';
-const dark = '#0f172a';
-const secondary = '#64748b';
-const border = '#e2e8f0';
-const bg = '#f8fafc';
-const red = '#ef4444';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Separator } from '../../components/ui/separator';
+import { Check, FileText, Mail } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Plan configuration
@@ -35,12 +29,7 @@ const PLANS: Record<string, PlanConfig> = {
     period: 'kr/mnd',
     messages: 100,
     chatbots: 1,
-    features: [
-      '1 chatbot',
-      '100 meldinger per maned',
-      'Grunnleggende widget',
-      'E-poststotte',
-    ],
+    features: ['1 chatbot', '100 meldinger per maned', 'Grunnleggende widget', 'E-poststotte'],
     highlighted: false,
   },
   professional: {
@@ -49,14 +38,7 @@ const PLANS: Record<string, PlanConfig> = {
     period: 'kr/mnd',
     messages: 10_000,
     chatbots: 5,
-    features: [
-      '5 chatbots',
-      '10 000 meldinger per maned',
-      'Widget-tilpasning',
-      'Prioritert stotte',
-      'Analyse-dashboard',
-      'API-tilgang',
-    ],
+    features: ['5 chatbots', '10 000 meldinger per maned', 'Widget-tilpasning', 'Prioritert stotte', 'Analyse-dashboard', 'API-tilgang'],
     highlighted: true,
   },
   enterprise: {
@@ -65,15 +47,7 @@ const PLANS: Record<string, PlanConfig> = {
     period: '',
     messages: Infinity,
     chatbots: Infinity,
-    features: [
-      'Ubegrenset chatbots',
-      'Ubegrenset meldinger',
-      'Hvit-merke widget',
-      'Dedikert kontaktperson',
-      'SLA-garanti',
-      'Egendefinerte integrasjoner',
-      'SSO / SAML',
-    ],
+    features: ['Ubegrenset chatbots', 'Ubegrenset meldinger', 'Hvit-merke widget', 'Dedikert kontaktperson', 'SLA-garanti', 'Egendefinerte integrasjoner', 'SSO / SAML'],
     highlighted: false,
   },
 };
@@ -81,35 +55,29 @@ const PLANS: Record<string, PlanConfig> = {
 const PLAN_ORDER = ['free', 'professional', 'enterprise'] as const;
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Progress bar
 // ---------------------------------------------------------------------------
-
-function ProgressBar({ label, used, limit, color = blue }: { label: string; used: number; limit: number; color?: string }) {
+function ProgressBar({ label, used, limit }: { label: string; used: number; limit: number }) {
   const isUnlimited = !isFinite(limit);
   const pct = isUnlimited ? 0 : limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
   const overThreshold = pct > 80;
 
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 14, fontWeight: 500, color: dark }}>{label}</span>
-        <span style={{ fontSize: 13, color: secondary }}>
+    <div className="mb-5">
+      <div className="flex justify-between mb-1.5">
+        <span className="text-sm font-medium text-slate-900">{label}</span>
+        <span className="text-sm text-slate-500">
           {used.toLocaleString('nb-NO')} / {isUnlimited ? 'Ubegrenset' : limit.toLocaleString('nb-NO')}
         </span>
       </div>
-      <div style={{ width: '100%', height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
         <div
-          style={{
-            width: isUnlimited ? '0%' : `${pct}%`,
-            height: '100%',
-            backgroundColor: overThreshold ? red : color,
-            borderRadius: 4,
-            transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
-          }}
+          className={`h-full rounded-full transition-all duration-500 ${overThreshold ? 'bg-red-500' : 'bg-blue-600'}`}
+          style={{ width: isUnlimited ? '0%' : `${pct}%` }}
         />
       </div>
       {overThreshold && (
-        <p style={{ fontSize: 12, color: red, margin: '4px 0 0', fontWeight: 500 }}>
+        <p className="text-xs text-red-600 mt-1 font-medium">
           {pct >= 100 ? 'Grensen er nadd' : 'Naermer seg grensen'}
         </p>
       )}
@@ -117,78 +85,34 @@ function ProgressBar({ label, used, limit, color = blue }: { label: string; used
   );
 }
 
+// ---------------------------------------------------------------------------
+// Upgrade modal
+// ---------------------------------------------------------------------------
 function UpgradeModal({ onClose }: { onClose: () => void }) {
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)',
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: 'white', borderRadius: 16, padding: '32px 28px',
-          maxWidth: 420, width: '90%',
-          boxShadow: '0 24px 48px rgba(0,0,0,0.16)',
-          fontFamily: font,
-        }}
-      >
-        <h3 style={{ fontSize: 20, fontWeight: 700, color: dark, margin: '0 0 8px' }}>
-          Oppgradering kommer snart
-        </h3>
-        <p style={{ fontSize: 14, color: secondary, lineHeight: 1.6, margin: '0 0 24px' }}>
-          Stripe-betaling er under utvikling. Kontakt oss for a oppgradere planen din allerede i dag.
-        </p>
-        <div style={{ padding: '16px', backgroundColor: bg, borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
-          <p style={{ fontSize: 14, color: dark, fontWeight: 600, margin: '0 0 4px' }}>hei@norskbot.no</p>
-          <p style={{ fontSize: 13, color: secondary, margin: 0 }}>Vi svarer innen 24 timer</p>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, height: 44, borderRadius: 8, border: `1px solid ${border}`,
-              backgroundColor: 'white', color: secondary, fontSize: 14, fontWeight: 600,
-              fontFamily: font, cursor: 'pointer',
-            }}
-          >
-            Lukk
-          </button>
-          <button
-            onClick={() => { window.location.href = 'mailto:hei@norskbot.no?subject=Oppgradering%20NorskBot'; }}
-            style={{
-              flex: 1, height: 44, borderRadius: 8, border: 'none',
-              backgroundColor: blue, color: 'white', fontSize: 14, fontWeight: 600,
-              fontFamily: font, cursor: 'pointer',
-            }}
-          >
-            Send e-post
-          </button>
-        </div>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <Card className="max-w-[420px] w-[90%] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <CardContent className="p-8">
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">Oppgradering kommer snart</h3>
+          <p className="text-sm text-slate-500 leading-relaxed mb-6">
+            Stripe-betaling er under utvikling. Kontakt oss for a oppgradere planen din allerede i dag.
+          </p>
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <p className="text-sm font-semibold text-slate-900 mb-1">hei@norskbot.no</p>
+              <p className="text-sm text-slate-500">Vi svarer innen 24 timer</p>
+            </CardContent>
+          </Card>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose} className="flex-1">Lukk</Button>
+            <Button onClick={() => { window.location.href = 'mailto:hei@norskbot.no?subject=Oppgradering%20NorskBot'; }} className="flex-1 gap-2">
+              <Mail className="h-4 w-4" />
+              Send e-post
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  );
-}
-
-function FileIcon() {
-  return (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
   );
 }
 
@@ -219,7 +143,6 @@ export default function BillingPage() {
     if (!user) return;
     setLoading(true);
     try {
-      // Subscription
       const { data: sub } = await supabase
         .from('subscriptions')
         .select('plan_name, status, current_period_start, current_period_end')
@@ -228,14 +151,12 @@ export default function BillingPage() {
         .single();
       setSubscription(sub);
 
-      // Count sites
       const { count: sites } = await supabase
         .from('sites')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id);
       setSiteCount(sites ?? 0);
 
-      // Usage this period
       const periodStart = sub?.current_period_start || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
       const { data: logs } = await supabase
         .from('usage_logs')
@@ -244,8 +165,7 @@ export default function BillingPage() {
         .gte('created_at', periodStart);
 
       if (logs) {
-        let msgs = 0;
-        let docs = 0;
+        let msgs = 0, docs = 0;
         for (const log of logs) {
           if (log.action_type === 'chat_message') msgs++;
           else if (log.action_type === 'document_ingest') docs++;
@@ -262,14 +182,12 @@ export default function BillingPage() {
 
   useEffect(() => { loadBilling(); }, [loadBilling]);
 
-  // ---- Loading state ----
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400, fontFamily: font }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: blue, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: secondary, fontSize: 14 }}>Laster fakturering...</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <div className="flex items-center justify-center h-[400px]">
+        <div className="text-center">
+          <div className="w-8 h-8 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-400">Laster fakturering...</p>
         </div>
       </div>
     );
@@ -282,82 +200,66 @@ export default function BillingPage() {
   const planIdx = PLAN_ORDER.indexOf(currentPlanKey as typeof PLAN_ORDER[number]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', fontFamily: font, minHeight: '100%' }}>
+    <div className="min-h-full bg-slate-50">
       {/* Header */}
-      <div style={{ backgroundColor: 'white', borderBottom: `1px solid ${border}`, padding: '20px 28px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: dark, margin: 0, letterSpacing: '-0.02em' }}>
-          Fakturering
-        </h1>
-        <p style={{ fontSize: 14, color: secondary, margin: '4px 0 0' }}>
-          Administrer abonnement, forbruk og betalinger
-        </p>
+      <div className="bg-white border-b border-slate-200 px-4 md:px-6 py-5">
+        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Fakturering</h1>
+        <p className="text-sm text-slate-500 mt-1">Administrer abonnement, forbruk og betalinger</p>
       </div>
 
-      <main style={{ padding: '28px', flex: 1, overflow: 'auto' }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-
-          {/* ---- Current plan + Usage row ---- */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 36 }}>
-            {/* Current Plan Card */}
-            <div style={{
-              backgroundColor: 'white', borderRadius: 14, border: `1px solid ${border}`,
-              padding: 28, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                <div>
-                  <p style={{ fontSize: 13, color: secondary, margin: '0 0 4px', fontWeight: 500 }}>Navaerende plan</p>
-                  <h2 style={{ fontSize: 28, fontWeight: 700, color: dark, margin: 0 }}>{plan.label}</h2>
+      <div className="p-4 md:p-6">
+        <div className="max-w-[1120px] mx-auto">
+          {/* Current plan + Usage */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Current Plan */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-5">
+                  <div>
+                    <p className="text-sm text-slate-500 font-medium mb-1">Navaerende plan</p>
+                    <h2 className="text-2xl font-bold text-slate-900">{plan.label}</h2>
+                  </div>
+                  <Badge className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    Aktiv
+                  </Badge>
                 </div>
-                <span style={{
-                  padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                  backgroundColor: '#dbeafe', color: blue,
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22c55e' }} />
-                  Aktiv
-                </span>
-              </div>
 
-              {currentPlanKey !== 'enterprise' && (
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 16 }}>
-                  <span style={{ fontSize: 36, fontWeight: 700, color: dark, letterSpacing: '-0.03em' }}>{plan.price}</span>
-                  <span style={{ fontSize: 15, color: secondary }}>{plan.period}</span>
-                </div>
-              )}
-              {currentPlanKey === 'enterprise' && (
-                <p style={{ fontSize: 15, color: secondary, margin: '0 0 16px', fontWeight: 500 }}>Tilpasset pris</p>
-              )}
+                {currentPlanKey !== 'enterprise' ? (
+                  <div className="flex items-baseline gap-1 mb-4">
+                    <span className="text-4xl font-bold text-slate-900 tracking-tight">{plan.price}</span>
+                    <span className="text-base text-slate-500">{plan.period}</span>
+                  </div>
+                ) : (
+                  <p className="text-base text-slate-500 font-medium mb-4">Tilpasset pris</p>
+                )}
 
-              {nextBilling && (
-                <p style={{ fontSize: 13, color: secondary, margin: 0 }}>
-                  Neste fakturering: <strong style={{ color: dark }}>{nextBilling}</strong>
-                </p>
-              )}
-              {!subscription && (
-                <p style={{ fontSize: 13, color: secondary, margin: 0 }}>Ingen betalt abonnement</p>
-              )}
-            </div>
+                {nextBilling && (
+                  <p className="text-sm text-slate-500">
+                    Neste fakturering: <strong className="text-slate-900">{nextBilling}</strong>
+                  </p>
+                )}
+                {!subscription && (
+                  <p className="text-sm text-slate-500">Ingen betalt abonnement</p>
+                )}
+              </CardContent>
+            </Card>
 
-            {/* Usage Card */}
-            <div style={{
-              backgroundColor: 'white', borderRadius: 14, border: `1px solid ${border}`,
-              padding: 28, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: dark, margin: '0 0 20px' }}>
-                Forbruk denne perioden
-              </h3>
-              <ProgressBar label="Meldinger" used={usageMessages} limit={plan.messages} />
-              <ProgressBar label="Chatbots" used={siteCount} limit={plan.chatbots} color="#8b5cf6" />
-              <ProgressBar label="Kunnskapskilder" used={usageDocs} limit={plan.chatbots * 10} color="#16a34a" />
-            </div>
+            {/* Usage */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-base font-semibold text-slate-900 mb-5">Forbruk denne perioden</h3>
+                <ProgressBar label="Meldinger" used={usageMessages} limit={plan.messages} />
+                <ProgressBar label="Chatbots" used={siteCount} limit={plan.chatbots} />
+                <ProgressBar label="Kunnskapskilder" used={usageDocs} limit={plan.chatbots * 10} />
+              </CardContent>
+            </Card>
           </div>
 
-          {/* ---- Plan cards ---- */}
-          <div style={{ marginBottom: 36 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: dark, margin: '0 0 16px', letterSpacing: '-0.01em' }}>
-              Tilgjengelige planer
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          {/* Plan cards */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Tilgjengelige planer</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
               {PLAN_ORDER.map((key, idx) => {
                 const p = PLANS[key];
                 const isCurrent = key === currentPlanKey;
@@ -365,106 +267,81 @@ export default function BillingPage() {
                 const isEnterprise = key === 'enterprise';
 
                 return (
-                  <div
+                  <Card
                     key={key}
-                    style={{
-                      backgroundColor: 'white', borderRadius: 14, position: 'relative',
-                      border: p.highlighted ? `2px solid ${blue}` : `1px solid ${border}`,
-                      padding: '28px 24px',
-                      boxShadow: p.highlighted ? `0 4px 24px rgba(37,99,235,0.12)` : '0 1px 3px rgba(0,0,0,0.04)',
-                      display: 'flex', flexDirection: 'column',
-                    }}
+                    className={`relative flex flex-col ${p.highlighted ? 'border-blue-600 border-2 shadow-md shadow-blue-600/10' : ''}`}
                   >
-                    {/* Badges */}
-                    {isCurrent && (
-                      <span style={{
-                        position: 'absolute', top: 14, right: 14,
-                        padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                        backgroundColor: '#dbeafe', color: blue,
-                      }}>
-                        Navaerende plan
-                      </span>
-                    )}
-                    {p.highlighted && !isCurrent && (
-                      <span style={{
-                        position: 'absolute', top: 14, right: 14,
-                        padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                        backgroundColor: blue, color: 'white',
-                      }}>
-                        Mest populaer
-                      </span>
-                    )}
+                    <CardContent className="p-6 flex-1 flex flex-col">
+                      {/* Badges */}
+                      {isCurrent && (
+                        <Badge className="absolute top-4 right-4 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 text-[11px]">
+                          Navaerende plan
+                        </Badge>
+                      )}
+                      {p.highlighted && !isCurrent && (
+                        <Badge className="absolute top-4 right-4 bg-blue-600 text-white hover:bg-blue-600 text-[11px]">
+                          Mest populaer
+                        </Badge>
+                      )}
 
-                    <h4 style={{ fontSize: 18, fontWeight: 700, color: dark, margin: '0 0 8px' }}>{p.label}</h4>
+                      <h4 className="text-lg font-bold text-slate-900 mb-2">{p.label}</h4>
 
-                    {!isEnterprise ? (
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 20 }}>
-                        <span style={{ fontSize: 40, fontWeight: 700, color: dark, letterSpacing: '-0.03em' }}>{p.price}</span>
-                        <span style={{ fontSize: 14, color: secondary }}>{p.period}</span>
-                      </div>
-                    ) : (
-                      <p style={{ fontSize: 16, fontWeight: 600, color: secondary, margin: '4px 0 20px' }}>Tilpasset pris</p>
-                    )}
+                      {!isEnterprise ? (
+                        <div className="flex items-baseline gap-1 mb-5">
+                          <span className="text-4xl font-bold text-slate-900 tracking-tight">{p.price}</span>
+                          <span className="text-sm text-slate-500">{p.period}</span>
+                        </div>
+                      ) : (
+                        <p className="text-base font-semibold text-slate-500 mb-5">Tilpasset pris</p>
+                      )}
 
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', flex: 1 }}>
-                      {p.features.map((f) => (
-                        <li key={f} style={{ padding: '5px 0', fontSize: 14, color: '#334155', display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <CheckIcon />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
+                      <ul className="space-y-2.5 flex-1 mb-6">
+                        {p.features.map((f) => (
+                          <li key={f} className="flex items-center gap-2 text-sm text-slate-700">
+                            <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
 
-                    <button
-                      onClick={() => {
-                        if (!isCurrent) setShowUpgradeModal(true);
-                      }}
-                      disabled={isCurrent}
-                      style={{
-                        width: '100%', height: 44, borderRadius: 8, fontSize: 14, fontWeight: 600,
-                        fontFamily: font, cursor: isCurrent ? 'default' : 'pointer',
-                        border: isCurrent ? 'none' : isHigher && p.highlighted ? 'none' : `1px solid ${border}`,
-                        backgroundColor: isCurrent ? '#f1f5f9' : isHigher && p.highlighted ? blue : 'white',
-                        color: isCurrent ? secondary : isHigher && p.highlighted ? 'white' : dark,
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {isCurrent
-                        ? 'Navaerende plan'
-                        : isEnterprise
-                          ? 'Kontakt oss'
-                          : isHigher
-                            ? 'Oppgrader'
-                            : 'Bytt plan'
-                      }
-                    </button>
-                  </div>
+                      <Button
+                        onClick={() => { if (!isCurrent) setShowUpgradeModal(true); }}
+                        disabled={isCurrent}
+                        variant={isCurrent ? 'secondary' : isHigher && p.highlighted ? 'default' : 'outline'}
+                        className="w-full"
+                      >
+                        {isCurrent
+                          ? 'Navaerende plan'
+                          : isEnterprise
+                            ? 'Kontakt oss'
+                            : isHigher
+                              ? 'Oppgrader'
+                              : 'Bytt plan'
+                        }
+                      </Button>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
           </div>
 
-          {/* ---- Billing history ---- */}
-          <div style={{
-            backgroundColor: 'white', borderRadius: 14, border: `1px solid ${border}`,
-            overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-          }}>
-            <div style={{ padding: '20px 28px', borderBottom: `1px solid ${border}` }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: dark, margin: 0 }}>Faktureringshistorikk</h3>
-            </div>
-            <div style={{ padding: '48px 28px', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                <FileIcon />
-              </div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: dark, margin: '0 0 4px' }}>Ingen fakturaer enna</p>
-              <p style={{ fontSize: 13, color: secondary, margin: 0 }}>
+          {/* Billing history */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Faktureringshistorikk</CardTitle>
+            </CardHeader>
+            <Separator />
+            <CardContent className="p-12 text-center">
+              <FileText className="h-10 w-10 text-slate-300 mx-auto mb-4" />
+              <p className="text-base font-semibold text-slate-900 mb-1">Ingen fakturaer enna</p>
+              <p className="text-sm text-slate-500">
                 Fakturaer vil vises her nar du oppgraderer til en betalt plan
               </p>
-            </div>
-          </div>
-
+            </CardContent>
+          </Card>
         </div>
-      </main>
+      </div>
 
       {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     </div>

@@ -5,24 +5,6 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../_lib/supabase/client';
 import { useAuth } from '../../_lib/supabase/hooks';
 
-
-
-const colors = {
-  blue: '#2563eb',
-  blueHover: '#1d4ed8',
-  blueBg: '#eff6ff',
-  border: '#e2e8f0',
-  borderLight: '#f1f5f9',
-  bg: '#f8fafc',
-  text: '#0f172a',
-  textMuted: '#64748b',
-  success: '#16a34a',
-  successBg: '#dcfce7',
-  danger: '#dc2626',
-  dangerBg: '#fef2f2',
-  white: '#ffffff',
-};
-
 interface Site {
   id: string;
   name: string;
@@ -53,7 +35,6 @@ export default function SitesPage() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch sites
       const { data: sitesData, error: sitesErr } = await supabase
         .from('sites')
         .select('id, name, domain, bot_name, is_active, created_at, updated_at')
@@ -63,19 +44,16 @@ export default function SitesPage() {
 
       const result: SiteWithStats[] = [];
       for (const site of (sitesData || [])) {
-        // Conversation count
         const { count: convCount } = await supabase
           .from('conversations')
           .select('*', { count: 'exact', head: true })
           .eq('site_id', site.id);
 
-        // Knowledge sources count
         const { count: knowledgeCount } = await supabase
           .from('knowledge_sources')
           .select('*', { count: 'exact', head: true })
           .eq('site_id', site.id);
 
-        // Last activity (most recent conversation)
         const { data: lastConv } = await supabase
           .from('conversations')
           .select('started_at')
@@ -132,29 +110,20 @@ export default function SitesPage() {
 
   if (authLoading || loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: '50%',
-          border: `3px solid ${colors.border}`, borderTopColor: colors.blue,
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <div style={{ color: colors.textMuted, fontSize: 14, fontWeight: 500, marginTop: 16 }}>Laster nettsteder...</div>
+      <div className="flex flex-col items-center justify-center p-20">
+        <div className="w-8 h-8 rounded-full border-[3px] border-slate-200 border-t-blue-600 animate-spin" />
+        <div className="text-slate-500 text-sm font-medium mt-4">Laster nettsteder...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
-        <div style={{ color: colors.danger, fontSize: 15, fontWeight: 500, marginBottom: 16 }}>{error}</div>
+      <div className="flex flex-col items-center justify-center p-20">
+        <div className="text-red-600 text-[15px] font-medium mb-4">{error}</div>
         <button
           onClick={loadSites}
-          style={{
-            padding: '10px 20px', backgroundColor: colors.white, color: colors.text,
-            border: `1px solid ${colors.border}`, borderRadius: 8, cursor: 'pointer',
-            fontSize: 14, fontWeight: 500,
-          }}
+          className="px-5 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-lg cursor-pointer text-sm font-medium hover:bg-slate-50 transition-colors"
         >
           Prov igjen
         </button>
@@ -163,28 +132,18 @@ export default function SitesPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: colors.bg }}>
+    <div className="flex flex-col min-h-screen bg-slate-50">
       {/* Header */}
-      <div style={{
-        backgroundColor: colors.white, borderBottom: `1px solid ${colors.border}`,
-        padding: '20px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
+      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: 0, letterSpacing: '-0.02em' }}>Nettsteder</h1>
-          <p style={{ fontSize: 14, color: colors.textMuted, margin: '4px 0 0' }}>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Nettsteder</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Administrer chatbotene dine og se ytelsen til hvert nettsted.
           </p>
         </div>
         <button
           onClick={() => router.push('/dashboard/sites/new')}
-          style={{
-            padding: '10px 20px', backgroundColor: colors.blue, color: colors.white,
-            border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600,
-            fontSize: 14, transition: 'all 0.15s', display: 'flex',
-            alignItems: 'center', gap: 6,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1d4ed8'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.blue; e.currentTarget.style.transform = 'none'; }}
+          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-blue-600 text-white border-none rounded-lg cursor-pointer font-semibold text-sm hover:bg-blue-700 transition-all w-full sm:w-auto"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M8 2v12M2 8h12" /></svg>
           Nytt nettsted
@@ -192,142 +151,100 @@ export default function SitesPage() {
       </div>
 
       {/* Content */}
-      <main style={{ padding: 32, flex: 1 }}>
+      <main className="p-4 md:p-8 flex-1">
         {sites.length === 0 ? (
-          <div style={{
-            backgroundColor: colors.white, borderRadius: 16, border: `1px solid ${colors.border}`,
-            padding: '80px 32px', textAlign: 'center', maxWidth: 520, margin: '40px auto',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-          }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 14, backgroundColor: colors.blueBg,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
-            }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="bg-white rounded-2xl border border-slate-200 p-10 md:p-20 text-center max-w-[520px] mx-auto mt-10 shadow-sm">
+            <div className="w-14 h-14 rounded-[14px] bg-blue-50 flex items-center justify-center mx-auto mb-5">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
               </svg>
             </div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: colors.text, marginBottom: 8 }}>Ingen nettsteder enna</div>
-            <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24, lineHeight: 1.6 }}>
+            <div className="text-lg font-semibold text-slate-900 mb-2">Ingen nettsteder enna</div>
+            <div className="text-sm text-slate-500 mb-6 leading-relaxed">
               Opprett ditt forste nettsted for a komme i gang med chatboten.
             </div>
             <button
               onClick={() => router.push('/dashboard/sites/new')}
-              style={{
-                padding: '12px 24px', backgroundColor: colors.blue, color: colors.white,
-                border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600,
-              }}
+              className="px-6 py-3 bg-blue-600 text-white border-none rounded-[10px] cursor-pointer text-sm font-semibold hover:bg-blue-700 transition-colors w-full sm:w-auto"
             >
               Opprett nettsted
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {sites.map((site) => (
               <div
                 key={site.id}
-                style={{
-                  backgroundColor: colors.white, borderRadius: 14, border: `1px solid ${colors.border}`,
-                  overflow: 'hidden', transition: 'all 0.2s', cursor: 'pointer',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)', position: 'relative',
-                }}
+                className="bg-white rounded-[14px] border border-slate-200 overflow-hidden transition-all cursor-pointer shadow-sm hover:shadow-md hover:border-slate-300 relative"
                 onClick={() => router.push('/dashboard/sites/' + site.id)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)';
-                  e.currentTarget.style.borderColor = '#cbd5e1';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
-                  e.currentTarget.style.borderColor = colors.border;
-                }}
               >
                 {/* Card header */}
-                <div style={{ padding: '20px 20px 16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div className="p-4 md:p-5 pb-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-semibold text-slate-900 truncate">
                         {site.name}
                       </h3>
-                      <p style={{ fontSize: 13, color: colors.textMuted, margin: '4px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p className="text-[13px] text-slate-500 mt-1 truncate">
                         {site.domain || 'Ingen domene satt'}
                       </p>
                     </div>
-                    <span style={{
-                      padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500,
-                      backgroundColor: site.is_active ? colors.successBg : colors.borderLight,
-                      color: site.is_active ? colors.success : colors.textMuted,
-                      display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0, marginLeft: 12,
-                    }}>
-                      <span style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        backgroundColor: site.is_active ? colors.success : '#94a3b8',
-                      }} />
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ml-3 shrink-0 ${
+                      site.is_active
+                        ? 'bg-green-50 text-green-600'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        site.is_active ? 'bg-green-500' : 'bg-slate-400'
+                      }`} />
                       {site.is_active ? 'Aktiv' : 'Inaktiv'}
                     </span>
                   </div>
 
                   {/* Stats row */}
-                  <div style={{ display: 'flex', gap: 20, paddingTop: 12, borderTop: `1px solid ${colors.borderLight}` }}>
+                  <div className="flex gap-5 pt-3 border-t border-slate-100">
                     <div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>{site.conversationCount}</div>
-                      <div style={{ fontSize: 12, color: colors.textMuted }}>Samtaler</div>
+                      <div className="text-lg font-bold text-slate-900">{site.conversationCount}</div>
+                      <div className="text-xs text-slate-500">Samtaler</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>{site.knowledgeCount}</div>
-                      <div style={{ fontSize: 12, color: colors.textMuted }}>Kunnskapskilder</div>
+                      <div className="text-lg font-bold text-slate-900">{site.knowledgeCount}</div>
+                      <div className="text-xs text-slate-500">Kunnskapskilder</div>
                     </div>
-                    <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted }}>{formatRelativeTime(site.lastActivity)}</div>
-                      <div style={{ fontSize: 12, color: colors.textMuted }}>Siste aktivitet</div>
+                    <div className="ml-auto text-right">
+                      <div className="text-[13px] font-medium text-slate-500">{formatRelativeTime(site.lastActivity)}</div>
+                      <div className="text-xs text-slate-500">Siste aktivitet</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Card footer */}
-                <div style={{
-                  padding: '12px 20px', borderTop: `1px solid ${colors.borderLight}`,
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  backgroundColor: colors.bg,
-                }}>
-                  <span style={{ fontSize: 12, color: colors.textMuted }}>
+                <div className="px-4 md:px-5 py-3 border-t border-slate-100 flex justify-between items-center bg-slate-50">
+                  <span className="text-xs text-slate-500">
                     Opprettet {new Date(site.created_at).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
-                  <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push('/dashboard/sites/' + site.id);
                       }}
-                      style={{
-                        padding: '5px 14px', backgroundColor: 'transparent', color: colors.blue,
-                        border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
-                        fontSize: 12, fontWeight: 500, transition: 'all 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.blueBg; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      className="px-3 py-1.5 bg-transparent text-blue-600 border border-slate-200 rounded-md cursor-pointer text-xs font-medium hover:bg-blue-50 transition-colors"
                     >
                       Rediger
                     </button>
                     {deleteConfirm === site.id ? (
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <div className="flex gap-1 items-center">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDelete(site.id); }}
                           disabled={deleting === site.id}
-                          style={{
-                            padding: '5px 10px', backgroundColor: colors.danger, color: colors.white,
-                            border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12,
-                            fontWeight: 500, opacity: deleting === site.id ? 0.6 : 1,
-                          }}
+                          className="px-2.5 py-1.5 bg-red-600 text-white border-none rounded-md cursor-pointer text-xs font-medium disabled:opacity-60"
                         >
                           {deleting === site.id ? '...' : 'Bekreft'}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteConfirm(null); }}
-                          style={{
-                            padding: '5px 10px', backgroundColor: 'transparent', color: colors.textMuted,
-                            border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
-                            fontSize: 12,
-                          }}
+                          className="px-2.5 py-1.5 bg-transparent text-slate-500 border border-slate-200 rounded-md cursor-pointer text-xs"
                         >
                           Avbryt
                         </button>
@@ -335,13 +252,7 @@ export default function SitesPage() {
                     ) : (
                       <button
                         onClick={(e) => { e.stopPropagation(); setDeleteConfirm(site.id); }}
-                        style={{
-                          padding: '5px 14px', backgroundColor: 'transparent', color: colors.danger,
-                          border: `1px solid ${colors.border}`, borderRadius: 6, cursor: 'pointer',
-                          fontSize: 12, fontWeight: 500, transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.dangerBg; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        className="px-3 py-1.5 bg-transparent text-red-600 border border-slate-200 rounded-md cursor-pointer text-xs font-medium hover:bg-red-50 transition-colors"
                       >
                         Slett
                       </button>
