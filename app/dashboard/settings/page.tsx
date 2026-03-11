@@ -47,7 +47,7 @@ function DeleteModal({ onCancel, onConfirm, deleting }: { onCancel: () => void; 
           </p>
           <div className="mb-5">
             <Label className="text-sm text-slate-500 mb-1.5">
-              Skriv <strong className="text-slate-900">slett kontoen min</strong> for a bekrefte
+              Skriv <strong className="text-slate-900">slett kontoen min</strong> for å bekrefte
             </Label>
             <Input
               value={confirmText}
@@ -81,9 +81,9 @@ function RegenerateModal({ onCancel, onConfirm, regenerating }: { onCancel: () =
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onCancel}>
       <Card className="max-w-[400px] w-[90%] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <CardContent className="p-7">
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Regenerer API-nokkel</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">Regenerer API-nøkkel</h3>
           <p className="text-sm text-slate-500 leading-relaxed mb-6">
-            Den eksisterende nokkelen vil slutte a fungere umiddelbart. Du ma oppdatere widgeten med den nye nokkelen.
+            Den eksisterende nøkkelen vil slutte a fungere umiddelbart. Du ma oppdatere widgeten med den nye nøkkelen.
           </p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={onCancel} disabled={regenerating} className="flex-1">Avbryt</Button>
@@ -185,10 +185,10 @@ export default function SettingsPage() {
     setRegenerating(true);
     try {
       await supabase.from('api_keys').update({ is_active: false }).eq('id', regenKeyId);
-      setStatus({ message: 'API-nokkelen er deaktivert. Opprett en ny nokkel via Widget-konfigurasjon.', type: 'success' });
+      setStatus({ message: 'API-nøkkelen er deaktivert. Opprett en ny nøkkel via Widget-konfigurasjon.', type: 'success' });
       await loadApiKeys();
     } catch {
-      setStatus({ message: 'Kunne ikke regenerere nokkelen', type: 'error' });
+      setStatus({ message: 'Kunne ikke regenerere nøkkelen', type: 'error' });
     } finally {
       setRegenerating(false);
       setRegenKeyId(null);
@@ -230,7 +230,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-4 md:px-6 py-5">
         <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Innstillinger</h1>
-        <p className="text-sm text-slate-500 mt-1">Administrer profil, varsler, API-nokler og konto</p>
+        <p className="text-sm text-slate-500 mt-1">Administrer profil, varsler, API-nøkler og konto</p>
       </div>
 
       <div className="p-4 md:p-6">
@@ -297,18 +297,18 @@ export default function SettingsPage() {
               {/* API Keys */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">API-nokler</CardTitle>
-                  <CardDescription>Alle API-nokler for dine chatbots</CardDescription>
+                  <CardTitle className="text-base">API-nøkler</CardTitle>
+                  <CardDescription>Alle API-nøkler for dine chatbots</CardDescription>
                 </CardHeader>
                 <Separator />
                 <CardContent className="p-6">
                   {loadingKeys ? (
-                    <p className="text-sm text-slate-500">Laster nokler...</p>
+                    <p className="text-sm text-slate-500">Laster nøkler...</p>
                   ) : apiKeys.length === 0 ? (
                     <div className="text-center py-6">
                       <Key className="h-9 w-9 text-slate-300 mx-auto mb-3" />
-                      <p className="text-sm font-medium text-slate-900 mb-1">Ingen API-nokler</p>
-                      <p className="text-sm text-slate-500">Opprett en chatbot for a generere en API-nokkel</p>
+                      <p className="text-sm font-medium text-slate-900 mb-1">Ingen API-nøkler</p>
+                      <p className="text-sm text-slate-500">Opprett en chatbot for å generere en API-nøkkel</p>
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
@@ -316,7 +316,7 @@ export default function SettingsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Nettsted</TableHead>
-                          <TableHead>Nokkelprefix</TableHead>
+                          <TableHead>Nøkkelprefix</TableHead>
                           <TableHead className="text-right">Handlinger</TableHead>
                         </TableRow>
                       </TableHeader>

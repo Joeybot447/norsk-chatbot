@@ -87,7 +87,7 @@ function DeleteModal({
         <CardContent className="p-6">
           <h3 className="text-base font-semibold text-slate-900 mb-2">Slett kilde</h3>
           <p className="text-sm text-slate-500 mb-6">
-            Er du sikker pa at du vil slette &laquo;{sourceName}&raquo;? Alle tilhorende deler vil ogsa bli fjernet. Denne handlingen kan ikke angres.
+            Er du sikker pa at du vil slette &laquo;{sourceName}&raquo;? Alle tilhorende deler vil også bli fjernet. Denne handlingen kan ikke angres.
           </p>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={onCancel} disabled={isDeleting}>
@@ -228,15 +228,15 @@ export default function KnowledgePage() {
       )}
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-5">
-        <div className="flex items-center justify-between">
+      <div className="bg-white border-b border-slate-200 px-4 md:px-6 py-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Kunnskapsbase</h1>
+            <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Kunnskapsbase</h1>
             <p className="mt-1 text-sm text-slate-500">
               Administrer kilder og dokumenter som chatboten din laerer fra.
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/dashboard/knowledge/upload" className="gap-2">
               <Plus className="h-4 w-4" />
               Last opp ny
@@ -246,7 +246,7 @@ export default function KnowledgePage() {
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {sites.length === 0 ? (
           <Card className="max-w-lg mx-auto">
             <CardContent className="p-16 text-center">
@@ -255,7 +255,7 @@ export default function KnowledgePage() {
               </div>
               <h2 className="text-lg font-semibold text-slate-900 mb-2">Ingen nettsteder enda</h2>
               <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto">
-                Opprett et nettsted forst, sa kan du legge til kunnskapskilder som chatboten laerer fra.
+                Opprett et nettsted først, sa kan du legge til kunnskapskilder som chatboten laerer fra.
               </p>
               <Button asChild>
                 <Link href="/dashboard/sites/new" className="gap-2">
@@ -316,7 +316,7 @@ export default function KnowledgePage() {
                   </div>
                   <h2 className="text-lg font-semibold text-slate-900 mb-2">Ingen kilder enda</h2>
                   <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto">
-                    Last opp dokumenter, lim inn tekst, eller skrap en nettside for a gi chatboten din kunnskap.
+                    Last opp dokumenter, lim inn tekst, eller skrap en nettside for å gi chatboten din kunnskap.
                   </p>
                   <Button asChild>
                     <Link href="/dashboard/knowledge/upload" className="gap-2">

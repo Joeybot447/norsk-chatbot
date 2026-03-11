@@ -10,7 +10,7 @@ export default function PersonvernPage() {
         <p className="leading-relaxed text-[#0f172a]">
           NorskBot AI (&laquo;NorskBot&raquo;, &laquo;vi&raquo;, &laquo;oss&raquo; eller
           &laquo;var&raquo;) er et norsk teknologiselskap som leverer AI-drevne
-          chatbot-losninger til bedrifter. Vi er behandlingsansvarlig for personopplysninger som
+          chatbot-løsninger til bedrifter. Vi er behandlingsansvårlig for personopplysninger som
           samles inn gjennom var plattform og nettside.
         </p>
         <p className="text-sm text-[#64748b]">
@@ -53,7 +53,7 @@ export default function PersonvernPage() {
         <h3 className="text-base font-semibold text-[#0f172a]">Tekniske data</h3>
         <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
           <li>IP-adresse, nettlesertype og operativsystem</li>
-          <li>Enhetsinformasjon og skjermopplosning</li>
+          <li>Enhetsinformasjon og skjermoppløsning</li>
           <li>Informasjonskapsler og lignende sporingsteknologier</li>
         </ul>
       </section>
@@ -108,7 +108,7 @@ export default function PersonvernPage() {
           </li>
           <li>
             <strong>Oppfyllelse av avtale (art. 6 nr. 1 bokstav b):</strong> Nar behandlingen er
-            nodvendig for a oppfylle en avtale med deg
+            nødvendig for å oppfylle en avtale med deg
           </li>
           <li>
             <strong>Berettiget interesse (art. 6 nr. 1 bokstav f):</strong> Nar vi har en
@@ -141,7 +141,7 @@ export default function PersonvernPage() {
             hostes hos palitelige skyleverandorer innenfor EOS
           </li>
           <li>
-            <strong>Analyseverktoy:</strong> Vi bruker anonymiserte analyser for a forsta
+            <strong>Analyseverktoy:</strong> Vi bruker anonymiserte analyser for å førsta
             bruksmonster
           </li>
           <li>
@@ -156,20 +156,20 @@ export default function PersonvernPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold text-[#0f172a]">6. Lagring og sletting</h2>
         <p className="leading-relaxed text-[#0f172a]">
-          Vi lagrer personopplysninger kun sa lenge det er nodvendig for formalet de ble samlet
+          Vi lagrer personopplysninger kun sa lenge det er nødvendig for formalet de ble samlet
           inn for, eller sa lenge vi er palagt ved lov.
         </p>
         <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
           <li>
             <strong>Kontoinformasjon:</strong> Lagres sa lenge du har en aktiv konto, og i inntil
-            12 maneder etter kontosletting
+            12 måneder etter kontosletting
           </li>
           <li>
             <strong>Chatlogger:</strong> Lagres i henhold til kundens valgte oppbevaringsperiode,
-            standard 12 maneder
+            standard 12 måneder
           </li>
           <li>
-            <strong>Bruksdata og logger:</strong> Lagres i inntil 24 maneder
+            <strong>Bruksdata og logger:</strong> Lagres i inntil 24 måneder
           </li>
           <li>
             <strong>Regnskapsdata:</strong> Lagres i 5 ar i henhold til bokforingsloven
@@ -225,7 +225,7 @@ export default function PersonvernPage() {
         <h2 className="text-xl font-semibold text-[#0f172a]">9. Sikkerhet</h2>
         <p className="leading-relaxed text-[#0f172a]">
           Vi tar sikkerheten til dine personopplysninger pa alvor og har implementert tekniske og
-          organisatoriske tiltak for a beskytte dem mot uautorisert tilgang, endring, utlevering
+          organisatoriske tiltak for å beskytte dem mot uautorisert tilgang, endring, utlevering
           eller sletting.
         </p>
       </section>

@@ -82,7 +82,7 @@ export default function UploadKnowledgePage() {
   }, []);
 
   const handleTextSubmit = async () => {
-    if (!selectedSiteId) { setError('Velg et nettsted forst.'); return; }
+    if (!selectedSiteId) { setError('Velg et nettsted først.'); return; }
     if (!textTitle.trim()) { setError('Gi innholdet en tittel.'); return; }
     if (!textContent.trim()) { setError('Lim inn innholdet du vil legge til.'); return; }
 
@@ -142,7 +142,7 @@ export default function UploadKnowledgePage() {
   }, []);
 
   const handleUrlSubmit = async () => {
-    if (!selectedSiteId) { setError('Velg et nettsted forst.'); return; }
+    if (!selectedSiteId) { setError('Velg et nettsted først.'); return; }
     if (!scrapeUrl.trim()) { setError('Skriv inn en URL.'); return; }
     try {
       const url = new URL(scrapeUrl.trim().startsWith('http') ? scrapeUrl.trim() : 'https://' + scrapeUrl.trim());
@@ -199,7 +199,7 @@ export default function UploadKnowledgePage() {
           Tilbake til kunnskapsbase
         </Link>
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Legg til kunnskap</h1>
-        <p className="mt-1 text-sm text-slate-500">Velg en metode for a gi chatboten ny kunnskap.</p>
+        <p className="mt-1 text-sm text-slate-500">Velg en metode for å gi chatboten ny kunnskap.</p>
       </div>
 
       {/* Content */}
@@ -208,7 +208,7 @@ export default function UploadKnowledgePage() {
           <Card>
             <CardContent className="p-12 text-center">
               <h2 className="text-base font-semibold text-slate-900 mb-2">Ingen nettsteder</h2>
-              <p className="text-sm text-slate-500 mb-5">Du trenger minst ett nettsted for a legge til kunnskap.</p>
+              <p className="text-sm text-slate-500 mb-5">Du trenger minst ett nettsted for å legge til kunnskap.</p>
               <Button asChild>
                 <Link href="/dashboard/sites/new">Opprett nettsted</Link>
               </Button>
@@ -358,7 +358,7 @@ export default function UploadKnowledgePage() {
                     <Lock className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                     <h3 className="text-base font-semibold text-slate-900 mb-2">Filopplasting kommer snart</h3>
                     <p className="text-sm text-slate-500 max-w-sm mx-auto">
-                      Stotte for direkte opplasting av PDF, DOCX og CSV-filer er under utvikling. Bruk tekstmetoden for na, eller lim inn innholdet direkte.
+                      Støtte for direkte opplasting av PDF, DOCX og CSV-filer er under utvikling. Bruk tekstmetoden for na, eller lim inn innholdet direkte.
                     </p>
                   </CardContent>
                 </Card>

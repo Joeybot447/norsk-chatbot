@@ -86,7 +86,7 @@ export default function AuthPage() {
         displayName: regName,
         companyName: regCompany,
       });
-      setSuccess('Konto opprettet! Sjekk e-posten din for a bekrefte kontoen.');
+      setSuccess('Konto opprettet! Sjekk e-posten din for å bekrefte kontoen.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registrering feilet');
     } finally {

@@ -110,7 +110,7 @@ function Hero() {
               className="bg-[#2563eb] text-base hover:bg-[#1d4ed8]"
             >
               <Link href="/auth">
-                Prov gratis
+                Prøv gratis
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
@@ -156,7 +156,7 @@ function Hero() {
               <div className="max-w-[80%]">
                 <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 text-sm leading-relaxed text-[#0f172a] shadow-sm">
                   Pro-planen koster 599 kr/mnd og inkluderer 5 nettsteder, 10 000 meldinger og
-                  prioritert stotte. Skal jeg hjelpe deg med a komme i gang?
+                  prioritert støtte. Skal jeg hjelpe deg med å komme i gang?
                 </div>
               </div>
             </div>
@@ -214,7 +214,7 @@ const features = [
     icon: MessageSquare,
     title: "AI-chatbot",
     description:
-      "Intelligent samtalerobot som forstår norsk og svarer presist basert på ditt innhold. Tilgjengelig 24/7.",
+      "Intelligent samtalerobot som førstår norsk og svarer presist basert på ditt innhold. Tilgjengelig 24/7.",
   },
   {
     icon: BookOpen,
@@ -341,7 +341,7 @@ const plans = [
     features: [
       "1 nettsted",
       "1 000 meldinger / mnd",
-      "E-poststotte",
+      "E-poststøtte",
       "Standard kunnskapsbase",
       "Grunnleggende analyse",
     ],
@@ -355,7 +355,7 @@ const plans = [
     features: [
       "5 nettsteder",
       "10 000 meldinger / mnd",
-      "Prioritert stotte",
+      "Prioritert støtte",
       "Avansert analyse",
       "Tilpasset chatbot-design",
       "API-tilgang",
@@ -370,7 +370,7 @@ const plans = [
     features: [
       "Ubegrenset nettsteder",
       "Ubegrenset meldinger",
-      "Dedikert stotte",
+      "Dedikert støtte",
       "Tilpasset integrasjon",
       "SLA-avtale",
       "On-premise mulighet",
@@ -407,7 +407,7 @@ function Pricing() {
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-[#2563eb] text-white hover:bg-[#2563eb]">
-                    Populaer
+                    Populær
                   </Badge>
                 </div>
               )}
@@ -466,7 +466,7 @@ function FinalCTA() {
     <section className="bg-[#dbeafe] py-24">
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
-          Klar til a automatisere kundeservicen?
+          Klar til å automatisere kundeservicen?
         </h2>
         <p className="mt-4 text-lg text-[#64748b]">
           Kom i gang gratis i dag. Ingen kredittkort krevd — opprett konto pa under ett minutt.
@@ -478,7 +478,7 @@ function FinalCTA() {
             className="bg-[#2563eb] text-base hover:bg-[#1d4ed8]"
           >
             <Link href="/auth">
-              Prov gratis
+              Prøv gratis
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>

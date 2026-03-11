@@ -94,3 +94,32 @@ aside {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
+
+/* ─── Responsive utilities ────────────────────────── */
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal overflow */
+body {
+  overflow-x: hidden;
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 768px) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px; /* Apple HIG minimum */
+  }
+
+  /* Exceptions for inline/small elements */
+  a.inline-link,
+  button.icon-only-sm {
+    min-height: auto;
+  }
+}

@@ -304,7 +304,7 @@ export default function WidgetPage() {
               </div>
               <p className="text-base font-semibold mb-2">Ingen nettsteder enda</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Opprett et nettsted for a konfigurere chat-widgeten din.
+                Opprett et nettsted for å konfigurere chat-widgeten din.
               </p>
             </CardContent>
           </Card>
@@ -318,7 +318,7 @@ export default function WidgetPage() {
     <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <div className="border-b bg-card px-8 py-5 flex items-center justify-between">
+        <div className="border-b bg-card px-4 md:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-semibold tracking-tight">Widget</h1>
@@ -358,7 +358,7 @@ export default function WidgetPage() {
 
         {/* Site selector */}
         {sites.length > 1 && (
-          <div className="px-8 pt-4">
+          <div className="px-4 md:px-8 pt-4">
             <Select value={selectedSiteId} onValueChange={handleSiteChange}>
               <SelectTrigger className="max-w-sm">
                 <SelectValue />
@@ -375,13 +375,13 @@ export default function WidgetPage() {
         )}
 
         {/* Main content: settings + preview */}
-        <div className="p-8 grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-8 max-w-[1400px]">
+        <div className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-6 md:gap-8 max-w-[1400px]">
           {/* LEFT: Settings */}
           <div>
             <Tabs defaultValue="utseende" className="w-full">
               <TabsList className="w-full grid grid-cols-3 mb-6">
                 <TabsTrigger value="utseende">Utseende</TabsTrigger>
-                <TabsTrigger value="oppforsel">Oppforsel</TabsTrigger>
+                <TabsTrigger value="oppførsel">Oppførsel</TabsTrigger>
                 <TabsTrigger value="installasjon">Installasjon</TabsTrigger>
               </TabsList>
 
@@ -416,7 +416,7 @@ export default function WidgetPage() {
                         placeholder="Hei! Hvordan kan jeg hjelpe deg?"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Forste melding besokende ser nar de apner widgeten.
+                        Første melding besokende ser nar de åpner widgeten.
                       </p>
                     </div>
                   </CardContent>
@@ -536,8 +536,8 @@ export default function WidgetPage() {
                 </Card>
               </TabsContent>
 
-              {/* ── Tab: Oppforsel ─────────────────────── */}
-              <TabsContent value="oppforsel" className="space-y-6">
+              {/* ── Tab: Oppførsel ─────────────────────── */}
+              <TabsContent value="oppførsel" className="space-y-6">
                 {/* Widget enabled */}
                 <Card>
                   <CardHeader>
@@ -570,12 +570,12 @@ export default function WidgetPage() {
                           <Info className="h-4 w-4 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-[240px]">
-                          Widgeten kan apnes automatisk etter et visst antall sekunder. Sett til 0 for a deaktivere.
+                          Widgeten kan åpnes automatisk etter et visst antall sekunder. Sett til 0 for å deaktivere.
                         </TooltipContent>
                       </Tooltip>
                     </div>
                     <CardDescription>
-                      Apne widgeten automatisk etter en forsinkelse
+                      Åpne widgeten automatisk etter en forsinkelse
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -594,8 +594,8 @@ export default function WidgetPage() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {autoOpenDelay === 0
-                        ? 'Widgeten apnes kun nar besokende klikker pa den.'
-                        : `Widgeten apnes automatisk etter ${autoOpenDelay} sekunder.`}
+                        ? 'Widgeten åpnes kun nar besokende klikker pa den.'
+                        : `Widgeten åpnes automatisk etter ${autoOpenDelay} sekunder.`}
                     </p>
                   </CardContent>
                 </Card>
@@ -635,7 +635,7 @@ export default function WidgetPage() {
                     {activeKey && (
                       <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-md text-xs text-green-700 border border-green-200">
                         <Check className="h-3.5 w-3.5" />
-                        Aktiv API-nokkel: <code className="font-semibold">{activeKey.key_prefix}...</code>
+                        Aktiv API-nøkkel: <code className="font-semibold">{activeKey.key_prefix}...</code>
                       </div>
                     )}
 
@@ -645,7 +645,7 @@ export default function WidgetPage() {
 
                     <p className="text-xs text-muted-foreground">
                       Erstatt <code className="bg-muted px-1.5 py-0.5 rounded text-[11px]">DIN_API_NOKKEL</code> med
-                      den fullstendige API-nokkelen du fikk ved opprettelse.
+                      den fullstendige API-nøkkelen du fikk ved opprettelse.
                     </p>
                   </CardContent>
                 </Card>
@@ -654,7 +654,7 @@ export default function WidgetPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Installasjonsveiledning</CardTitle>
-                    <CardDescription>Tre enkle steg for a komme i gang</CardDescription>
+                    <CardDescription>Tre enkle steg for å komme i gang</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-5">
@@ -662,7 +662,7 @@ export default function WidgetPage() {
                         {
                           step: '1',
                           title: 'Kopier koden',
-                          desc: 'Klikk "Kopier" pa kodeblokken ovenfor for a kopiere script-taggen.',
+                          desc: 'Klikk "Kopier" pa kodeblokken ovenfor for å kopiere script-taggen.',
                         },
                         {
                           step: '2',
@@ -702,7 +702,7 @@ export default function WidgetPage() {
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-base">Forhandsvisning</CardTitle>
+                      <CardTitle className="text-base">Forhåndsvisning</CardTitle>
                       <CardDescription>Slik ser widgeten ut</CardDescription>
                     </div>
                     <Button

@@ -76,25 +76,25 @@ export default function CookiesPage() {
                 name: 'nb_session',
                 purpose: 'Opprettholder brukersesjonen og autentiseringsstatus',
                 duration: 'Sesjon',
-                type: 'Forstepart',
+                type: 'Førstepart',
               },
               {
                 name: 'nb_csrf',
                 purpose: 'Beskytter mot CSRF-angrep',
                 duration: 'Sesjon',
-                type: 'Forstepart',
+                type: 'Førstepart',
               },
               {
                 name: 'nb_auth',
                 purpose: 'Lagrer autentiseringstoken for innloggede brukere',
                 duration: '7 dager',
-                type: 'Forstepart',
+                type: 'Førstepart',
               },
               {
                 name: 'nb_cookie_consent',
                 purpose: 'Lagrer dine valg for informasjonskapsler',
-                duration: '12 maneder',
-                type: 'Forstepart',
+                duration: '12 måneder',
+                type: 'Førstepart',
               },
             ]}
           />
@@ -112,20 +112,20 @@ export default function CookiesPage() {
               {
                 name: 'nb_lang',
                 purpose: 'Lagrer foretrukket sprakinnstilling',
-                duration: '12 maneder',
-                type: 'Forstepart',
+                duration: '12 måneder',
+                type: 'Førstepart',
               },
               {
                 name: 'nb_theme',
                 purpose: 'Lagrer foretrukket visningsinnstilling (lyst/morkt tema)',
-                duration: '12 maneder',
-                type: 'Forstepart',
+                duration: '12 måneder',
+                type: 'Førstepart',
               },
               {
                 name: 'nb_dashboard_prefs',
                 purpose: 'Lagrer kontrollpanelinnstillinger og filtreringsvalg',
-                duration: '6 maneder',
-                type: 'Forstepart',
+                duration: '6 måneder',
+                type: 'Førstepart',
               },
             ]}
           />
@@ -136,21 +136,21 @@ export default function CookiesPage() {
             2.3 Analytiske informasjonskapsler
           </h3>
           <p className="text-sm text-[#64748b]">
-            Hjelper oss a forsta hvordan besokende bruker nettsiden. All data anonymiseres.
+            Hjelper oss a førsta hvordan besokende bruker nettsiden. All data anonymiseres.
           </p>
           <CookieTable
             rows={[
               {
                 name: 'nb_analytics',
                 purpose: 'Samler anonymisert bruksstatistikk',
-                duration: '12 maneder',
-                type: 'Forstepart',
+                duration: '12 måneder',
+                type: 'Førstepart',
               },
               {
                 name: 'nb_perf',
                 purpose: 'Maler ytelse og lastetider',
                 duration: 'Sesjon',
-                type: 'Forstepart',
+                type: 'Førstepart',
               },
             ]}
           />
@@ -196,7 +196,7 @@ export default function CookiesPage() {
           </li>
         </ul>
         <p className="text-sm text-[#64748b]">
-          Blokkering av nodvendige informasjonskapsler kan pavirke funksjonaliteten.
+          Blokkering av nødvendige informasjonskapsler kan pavirke funksjonaliteten.
         </p>
       </section>
 
@@ -205,8 +205,8 @@ export default function CookiesPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold text-[#0f172a]">4. Samtykke</h2>
         <p className="leading-relaxed text-[#0f172a]">
-          Nar du besoker var nettside for forste gang, vil du bli bedt om a gi ditt samtykke til
-          bruk av ikke-nodvendige informasjonskapsler. Du kan nar som helst endre eller trekke
+          Nar du besoker var nettside for første gang, vil du bli bedt om a gi ditt samtykke til
+          bruk av ikke-nødvendige informasjonskapsler. Du kan nar som helst endre eller trekke
           tilbake ditt samtykke.
         </p>
       </section>

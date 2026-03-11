@@ -29,7 +29,7 @@ const PLANS: Record<string, PlanConfig> = {
     period: 'kr/mnd',
     messages: 100,
     chatbots: 1,
-    features: ['1 chatbot', '100 meldinger per maned', 'Grunnleggende widget', 'E-poststotte'],
+    features: ['1 chatbot', '100 meldinger per måned', 'Grunnleggende widget', 'E-poststøtte'],
     highlighted: false,
   },
   professional: {
@@ -38,7 +38,7 @@ const PLANS: Record<string, PlanConfig> = {
     period: 'kr/mnd',
     messages: 10_000,
     chatbots: 5,
-    features: ['5 chatbots', '10 000 meldinger per maned', 'Widget-tilpasning', 'Prioritert stotte', 'Analyse-dashboard', 'API-tilgang'],
+    features: ['5 chatbots', '10 000 meldinger per måned', 'Widget-tilpasning', 'Prioritert støtte', 'Analyse-dashboard', 'API-tilgang'],
     highlighted: true,
   },
   enterprise: {
@@ -95,7 +95,7 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
         <CardContent className="p-8">
           <h3 className="text-xl font-semibold text-slate-900 mb-2">Oppgradering kommer snart</h3>
           <p className="text-sm text-slate-500 leading-relaxed mb-6">
-            Stripe-betaling er under utvikling. Kontakt oss for a oppgradere planen din allerede i dag.
+            Stripe-betaling er under utvikling. Kontakt oss for å oppgradere planen din allerede i dag.
           </p>
           <Card className="mb-6">
             <CardContent className="p-4">
@@ -280,7 +280,7 @@ export default function BillingPage() {
                       )}
                       {p.highlighted && !isCurrent && (
                         <Badge className="absolute top-4 right-4 bg-blue-600 text-white hover:bg-blue-600 text-[11px]">
-                          Mest populaer
+                          Mest populær
                         </Badge>
                       )}
 

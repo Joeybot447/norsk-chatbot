@@ -125,7 +125,7 @@ export default function SitesPage() {
           onClick={loadSites}
           className="px-5 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-lg cursor-pointer text-sm font-medium hover:bg-slate-50 transition-colors"
         >
-          Prov igjen
+          Prøv igjen
         </button>
       </div>
     );
@@ -161,7 +161,7 @@ export default function SitesPage() {
             </div>
             <div className="text-lg font-semibold text-slate-900 mb-2">Ingen nettsteder enna</div>
             <div className="text-sm text-slate-500 mb-6 leading-relaxed">
-              Opprett ditt forste nettsted for a komme i gang med chatboten.
+              Opprett ditt første nettsted for å komme i gang med chatboten.
             </div>
             <button
               onClick={() => router.push('/dashboard/sites/new')}

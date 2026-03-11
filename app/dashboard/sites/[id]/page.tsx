@@ -4,26 +4,19 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '../../../_lib/supabase/client';
 import { useAuth } from '../../../_lib/supabase/hooks';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Textarea } from '../../../components/ui/textarea';
-import { Label } from '../../../components/ui/label';
-import { Switch } from '../../../components/ui/switch';
-import { Slider } from '../../../components/ui/slider';
-import { Badge } from '../../../components/ui/badge';
-import { Separator } from '../../../components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import {
-  ArrowLeft, Check, Plus, Upload, Trash2, Key, Copy, MessageSquare, BarChart3, Settings, Globe, BookOpen, Palette,
-} from 'lucide-react';
-import Link from 'next/link';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// ── Design tokens ──
+const presetColors = ['#2563eb', '#7c3aed', '#059669', '#dc2626', '#ea580c', '#d97706', '#db2777', '#0891b2'];
+
+const tabs = [
+  { key: 'general', label: 'Generelt' },
+  { key: 'knowledge', label: 'Kunnskapsbase' },
+  { key: 'ai-settings', label: 'AI-innstillinger' },
+  { key: 'widget', label: 'Widget' },
+  { key: 'api-keys', label: 'API-nøkler' },
+  { key: 'stats', label: 'Statistikk' },
+];
+
 interface BotConfig {
   system_prompt: string;
   tone: string;
@@ -67,11 +60,7 @@ interface KnowledgeSource {
   created_at: string;
 }
 
-const presetColors = ['#2563eb', '#7c3aed', '#059669', '#dc2626', '#ea580c', '#d97706', '#db2777', '#0891b2'];
-
-// ---------------------------------------------------------------------------
-// Main Page
-// ---------------------------------------------------------------------------
+// ── Main Page ──
 export default function SiteEditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -89,14 +78,25 @@ export default function SiteEditorPage() {
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
-      const res = await fetch('/api/sites/' + siteId, { headers: { Authorization: 'Bearer ' + token } });
-      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Kunne ikke laste nettstedet'); }
-      setSite(await res.json());
-    } catch (err: any) { setError(err.message); }
-    finally { setLoading(false); }
+      const res = await fetch('/api/sites/' + siteId, {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Kunne ikke laste nettstedet');
+      }
+      const data = await res.json();
+      setSite(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, [siteId, getAccessToken]);
 
-  useEffect(() => { if (user && siteId) fetchSite(); }, [user, siteId, fetchSite]);
+  useEffect(() => {
+    if (user && siteId) fetchSite();
+  }, [user, siteId, fetchSite]);
 
   const patchSite = async (updates: Record<string, any>) => {
     setSaving(true);
@@ -104,20 +104,30 @@ export default function SiteEditorPage() {
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
-      const res = await fetch('/api/sites/' + siteId, { method: 'PATCH', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
-      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Kunne ikke lagre'); }
+      const res = await fetch('/api/sites/' + siteId, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Kunne ikke lagre');
+      }
       const updated = await res.json();
       setSite((prev) => (prev ? { ...prev, ...updated } : prev));
       setSuccessMsg('Endringer lagret');
       setTimeout(() => setSuccessMsg(null), 3000);
-    } catch (err: any) { alert(err.message); }
-    finally { setSaving(false); }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center p-20">
-        <div className="w-8 h-8 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+        <div className="w-8 h-8 rounded-full border-[3px] border-slate-200 border-t-blue-600 animate-spin" />
       </div>
     );
   }
@@ -125,8 +135,10 @@ export default function SiteEditorPage() {
   if (error || !site) {
     return (
       <div className="flex flex-col items-center justify-center p-20">
-        <p className="text-base text-red-600 font-medium mb-4">{error || 'Nettsted ikke funnet'}</p>
-        <Button variant="outline" onClick={() => router.push('/dashboard/sites')}>Tilbake til nettsteder</Button>
+        <div className="text-red-600 text-[15px] font-medium mb-4">{error || 'Nettsted ikke funnet'}</div>
+        <button onClick={() => router.push('/dashboard/sites')} className="px-5 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-lg cursor-pointer text-sm font-medium">
+          Tilbake til nettsteder
+        </button>
       </div>
     );
   }
@@ -134,66 +146,65 @@ export default function SiteEditorPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4">
-        <Link href="/dashboard/sites" className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 transition-colors mb-2">
-          <ArrowLeft className="h-3.5 w-3.5" />
+      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-4">
+        <button
+          onClick={() => router.push('/dashboard/sites')}
+          className="bg-transparent border-none text-blue-600 cursor-pointer text-sm p-0 mb-1.5 flex items-center gap-1"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           Tilbake til nettsteder
-        </Link>
+        </button>
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{site.name}</h1>
-          <Badge className={site.is_active ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-50' : 'bg-slate-100 text-slate-500 hover:bg-slate-100'}>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">{site.name}</h1>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            site.is_active ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-500'
+          }`}>
             {site.is_active ? 'Aktiv' : 'Inaktiv'}
-          </Badge>
+          </span>
         </div>
       </div>
 
       {/* Success banner */}
       {successMsg && (
-        <div className="bg-green-50 border-b border-green-200 px-6 py-2.5 flex items-center gap-2">
-          <Check className="h-4 w-4 text-green-600" />
-          <span className="text-sm font-medium text-green-700">{successMsg}</span>
+        <div className="bg-green-50 text-green-600 px-4 md:px-8 py-2.5 text-sm font-medium border-b border-green-200 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+          {successMsg}
         </div>
       )}
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="bg-white border-b border-slate-200 px-6">
-          <TabsList className="h-auto bg-transparent p-0 gap-0">
-            {[
-              { key: 'general', label: 'Generelt', icon: Settings },
-              { key: 'knowledge', label: 'Kunnskapsbase', icon: BookOpen },
-              { key: 'ai-settings', label: 'AI-innstillinger', icon: MessageSquare },
-              { key: 'widget', label: 'Widget', icon: Palette },
-              { key: 'api-keys', label: 'API-nokler', icon: Key },
-              { key: 'stats', label: 'Statistikk', icon: BarChart3 },
-            ].map((tab) => (
-              <TabsTrigger
-                key={tab.key}
-                value={tab.key}
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none px-5 py-3.5 text-sm"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
+      <div className="bg-white border-b border-slate-200 px-4 md:px-8 flex gap-0 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-3 md:px-5 py-3.5 text-sm bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors ${
+              activeTab === tab.key
+                ? 'font-semibold text-blue-600 border-b-2 border-blue-600'
+                : 'font-normal text-slate-500 border-b-2 border-transparent'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <div className="p-6 max-w-[900px]">
-          <TabsContent value="general"><GeneralTab site={site} onSave={patchSite} saving={saving} /></TabsContent>
-          <TabsContent value="knowledge"><KnowledgeTab siteId={siteId} getAccessToken={getAccessToken} /></TabsContent>
-          <TabsContent value="ai-settings"><AISettingsTab site={site} onSave={patchSite} saving={saving} /></TabsContent>
-          <TabsContent value="widget"><WidgetTab site={site} siteId={siteId} onSave={patchSite} saving={saving} /></TabsContent>
-          <TabsContent value="api-keys"><ApiKeysTab site={site} siteId={siteId} getAccessToken={getAccessToken} onRefresh={fetchSite} /></TabsContent>
-          <TabsContent value="stats"><StatsTab siteId={siteId} site={site} /></TabsContent>
-        </div>
-      </Tabs>
+      {/* Tab content */}
+      <div className="p-4 md:p-7 max-w-[900px]">
+        {activeTab === 'general' && <GeneralTab site={site} onSave={patchSite} saving={saving} />}
+        {activeTab === 'knowledge' && <KnowledgeTab siteId={siteId} getAccessToken={getAccessToken} />}
+        {activeTab === 'ai-settings' && <AISettingsTab site={site} onSave={patchSite} saving={saving} />}
+        {activeTab === 'widget' && <WidgetTab site={site} siteId={siteId} onSave={patchSite} saving={saving} />}
+        {activeTab === 'api-keys' && <ApiKeysTab site={site} siteId={siteId} getAccessToken={getAccessToken} onRefresh={fetchSite} />}
+        {activeTab === 'stats' && <StatsTab siteId={siteId} site={site} />}
+      </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 // Tab: Generelt
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 function GeneralTab({ site, onSave, saving }: { site: Site; onSave: (u: any) => Promise<void>; saving: boolean }) {
   const [name, setName] = useState(site.name || '');
   const [domain, setDomain] = useState(site.domain || '');
@@ -202,47 +213,71 @@ function GeneralTab({ site, onSave, saving }: { site: Site; onSave: (u: any) => 
   const [isActive, setIsActive] = useState(site.is_active);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Generelle innstillinger</CardTitle>
-      </CardHeader>
-      <Separator />
-      <CardContent className="p-6 space-y-5">
-        <div>
-          <Label className="mb-1.5">Nettstedsnavn</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="F.eks. Min Bedrift" />
-        </div>
-        <div>
-          <Label className="mb-1.5">Domene</Label>
-          <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="https://eksempel.no" />
-        </div>
-        <div>
-          <Label className="mb-1.5">Bot-navn</Label>
-          <Input value={botName} onChange={(e) => setBotName(e.target.value)} placeholder="NorskBot" />
-          <p className="text-xs text-slate-400 mt-1">Navnet som vises i chat-vinduet til besokende.</p>
-        </div>
-        <div>
-          <Label className="mb-1.5">Velkomstmelding</Label>
-          <Textarea value={welcomeMsg} onChange={(e) => setWelcomeMsg(e.target.value)} placeholder="Hei! Hvordan kan jeg hjelpe deg?" rows={3} />
-        </div>
-        <div className="flex items-center gap-3">
-          <Label>Status</Label>
-          <Switch checked={isActive} onCheckedChange={setIsActive} />
-          <span className={`text-sm ${isActive ? 'text-green-600' : 'text-slate-500'}`}>{isActive ? 'Aktiv' : 'Inaktiv'}</span>
-        </div>
-        <Button onClick={() => onSave({ name, domain, bot_name: botName, welcome_message: welcomeMsg, is_active: isActive })} disabled={saving}>
-          {saving ? 'Lagrer...' : 'Lagre endringer'}
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="bg-white border border-slate-200 rounded-[14px] p-5 md:p-6 mb-5">
+      <h2 className="text-lg font-semibold text-slate-900 mb-6">Generelle innstillinger</h2>
+
+      <div className="mb-5">
+        <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Nettstedsnavn</label>
+        <input className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 transition-colors" value={name} onChange={(e) => setName(e.target.value)} placeholder="F.eks. Min Bedrift" />
+      </div>
+
+      <div className="mb-5">
+        <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Domene</label>
+        <input className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 transition-colors" value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="https://eksempel.no" />
+      </div>
+
+      <div className="mb-5">
+        <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Bot-navn</label>
+        <input className="w-full h-11 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 transition-colors" value={botName} onChange={(e) => setBotName(e.target.value)} placeholder="NorskBot" />
+        <p className="text-xs text-slate-500 mt-1">Navnet som vises i chat-vinduet til besokende.</p>
+      </div>
+
+      <div className="mb-5">
+        <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Velkomstmelding</label>
+        <textarea
+          value={welcomeMsg} onChange={(e) => setWelcomeMsg(e.target.value)}
+          placeholder="Hei! Hvordan kan jeg hjelpe deg?"
+          rows={3}
+          className="w-full px-3 py-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 resize-y transition-colors"
+        />
+      </div>
+
+      <div className="mb-5 flex items-center gap-3">
+        <label className="text-[13px] font-semibold text-slate-900">Status</label>
+        <button
+          onClick={() => setIsActive(!isActive)}
+          className={`w-12 h-[26px] rounded-[13px] border-none cursor-pointer relative transition-colors ${
+            isActive ? 'bg-blue-600' : 'bg-slate-300'
+          }`}
+        >
+          <span className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-sm transition-[left] ${
+            isActive ? 'left-[25px]' : 'left-[3px]'
+          }`} />
+        </button>
+        <span className={`text-[13px] ${isActive ? 'text-green-600' : 'text-slate-500'}`}>{isActive ? 'Aktiv' : 'Inaktiv'}</span>
+      </div>
+
+      <button
+        onClick={() => onSave({ name, domain, bot_name: botName, welcome_message: welcomeMsg, is_active: isActive })}
+        disabled={saving}
+        className={`w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white border-none rounded-lg cursor-pointer font-medium text-sm transition-all ${saving ? 'opacity-70' : 'hover:bg-blue-700'}`}
+      >
+        {saving ? 'Lagrer...' : 'Lagre endringer'}
+      </button>
+    </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 // Tab: AI-innstillinger
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 function AISettingsTab({ site, onSave, saving }: { site: Site; onSave: (u: any) => Promise<void>; saving: boolean }) {
-  const defaults: BotConfig = { system_prompt: '', tone: 'vennlig', response_length: 'medium', temperature: 0.7, include_sources: true, fallback_message: 'Beklager, jeg fant ikke svar pa det. Kontakt oss direkte for hjelp.', max_tokens: 500 };
+  const defaults: BotConfig = {
+    system_prompt: '', tone: 'vennlig', response_length: 'medium',
+    temperature: 0.7, include_sources: true,
+    fallback_message: 'Beklager, jeg fant ikke svar pa det. Kontakt oss direkte for hjelp.',
+    max_tokens: 500,
+  };
   const bc = site.bot_config || defaults;
   const [systemPrompt, setSystemPrompt] = useState(bc.system_prompt || '');
   const [tone, setTone] = useState(bc.tone || defaults.tone);
@@ -253,115 +288,128 @@ function AISettingsTab({ site, onSave, saving }: { site: Site; onSave: (u: any) 
   const [maxTokens, setMaxTokens] = useState(bc.max_tokens || defaults.max_tokens);
 
   const handleSave = () => {
-    onSave({ bot_config: { system_prompt: systemPrompt, tone, response_length: responseLength, temperature, include_sources: includeSources, fallback_message: fallbackMessage, max_tokens: maxTokens } });
+    onSave({
+      bot_config: { system_prompt: systemPrompt, tone, response_length: responseLength, temperature, include_sources: includeSources, fallback_message: fallbackMessage, max_tokens: maxTokens },
+    });
   };
 
+  const toneOptions = [
+    { value: 'profesjonell', label: 'Profesjonell' },
+    { value: 'vennlig', label: 'Vennlig' },
+    { value: 'uformell', label: 'Uformell' },
+    { value: 'teknisk', label: 'Teknisk' },
+  ];
+
+  const lengthOptions = [
+    { value: 'kort', label: 'Kort' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'detaljert', label: 'Detaljert' },
+  ];
+
+  const placeholderPrompt = `Du er en hjelpsom assistent for ${site.name}. Svar pa norsk.`;
+  const inputCls = "w-full h-11 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 transition-colors";
+  const cardCls = "bg-white border border-slate-200 rounded-[14px] p-5 md:p-6 mb-5";
+
   return (
-    <div className="space-y-5">
-      <Card>
-        <CardHeader>
-          <CardTitle>Systeminstruks</CardTitle>
-          <CardDescription>Tilpassede instruksjoner for hvordan chatboten skal oppfore seg.</CardDescription>
-        </CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <Label className="mb-1.5">Systemprompt</Label>
-          <Textarea value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder={`Du er en hjelpsom assistent for ${site.name}. Svar pa norsk.`} rows={4} />
-          <p className="text-xs text-slate-400 mt-1.5">Hvis tomt brukes standard systemprompt.</p>
-        </CardContent>
-      </Card>
+    <div>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-1">Systeminstruks</h2>
+        <p className="text-[13px] text-slate-500 mb-4">Tilpassede instruksjoner for hvordan chatboten skal oppfore seg.</p>
+        <div className="mb-5">
+          <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Systemprompt</label>
+          <textarea
+            value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)}
+            placeholder={placeholderPrompt} rows={4}
+            className="w-full px-3 py-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 resize-y transition-colors"
+          />
+          <p className="text-xs text-slate-500 mt-1.5">Hvis tomt brukes standard: &quot;{placeholderPrompt}&quot;</p>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader><CardTitle>Svarstil</CardTitle></CardHeader>
-        <Separator />
-        <CardContent className="p-6 flex gap-5 flex-wrap">
-          <div className="flex-1 min-w-[200px]">
-            <Label className="mb-1.5">Tone</Label>
-            <Select value={tone} onValueChange={setTone}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="profesjonell">Profesjonell</SelectItem>
-                <SelectItem value="vennlig">Vennlig</SelectItem>
-                <SelectItem value="uformell">Uformell</SelectItem>
-                <SelectItem value="teknisk">Teknisk</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Svarstil</h2>
+        <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex-1 min-w-0 mb-5">
+            <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Tone</label>
+            <select value={tone} onChange={(e) => setTone(e.target.value)} className={inputCls + " cursor-pointer"}>
+              {toneOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           </div>
-          <div className="flex-1 min-w-[200px]">
-            <Label className="mb-1.5">Svarlengde</Label>
-            <Select value={responseLength} onValueChange={setResponseLength}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="kort">Kort</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="detaljert">Detaljert</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex-1 min-w-0 mb-5">
+            <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Svarlengde</label>
+            <select value={responseLength} onChange={(e) => setResponseLength(e.target.value)} className={inputCls + " cursor-pointer"}>
+              {lengthOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Kreativitet (temperatur)</CardTitle>
-          <CardDescription>Lavere verdi gir mer fokuserte svar. Hoyere verdi gir mer kreative svar.</CardDescription>
-        </CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500 min-w-[50px]">Fokusert</span>
-            <Slider value={[temperature]} onValueChange={([v]) => setTemperature(v)} min={0} max={1} step={0.05} className="flex-1" />
-            <span className="text-sm text-slate-500 min-w-[50px] text-right">Kreativ</span>
-          </div>
-          <div className="text-center mt-3">
-            <Badge className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 font-mono text-sm">{temperature.toFixed(2)}</Badge>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-1">Kreativitet (temperatur)</h2>
+        <p className="text-[13px] text-slate-500 mb-4">Lavere verdi gir mer fokuserte svar. Hoyere verdi gir mer kreative svar.</p>
+        <div className="flex items-center gap-4">
+          <span className="text-[13px] text-slate-500 min-w-[50px]">Fokusert</span>
+          <input type="range" min="0" max="1" step="0.05" value={temperature} onChange={(e) => setTemperature(parseFloat(e.target.value))} className="flex-1 accent-blue-600 cursor-pointer" />
+          <span className="text-[13px] text-slate-500 min-w-[50px] text-right">Kreativ</span>
+        </div>
+        <div className="text-center mt-2.5">
+          <span className="inline-block px-3.5 py-1 bg-blue-50 rounded-md text-sm font-semibold text-blue-600 font-mono">
+            {temperature.toFixed(2)}
+          </span>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Maks svarlengde</CardTitle>
-          <CardDescription>Begrenser hvor langt hvert svar kan bli. 1 token er ca. 4 tegn.</CardDescription>
-        </CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <Label className="mb-1.5">Maks tokens</Label>
-          <Input type="number" min={100} max={2000} step={50} value={maxTokens} onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) setMaxTokens(Math.max(100, Math.min(2000, v))); }} className="w-40" />
-          <p className="text-xs text-slate-400 mt-1.5">Standardverdi: 500. Tillatt: 100 til 2000.</p>
-        </CardContent>
-      </Card>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-1">Maks svarlengde</h2>
+        <p className="text-[13px] text-slate-500 mb-4">Begrenser hvor langt hvert svar kan bli. 1 token er ca. 4 tegn.</p>
+        <div className="mb-5">
+          <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Maks tokens</label>
+          <input type="number" min={100} max={2000} step={50} value={maxTokens}
+            onChange={(e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) setMaxTokens(Math.max(100, Math.min(2000, v))); }}
+            className="w-full sm:w-40 h-11 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 transition-colors"
+          />
+          <p className="text-xs text-slate-500 mt-1.5">Standardverdi: 500. Tillatt: 100 til 2000.</p>
+        </div>
+      </div>
 
-      <Card>
-        <CardContent className="p-6 flex items-center justify-between">
+      <div className={cardCls}>
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Vis kilder</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Om chatboten skal vise referanser til kunnskapsbasen.</p>
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Vis kilder</h2>
+            <p className="text-[13px] text-slate-500">Om chatboten skal vise referanser til kunnskapsbasen.</p>
           </div>
-          <Switch checked={includeSources} onCheckedChange={setIncludeSources} />
-        </CardContent>
-      </Card>
+          <button
+            onClick={() => setIncludeSources(!includeSources)}
+            className={`w-12 h-[26px] rounded-[13px] border-none cursor-pointer relative transition-colors shrink-0 ${
+              includeSources ? 'bg-blue-600' : 'bg-slate-300'
+            }`}
+          >
+            <span className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-sm transition-[left] ${
+              includeSources ? 'left-[25px]' : 'left-[3px]'
+            }`} />
+          </button>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Reservemelding</CardTitle>
-          <CardDescription>Meldingen som vises nar chatboten ikke finner relevante svar.</CardDescription>
-        </CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <Label className="mb-1.5">Reservemelding</Label>
-          <Input value={fallbackMessage} onChange={(e) => setFallbackMessage(e.target.value)} placeholder="Beklager, jeg fant ikke svar..." />
-        </CardContent>
-      </Card>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-1">Reservemelding</h2>
+        <p className="text-[13px] text-slate-500 mb-4">Meldingen som vises nar chatboten ikke finner relevante svar.</p>
+        <div className="mb-5">
+          <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Reservemelding</label>
+          <input className={inputCls} value={fallbackMessage} onChange={(e) => setFallbackMessage(e.target.value)} placeholder="Beklager, jeg fant ikke svar..." />
+        </div>
+      </div>
 
-      <Button onClick={handleSave} disabled={saving}>{saving ? 'Lagrer...' : 'Lagre AI-innstillinger'}</Button>
+      <button onClick={handleSave} disabled={saving} className={`w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white border-none rounded-lg cursor-pointer font-medium text-sm transition-all ${saving ? 'opacity-70' : 'hover:bg-blue-700'}`}>
+        {saving ? 'Lagrer...' : 'Lagre AI-innstillinger'}
+      </button>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 // Tab: Kunnskapsbase
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessToken: () => Promise<string | null> }) {
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -398,9 +446,7 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
       const fd = new FormData();
-      fd.append('file', file);
-      fd.append('siteId', siteId);
-      fd.append('title', file.name);
+      fd.append('file', file); fd.append('siteId', siteId); fd.append('title', file.name);
       const res = await fetch('/api/ingest', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: fd });
       if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Opplasting feilet'); }
       await fetchSources();
@@ -409,8 +455,7 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
   };
 
   const handleDelete = async (sourceId: string) => {
-    setDeleting(sourceId);
-    setDeleteConfirm(null);
+    setDeleting(sourceId); setDeleteConfirm(null);
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
@@ -427,7 +472,11 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
-      const res = await fetch('/api/ingest', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ siteId, title: textTitle, text: textContent, type: 'text' }) });
+      const res = await fetch('/api/ingest', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId, title: textTitle, text: textContent, type: 'text' }),
+      });
       if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Kunne ikke lagre tekst'); }
       setTextTitle(''); setTextContent(''); setShowTextForm(false);
       await fetchSources();
@@ -441,7 +490,11 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
-      const res = await fetch('/api/ingest/scrape', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ url: scrapeUrl, siteId }) });
+      const res = await fetch('/api/ingest/scrape', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: scrapeUrl, siteId }),
+      });
       if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Skanning feilet'); }
       const data = await res.json();
       const sourceId = data.sourceId;
@@ -465,17 +518,26 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
   };
 
   const typeBadge = (type: string) => {
-    const map: Record<string, string> = { document: 'PDF', text: 'Tekst', webpage: 'URL', csv: 'CSV', faq: 'FAQ' };
-    return <Badge variant="secondary" className="text-[11px]">{map[type] || type.toUpperCase()}</Badge>;
+    const map: Record<string, { label: string; cls: string }> = {
+      document: { label: 'PDF', cls: 'bg-amber-50 text-amber-800' },
+      text: { label: 'Tekst', cls: 'bg-blue-50 text-blue-800' },
+      webpage: { label: 'URL', cls: 'bg-indigo-50 text-indigo-800' },
+      csv: { label: 'CSV', cls: 'bg-green-50 text-green-800' },
+      faq: { label: 'FAQ', cls: 'bg-pink-50 text-pink-800' },
+    };
+    const m = map[type] || { label: type.toUpperCase(), cls: 'bg-slate-100 text-slate-600' };
+    return <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${m.cls}`}>{m.label}</span>;
   };
 
   const statusBadge = (status: string) => {
-    switch (status) {
-      case 'ready': return <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50 text-[11px]">Klar</Badge>;
-      case 'processing': return <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 text-[11px]">Behandler</Badge>;
-      case 'error': return <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 text-[11px]">Feil</Badge>;
-      default: return <Badge variant="secondary" className="text-[11px]">{status}</Badge>;
-    }
+    const map: Record<string, { label: string; cls: string }> = {
+      ready: { label: 'Klar', cls: 'bg-green-50 text-green-600' },
+      processing: { label: 'Behandler', cls: 'bg-amber-50 text-amber-800' },
+      error: { label: 'Feil', cls: 'bg-red-50 text-red-600' },
+      pending: { label: 'Venter', cls: 'bg-slate-100 text-slate-500' },
+    };
+    const m = map[status] || { label: status, cls: 'bg-slate-100 text-slate-600' };
+    return <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${m.cls}`}>{m.label}</span>;
   };
 
   const formatSize = (bytes: number | null) => {
@@ -485,127 +547,146 @@ function KnowledgeTab({ siteId, getAccessToken }: { siteId: string; getAccessTok
     return (bytes / 1048576).toFixed(1) + ' MB';
   };
 
+  const cardCls = "bg-white border border-slate-200 rounded-[14px] p-5 md:p-6 mb-5";
+  const inputCls = "w-full h-11 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 transition-colors";
+  const btnPrimary = "px-5 py-2.5 bg-blue-600 text-white border-none rounded-lg cursor-pointer font-medium text-sm hover:bg-blue-700 transition-colors";
+  const btnSecondary = "px-5 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-lg cursor-pointer font-medium text-sm hover:bg-slate-50 transition-colors";
+
   if (loading) {
-    return <div className="flex items-center justify-center p-10"><div className="w-6 h-6 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" /></div>;
+    return (
+      <div className="flex items-center justify-center p-10">
+        <div className="w-6 h-6 rounded-full border-[3px] border-slate-200 border-t-blue-600 animate-spin" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-5">
+    <div>
       {/* URL Scrape */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Importer fra nettside</CardTitle>
-          <CardDescription>Skann en nettside og importer innholdet automatisk.</CardDescription>
-        </CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <div className="flex gap-3 items-end flex-wrap">
-            <div className="flex-1 min-w-[240px]">
-              <Label className="mb-1.5">Nettadresse</Label>
-              <Input value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} placeholder="https://dinbedrift.no" disabled={scraping} onKeyDown={(e) => { if (e.key === 'Enter' && !scraping) handleScrape(); }} />
-            </div>
-            <Button onClick={handleScrape} disabled={scraping || !scrapeUrl.trim()}>{scraping ? 'Skanner...' : 'Skann nettside'}</Button>
+      <div className={cardCls}>
+        <h3 className="text-base font-semibold text-slate-900 mb-1">Importer fra nettside</h3>
+        <p className="text-[13px] text-slate-500 mb-3.5">Skann en nettside og importer innholdet automatisk.</p>
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+          <div className="flex-1">
+            <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Nettadresse</label>
+            <input className={inputCls} value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} placeholder="https://dinbedrift.no" disabled={scraping} onKeyDown={(e) => { if (e.key === 'Enter' && !scraping) handleScrape(); }} />
           </div>
-          {scrapeStatus && <Card className="mt-3 border-blue-200 bg-blue-50"><CardContent className="p-3 text-sm text-blue-700 font-medium">{scrapeStatus}</CardContent></Card>}
-          {scrapeError && <Card className="mt-3 border-red-200 bg-red-50"><CardContent className="p-3 text-sm text-red-700 font-medium">{scrapeError}</CardContent></Card>}
-          {scrapeResult && <Card className="mt-3 border-green-200 bg-green-50"><CardContent className="p-3 text-sm text-green-700 font-medium">Ferdig — {scrapeResult.chunksCreated} kunnskapsdeler opprettet.</CardContent></Card>}
-        </CardContent>
-      </Card>
+          <button onClick={handleScrape} disabled={scraping || !scrapeUrl.trim()} className={`${btnPrimary} whitespace-nowrap w-full sm:w-auto ${(scraping || !scrapeUrl.trim()) ? 'opacity-60' : ''}`}>
+            {scraping ? 'Skanner...' : 'Skann nettside'}
+          </button>
+        </div>
+        {scrapeStatus && <div className="mt-3 p-2.5 bg-blue-50 rounded-lg text-[13px] text-blue-600 font-medium">{scrapeStatus}</div>}
+        {scrapeError && <div className="mt-3 p-2.5 bg-red-50 rounded-lg text-[13px] text-red-600 font-medium">{scrapeError}</div>}
+        {scrapeResult && <div className="mt-3 p-2.5 bg-green-50 rounded-lg text-[13px] text-green-600 font-medium">Ferdig — {scrapeResult.chunksCreated} kunnskapsdeler opprettet.</div>}
+      </div>
 
-      {/* Sources header */}
-      <Card>
-        <CardContent className="p-6 flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-slate-900">Kunnskapsbase</h3>
-            <p className="text-sm text-slate-500 mt-0.5">{sources.length} {sources.length === 1 ? 'kilde' : 'kilder'}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowTextForm(!showTextForm)} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              Legg til tekst
-            </Button>
-            <Button onClick={() => fileRef.current?.click()} disabled={uploading} className="gap-1.5">
-              <Upload className="h-3.5 w-3.5" />
-              {uploading ? 'Laster opp...' : 'Last opp fil'}
-            </Button>
-            <input ref={fileRef} type="file" accept=".pdf,.txt,.docx,.md,.csv" className="hidden" onChange={handleUpload} />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Header with actions */}
+      <div className={`${cardCls} flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3`}>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Kunnskapsbase</h2>
+          <p className="text-[13px] text-slate-500 mt-0.5">{sources.length} {sources.length === 1 ? 'kilde' : 'kilder'}</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button onClick={() => setShowTextForm(!showTextForm)} className={`${btnSecondary} flex items-center justify-center gap-1.5 w-full sm:w-auto`}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 2v12M2 8h12" /></svg>
+            Legg til tekst
+          </button>
+          <button onClick={() => fileRef.current?.click()} disabled={uploading} className={`${btnPrimary} flex items-center justify-center gap-1.5 w-full sm:w-auto ${uploading ? 'opacity-60' : ''}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+            {uploading ? 'Laster opp...' : 'Last opp fil'}
+          </button>
+          <input ref={fileRef} type="file" accept=".pdf,.txt,.docx,.md,.csv" className="hidden" onChange={handleUpload} />
+        </div>
+      </div>
 
       {/* Text form */}
       {showTextForm && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Legg til tekstinnhold</CardTitle></CardHeader>
-          <Separator />
-          <CardContent className="p-6 space-y-4">
-            <div><Label className="mb-1.5">Tittel</Label><Input value={textTitle} onChange={(e) => setTextTitle(e.target.value)} placeholder="F.eks. Apningstider" /></div>
-            <div><Label className="mb-1.5">Innhold</Label><Textarea value={textContent} onChange={(e) => setTextContent(e.target.value)} placeholder="Skriv eller lim inn teksten her..." rows={6} /></div>
-            <div className="flex gap-2">
-              <Button onClick={handleTextSubmit} disabled={submittingText || !textTitle.trim() || !textContent.trim()}>{submittingText ? 'Lagrer...' : 'Lagre tekst'}</Button>
-              <Button variant="outline" onClick={() => { setShowTextForm(false); setTextTitle(''); setTextContent(''); }}>Avbryt</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className={cardCls}>
+          <h3 className="text-[15px] font-semibold text-slate-900 mb-4">Legg til tekstinnhold</h3>
+          <div className="mb-5">
+            <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Tittel</label>
+            <input className={inputCls} value={textTitle} onChange={(e) => setTextTitle(e.target.value)} placeholder="F.eks. Apningstider" />
+          </div>
+          <div className="mb-5">
+            <label className="block text-[13px] font-semibold text-slate-900 mb-1.5">Innhold</label>
+            <textarea value={textContent} onChange={(e) => setTextContent(e.target.value)} placeholder="Skriv eller lim inn teksten her..." rows={6}
+              className="w-full px-3 py-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 resize-y transition-colors" />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button onClick={handleTextSubmit} disabled={submittingText || !textTitle.trim() || !textContent.trim()} className={`${btnPrimary} w-full sm:w-auto ${submittingText ? 'opacity-60' : ''}`}>
+              {submittingText ? 'Lagrer...' : 'Lagre tekst'}
+            </button>
+            <button onClick={() => { setShowTextForm(false); setTextTitle(''); setTextContent(''); }} className={`${btnSecondary} w-full sm:w-auto`}>Avbryt</button>
+          </div>
+        </div>
       )}
 
-      {/* Sources table */}
+      {/* Sources list */}
       {sources.length === 0 ? (
-        <Card>
-          <CardContent className="p-14 text-center">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
-            <p className="text-base font-semibold text-slate-900 mb-1">Ingen kunnskapskilder enna</p>
-            <p className="text-sm text-slate-500">Last opp dokumenter eller legg til tekst for a trene chatboten din.</p>
-          </CardContent>
-        </Card>
+        <div className={`${cardCls} text-center py-14 px-6`}>
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </div>
+          <div className="text-[15px] font-semibold text-slate-900 mb-1.5">Ingen kunnskapskilder enna</div>
+          <div className="text-[13px] text-slate-500 leading-relaxed">
+            Last opp dokumenter eller legg til tekst for å trene chatboten din.
+          </div>
+        </div>
       ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tittel</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-center">Deler</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Storrelse</TableHead>
-                <TableHead>Dato</TableHead>
-                <TableHead className="w-20" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sources.map((src) => (
-                <TableRow key={src.id}>
-                  <TableCell className="font-medium max-w-[200px] truncate">{src.title}</TableCell>
-                  <TableCell>{typeBadge(src.type)}</TableCell>
-                  <TableCell className="text-center">{src.chunk_count}</TableCell>
-                  <TableCell>{statusBadge(src.status)}</TableCell>
-                  <TableCell className="text-right text-sm text-slate-500">{formatSize(src.file_size)}</TableCell>
-                  <TableCell className="text-sm text-slate-500">{new Date(src.created_at).toLocaleDateString('nb-NO')}</TableCell>
-                  <TableCell className="text-center">
+        <div className={cardCls}>
+          <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="p-2.5 text-left text-slate-500 text-xs font-semibold">Tittel</th>
+                <th className="p-2.5 text-left text-slate-500 text-xs font-semibold">Type</th>
+                <th className="p-2.5 text-center text-slate-500 text-xs font-semibold">Deler</th>
+                <th className="p-2.5 text-left text-slate-500 text-xs font-semibold">Status</th>
+                <th className="p-2.5 text-right text-slate-500 text-xs font-semibold hidden sm:table-cell">Storrelse</th>
+                <th className="p-2.5 text-left text-slate-500 text-xs font-semibold hidden md:table-cell">Dato</th>
+                <th className="p-2.5 w-20"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sources.map((src, i) => (
+                <tr key={src.id} className={i < sources.length - 1 ? 'border-b border-slate-100' : ''}>
+                  <td className="p-3 text-sm text-slate-900 font-medium max-w-[200px] truncate">{src.title}</td>
+                  <td className="p-3">{typeBadge(src.type)}</td>
+                  <td className="p-3 text-center text-sm text-slate-900">{src.chunk_count}</td>
+                  <td className="p-3">{statusBadge(src.status)}</td>
+                  <td className="p-3 text-right text-[13px] text-slate-500 hidden sm:table-cell">{formatSize(src.file_size)}</td>
+                  <td className="p-3 text-[13px] text-slate-500 hidden md:table-cell">{new Date(src.created_at).toLocaleDateString('nb-NO')}</td>
+                  <td className="p-3 text-center">
                     {deleteConfirm === src.id ? (
                       <div className="flex gap-1">
-                        <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={() => handleDelete(src.id)} disabled={deleting === src.id}>{deleting === src.id ? '...' : 'Ja'}</Button>
-                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setDeleteConfirm(null)}>Nei</Button>
+                        <button onClick={() => handleDelete(src.id)} disabled={deleting === src.id}
+                          className="px-2.5 py-1 bg-red-600 text-white border-none rounded-md cursor-pointer text-xs disabled:opacity-50">
+                          {deleting === src.id ? '...' : 'Ja'}
+                        </button>
+                        <button onClick={() => setDeleteConfirm(null)}
+                          className="px-2.5 py-1 bg-transparent text-slate-500 border border-slate-200 rounded-md cursor-pointer text-xs">Nei</button>
                       </div>
                     ) : (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteConfirm(src.id)}>Slett</Button>
+                      <button onClick={() => setDeleteConfirm(src.id)}
+                        className="px-3 py-1 bg-transparent text-red-600 border border-slate-200 rounded-md cursor-pointer text-xs hover:bg-red-50 transition-colors">Slett</button>
                     )}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </Card>
+            </tbody>
+          </table>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 // Tab: Widget
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 function WidgetTab({ site, siteId, onSave, saving }: { site: Site; siteId: string; onSave: (u: any) => Promise<void>; saving: boolean }) {
   const tc = site.theme_config || {};
   const [primaryColor, setPrimaryColor] = useState(tc.primaryColor || '#2563eb');
@@ -615,106 +696,106 @@ function WidgetTab({ site, siteId, onSave, saving }: { site: Site; siteId: strin
   const [copiedEmbed, setCopiedEmbed] = useState(false);
 
   const embedCode = `<script src="https://cdn.norskbot.no/widget.js" data-site-id="${siteId}"></script>`;
-
   const handleSave = () => { onSave({ theme_config: { ...tc, primaryColor, position, autoOpenDelay } }); };
-
   const copyEmbed = () => { navigator.clipboard.writeText(embedCode).then(() => { setCopiedEmbed(true); setTimeout(() => setCopiedEmbed(false), 2500); }); };
 
-  return (
-    <div className="space-y-5">
-      <Card>
-        <CardHeader><CardTitle>Temafarge</CardTitle></CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <div className="flex gap-2.5 flex-wrap mb-4">
-            {presetColors.map((c) => (
-              <button key={c} onClick={() => setPrimaryColor(c)} className={`w-9 h-9 rounded-lg cursor-pointer transition-all border-2 ${primaryColor === c ? 'border-slate-900 ring-2 ring-white shadow-md' : 'border-slate-200 hover:scale-105'}`} style={{ backgroundColor: c }} title={c} />
-            ))}
-          </div>
-          <div className="flex gap-2 items-center">
-            <Input value={customHex} onChange={(e) => setCustomHex(e.target.value)} placeholder="#hex" className="w-28" />
-            <Button variant="outline" onClick={() => { if (/^#[0-9a-fA-F]{6}$/.test(customHex)) setPrimaryColor(customHex); }}>Bruk</Button>
-            <div className="w-7 h-7 rounded-md border border-slate-200 flex-shrink-0" style={{ backgroundColor: primaryColor }} />
-          </div>
-        </CardContent>
-      </Card>
+  const cardCls = "bg-white border border-slate-200 rounded-[14px] p-5 md:p-6 mb-5";
+  const inputCls = "w-full h-11 px-3 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-50 transition-colors";
 
-      <Card>
-        <CardHeader><CardTitle>Chat-posisjon</CardTitle></CardHeader>
-        <Separator />
-        <CardContent className="p-6 flex gap-6">
+  return (
+    <div>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Temafarge</h2>
+        <div className="flex gap-2.5 flex-wrap mb-3.5">
+          {presetColors.map((c) => (
+            <button key={c} onClick={() => setPrimaryColor(c)} className="w-9 h-9 rounded-lg cursor-pointer transition-all" style={{
+              backgroundColor: c,
+              border: primaryColor === c ? '2px solid #0f172a' : '2px solid #e2e8f0',
+            }} title={c} />
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input className="w-28 h-11 px-3 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors" value={customHex} onChange={(e) => setCustomHex(e.target.value)} placeholder="#hex" />
+          <button onClick={() => { if (/^#[0-9a-fA-F]{6}$/.test(customHex)) setPrimaryColor(customHex); }} className="px-4 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-lg cursor-pointer text-sm font-medium hover:bg-slate-50 transition-colors">Bruk</button>
+          <div className="w-7 h-7 rounded-md border border-slate-200 shrink-0" style={{ backgroundColor: primaryColor }} />
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Chat-posisjon</h2>
+        <div className="flex flex-col sm:flex-row gap-4">
           {(['bottom-right', 'bottom-left'] as const).map((pos) => (
-            <label key={pos} className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+            <label key={pos} className="flex items-center gap-2 cursor-pointer text-sm text-slate-900">
               <input type="radio" name="position" checked={position === pos} onChange={() => setPosition(pos)} className="accent-blue-600" />
               {pos === 'bottom-right' ? 'Nederst til hoyre' : 'Nederst til venstre'}
             </label>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader><CardTitle>Automatisk apning</CardTitle></CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <Select value={String(autoOpenDelay)} onValueChange={(v) => setAutoOpenDelay(Number(v))}>
-            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Deaktivert</SelectItem>
-              <SelectItem value="3">Etter 3 sekunder</SelectItem>
-              <SelectItem value="5">Etter 5 sekunder</SelectItem>
-              <SelectItem value="10">Etter 10 sekunder</SelectItem>
-              <SelectItem value="30">Etter 30 sekunder</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Automatisk apning</h2>
+        <select value={autoOpenDelay} onChange={(e) => setAutoOpenDelay(Number(e.target.value))} className="w-full sm:w-56 h-11 px-3 border border-slate-200 rounded-lg text-sm cursor-pointer outline-none focus:border-blue-600 transition-colors">
+          <option value={0}>Deaktivert</option>
+          <option value={3}>Etter 3 sekunder</option>
+          <option value={5}>Etter 5 sekunder</option>
+          <option value={10}>Etter 10 sekunder</option>
+          <option value={30}>Etter 30 sekunder</option>
+        </select>
+      </div>
 
-      {/* Preview */}
-      <Card>
-        <CardHeader><CardTitle>Forhandsvisning</CardTitle></CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <div className="bg-slate-100 rounded-xl p-6 relative min-h-[280px]">
-            <div className={`absolute ${position === 'bottom-right' ? 'right-6' : 'left-6'} bottom-[70px] w-[280px] rounded-xl shadow-lg overflow-hidden bg-white`}>
-              <div className="px-4 py-3 text-white font-semibold text-sm" style={{ backgroundColor: primaryColor }}>{site.bot_name || 'NorskBot'}</div>
+      {/* Live preview - hidden on mobile */}
+      <div className={`${cardCls} hidden md:block`}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Forhåndsvisning</h2>
+        <div className="bg-slate-100 rounded-xl p-6 relative min-h-[280px]">
+          <div className="absolute bottom-[70px]" style={{ [position === 'bottom-right' ? 'right' : 'left']: '24px' }}>
+            <div className="w-[280px] rounded-[14px] shadow-lg overflow-hidden bg-white">
+              <div className="text-white py-3.5 px-4 font-semibold text-sm" style={{ backgroundColor: primaryColor }}>{site.bot_name || 'NorskBot'}</div>
               <div className="p-4">
-                <div className="bg-slate-100 rounded-xl rounded-bl-sm px-3 py-2.5 text-sm text-slate-900 mb-3 max-w-[85%]">{site.welcome_message || 'Hei! Hvordan kan jeg hjelpe deg?'}</div>
+                <div className="bg-slate-100 rounded-xl rounded-bl-sm px-3.5 py-2.5 text-[13px] text-slate-900 mb-2.5 max-w-[85%]">
+                  {site.welcome_message || 'Hei! Hvordan kan jeg hjelpe deg?'}
+                </div>
                 <div className="flex gap-2">
-                  <Input readOnly placeholder="Skriv en melding..." className="h-9 text-sm flex-1" />
-                  <Button size="icon" className="h-9 w-9" style={{ backgroundColor: primaryColor }}><ArrowLeft className="h-3.5 w-3.5 rotate-180" /></Button>
+                  <input readOnly placeholder="Skriv en melding..." className="flex-1 h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-[13px]" />
+                  <button className="w-9 h-9 rounded-lg border-none text-white cursor-default flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
                 </div>
               </div>
             </div>
-            <div className={`absolute ${position === 'bottom-right' ? 'right-6' : 'left-6'} bottom-4 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg`} style={{ backgroundColor: primaryColor }}>
-              <MessageSquare className="h-5 w-5" />
-            </div>
           </div>
-        </CardContent>
-      </Card>
+          <div className="absolute bottom-4 w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white" style={{ backgroundColor: primaryColor, [position === 'bottom-right' ? 'right' : 'left']: '24px' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
 
       {/* Embed code */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Innbyggingskode</CardTitle>
-          <CardDescription>Legg denne koden til i head eller body pa nettstedet ditt.</CardDescription>
-        </CardHeader>
-        <Separator />
-        <CardContent className="p-6">
-          <div className="flex gap-2 items-stretch">
-            <code className="flex-1 block bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-xs font-mono text-slate-900 break-all leading-relaxed">{embedCode}</code>
-            <Button variant="outline" onClick={copyEmbed}>{copiedEmbed ? 'Kopiert' : 'Kopier'}</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cardCls}>
+        <h2 className="text-lg font-semibold text-slate-900 mb-1">Innbyggingskode</h2>
+        <p className="text-[13px] text-slate-500 mb-3.5">Legg denne koden til i &lt;head&gt; eller &lt;body&gt; pa nettstedet ditt:</p>
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch">
+          <code className="flex-1 block bg-slate-50 px-3.5 py-3 rounded-lg text-xs font-mono text-slate-900 break-all leading-relaxed border border-slate-200">
+            {embedCode}
+          </code>
+          <button onClick={copyEmbed} className="px-4 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-lg cursor-pointer text-sm font-medium hover:bg-slate-50 transition-colors whitespace-nowrap w-full sm:w-auto">
+            {copiedEmbed ? 'Kopiert' : 'Kopier'}
+          </button>
+        </div>
+      </div>
 
-      <Button onClick={handleSave} disabled={saving}>{saving ? 'Lagrer...' : 'Lagre widget-innstillinger'}</Button>
+      <button onClick={handleSave} disabled={saving} className={`w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white border-none rounded-lg cursor-pointer font-medium text-sm transition-all ${saving ? 'opacity-70' : 'hover:bg-blue-700'}`}>
+        {saving ? 'Lagrer...' : 'Lagre widget-innstillinger'}
+      </button>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════
-// Tab: API-nokler
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
+// Tab: API-nøkler
+// ═════════════════════════════════════════════════════
 function ApiKeysTab({ site, siteId, getAccessToken, onRefresh }: { site: Site; siteId: string; getAccessToken: () => Promise<string | null>; onRefresh: () => Promise<void> }) {
   const [generating, setGenerating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
@@ -728,8 +809,12 @@ function ApiKeysTab({ site, siteId, getAccessToken, onRefresh }: { site: Site; s
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
-      const res = await fetch('/api/sites/' + siteId + '/api-keys', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'API-nokkel' }) });
-      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Kunne ikke opprette nokkel'); }
+      const res = await fetch('/api/sites/' + siteId + '/api-keys', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'API-nøkkel' }),
+      });
+      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || 'Kunne ikke opprette nøkkel'); }
       const data = await res.json();
       setNewKey(data.key);
       await onRefresh();
@@ -742,196 +827,233 @@ function ApiKeysTab({ site, siteId, getAccessToken, onRefresh }: { site: Site; s
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Ikke autentisert');
-      const res = await fetch('/api/sites/' + siteId + '/api-keys', { method: 'DELETE', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ keyId }) });
-      if (!res.ok) throw new Error('Kunne ikke deaktivere nokkel');
+      const res = await fetch('/api/sites/' + siteId + '/api-keys', {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyId }),
+      });
+      if (!res.ok) throw new Error('Kunne ikke deaktivere nøkkel');
       await onRefresh();
     } catch (err: any) { alert(err.message); }
     finally { setRevoking(null); }
   };
 
-  const copyKey = () => { if (newKey) { navigator.clipboard.writeText(newKey); setCopiedKey(true); setTimeout(() => setCopiedKey(false), 2500); } };
+  const copyKey = () => {
+    if (newKey) { navigator.clipboard.writeText(newKey); setCopiedKey(true); setTimeout(() => setCopiedKey(false), 2500); }
+  };
 
   const activeKeys = (site.apiKeys || []).filter((k) => k.is_active);
   const revokedKeys = (site.apiKeys || []).filter((k) => !k.is_active);
+  const cardCls = "bg-white border border-slate-200 rounded-[14px] p-5 md:p-6 mb-5";
+  const btnPrimary = "px-5 py-2.5 bg-blue-600 text-white border-none rounded-lg cursor-pointer font-medium text-sm hover:bg-blue-700 transition-colors";
+  const btnSecondary = "px-5 py-2.5 bg-white text-slate-900 border border-slate-200 rounded-lg cursor-pointer font-medium text-sm hover:bg-slate-50 transition-colors";
 
   return (
-    <div className="space-y-5">
-      <Card>
-        <CardContent className="p-6 flex justify-between items-center flex-wrap gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-slate-900">API-nokler</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Nokler for a autentisere chat-widgeten mot dette nettstedet.</p>
+    <div>
+      <div className={`${cardCls} flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3`}>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">API-nøkler</h2>
+          <p className="text-[13px] text-slate-500 mt-0.5">Nøkler for å autentisere chat-widgeten mot dette nettstedet.</p>
+        </div>
+        {generateConfirm ? (
+          <div className="flex gap-2 items-center">
+            <span className="text-[13px] text-slate-900">Generer ny nøkkel?</span>
+            <button onClick={handleGenerate} disabled={generating} className={`${btnPrimary} py-2 px-4 text-[13px]`}>{generating ? '...' : 'Bekreft'}</button>
+            <button onClick={() => setGenerateConfirm(false)} className={`${btnSecondary} py-2 px-4 text-[13px]`}>Avbryt</button>
           </div>
-          {generateConfirm ? (
-            <div className="flex gap-2 items-center">
-              <span className="text-sm text-slate-700">Generer ny nokkel?</span>
-              <Button size="sm" onClick={handleGenerate} disabled={generating}>{generating ? '...' : 'Bekreft'}</Button>
-              <Button variant="outline" size="sm" onClick={() => setGenerateConfirm(false)}>Avbryt</Button>
-            </div>
-          ) : (
-            <Button onClick={() => setGenerateConfirm(true)} disabled={generating} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              Ny API-nokkel
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+        ) : (
+          <button onClick={() => setGenerateConfirm(true)} disabled={generating} className={`${btnPrimary} flex items-center gap-1.5 w-full sm:w-auto justify-center`}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 2v12M2 8h12" /></svg>
+            Ny API-nøkkel
+          </button>
+        )}
+      </div>
 
+      {/* Newly generated key banner */}
       {newKey && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start gap-3 mb-3">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 mb-1">Ny API-nokkel opprettet</h3>
-                <p className="text-sm text-slate-500">Kopier nokkelen na. Den vises ikke igjen.</p>
-              </div>
-              <button onClick={() => setNewKey(null)} className="text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer text-lg leading-none">&times;</button>
+        <div className={`${cardCls} bg-blue-50 border-blue-200`}>
+          <div className="flex justify-between items-start gap-3 mb-3">
+            <div>
+              <h3 className="text-[15px] font-semibold text-slate-900 mb-1">Ny API-nøkkel opprettet</h3>
+              <p className="text-[13px] text-slate-500">Kopier nøkkelen nå. Den vises ikke igjen.</p>
             </div>
-            <div className="flex gap-2">
-              <code className="flex-1 bg-white border border-slate-200 rounded-lg px-4 py-3 text-sm font-mono text-slate-900 break-all">{newKey}</code>
-              <Button onClick={copyKey}><Copy className="h-4 w-4 mr-1.5" />{copiedKey ? 'Kopiert' : 'Kopier'}</Button>
-            </div>
-          </CardContent>
-        </Card>
+            <button onClick={() => setNewKey(null)} className="bg-transparent border-none text-slate-500 cursor-pointer text-lg p-0 leading-none">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <code className="flex-1 px-3.5 py-2.5 bg-white rounded-lg text-[13px] font-mono text-slate-900 break-all border border-slate-200">{newKey}</code>
+            <button onClick={copyKey} className={`${btnPrimary} whitespace-nowrap w-full sm:w-auto`}>{copiedKey ? 'Kopiert' : 'Kopier'}</button>
+          </div>
+        </div>
       )}
 
+      {/* Active keys */}
       {activeKeys.length === 0 && !newKey ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <Key className="h-5 w-5 text-slate-400" />
-            </div>
-            <p className="text-base font-medium text-slate-900 mb-1">Ingen aktive API-nokler</p>
-            <p className="text-sm text-slate-500">Opprett en API-nokkel for a aktivere chat-widgeten.</p>
-          </CardContent>
-        </Card>
+        <div className={`${cardCls} text-center py-12 px-6`}>
+          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3.5">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+            </svg>
+          </div>
+          <div className="text-[15px] font-medium text-slate-900 mb-1">Ingen aktive API-nøkler</div>
+          <div className="text-[13px] text-slate-500">Opprett en API-nøkkel for å aktivere chat-widgeten.</div>
+        </div>
       ) : (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Aktive nokler ({activeKeys.length})</CardTitle></CardHeader>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nokkelprefix</TableHead>
-                <TableHead>Navn</TableHead>
-                <TableHead>Opprettet</TableHead>
-                <TableHead>Sist brukt</TableHead>
-                <TableHead className="w-28" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {activeKeys.map((k) => (
-                <TableRow key={k.id}>
-                  <TableCell className="font-mono text-sm">{k.key_prefix}...</TableCell>
-                  <TableCell>{k.name}</TableCell>
-                  <TableCell className="text-sm text-slate-500">{new Date(k.created_at).toLocaleDateString('nb-NO')}</TableCell>
-                  <TableCell className="text-sm text-slate-500">{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString('nb-NO') : 'Aldri'}</TableCell>
-                  <TableCell className="text-right">
+        <div className={cardCls}>
+          <h3 className="text-[15px] font-semibold text-slate-900 mb-3.5">Aktive nøkler ({activeKeys.length})</h3>
+          <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="p-2 text-left text-slate-500 text-xs font-semibold">Nøkkelprefix</th>
+                <th className="p-2 text-left text-slate-500 text-xs font-semibold hidden sm:table-cell">Navn</th>
+                <th className="p-2 text-left text-slate-500 text-xs font-semibold hidden sm:table-cell">Opprettet</th>
+                <th className="p-2 text-left text-slate-500 text-xs font-semibold hidden md:table-cell">Sist brukt</th>
+                <th className="p-2 w-24"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeKeys.map((k, i) => (
+                <tr key={k.id} className={i < activeKeys.length - 1 ? 'border-b border-slate-100' : ''}>
+                  <td className="p-3 text-[13px] font-mono text-slate-900">{k.key_prefix}...</td>
+                  <td className="p-3 text-[13px] text-slate-900 hidden sm:table-cell">{k.name}</td>
+                  <td className="p-3 text-[13px] text-slate-500 hidden sm:table-cell">{new Date(k.created_at).toLocaleDateString('nb-NO')}</td>
+                  <td className="p-3 text-[13px] text-slate-500 hidden md:table-cell">{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString('nb-NO') : 'Aldri'}</td>
+                  <td className="p-3 text-right">
                     {revokeConfirm === k.id ? (
                       <div className="flex gap-1 justify-end">
-                        <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={() => handleRevoke(k.id)} disabled={revoking === k.id}>{revoking === k.id ? '...' : 'Bekreft'}</Button>
-                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRevokeConfirm(null)}>Avbryt</Button>
+                        <button onClick={() => handleRevoke(k.id)} disabled={revoking === k.id} className="px-2.5 py-1 bg-red-600 text-white border-none rounded-md cursor-pointer text-xs">{revoking === k.id ? '...' : 'Bekreft'}</button>
+                        <button onClick={() => setRevokeConfirm(null)} className="px-2.5 py-1 bg-transparent text-slate-500 border border-slate-200 rounded-md cursor-pointer text-xs">Avbryt</button>
                       </div>
                     ) : (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setRevokeConfirm(k.id)}>Deaktiver</Button>
+                      <button onClick={() => setRevokeConfirm(k.id)} className="px-3 py-1 bg-transparent text-red-600 border border-slate-200 rounded-md cursor-pointer text-xs hover:bg-red-50 transition-colors">Deaktiver</button>
                     )}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </Card>
+            </tbody>
+          </table>
+          </div>
+        </div>
       )}
 
+      {/* Revoked keys */}
       {revokedKeys.length > 0 && (
-        <Card className="opacity-60">
-          <CardHeader><CardTitle className="text-sm text-slate-500">Deaktiverte nokler ({revokedKeys.length})</CardTitle></CardHeader>
-          <CardContent className="p-6 pt-0">
-            {revokedKeys.map((k) => (
-              <div key={k.id} className="flex justify-between py-2 border-b border-slate-100 last:border-0 text-sm text-slate-500">
-                <span className="font-mono">{k.key_prefix}...</span>
-                <span>Deaktivert</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <div className={`${cardCls} opacity-60`}>
+          <h3 className="text-sm font-semibold text-slate-500 mb-3">Deaktiverte nøkler ({revokedKeys.length})</h3>
+          {revokedKeys.map((k) => (
+            <div key={k.id} className="flex justify-between py-2 border-b border-slate-100 text-[13px] text-slate-500">
+              <span className="font-mono">{k.key_prefix}...</span>
+              <span>Deaktivert</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 // Tab: Statistikk
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 function StatsTab({ siteId, site }: { siteId: string; site: Site }) {
-  const [stats, setStats] = useState<{ conversations: number; messages: number; avgMessages: number; lastActive: string | null; totalTokens: number; apiCalls: number } | null>(null);
+  const [stats, setStats] = useState<{
+    conversations: number; messages: number; avgMessages: number;
+    lastActive: string | null; totalTokens: number; apiCalls: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data: convos, count: convCount } = await supabase.from('conversations').select('id, started_at', { count: 'exact' }).eq('site_id', siteId).order('started_at', { ascending: false });
+        const { data: convos, count: convCount } = await supabase
+          .from('conversations')
+          .select('id, started_at', { count: 'exact' })
+          .eq('site_id', siteId)
+          .order('started_at', { ascending: false });
+
         const conversations = convCount || 0;
         const convIds = (convos || []).map((c: any) => c.id);
         let messages = 0;
-        if (convIds.length > 0) { const { count: msgCount } = await supabase.from('messages').select('*', { count: 'exact', head: true }).in('conversation_id', convIds); messages = msgCount || 0; }
-        let totalTokens = 0; let apiCalls = 0;
-        try { const { data: usageLogs } = await supabase.from('usage_logs').select('action_type, tokens_used').eq('site_id', siteId); if (usageLogs) { totalTokens = usageLogs.reduce((sum: number, l: any) => sum + (l.tokens_used || 0), 0); apiCalls = usageLogs.filter((l: any) => l.action_type === 'api_call' || l.action_type === 'chat_message').length; } } catch {}
+        if (convIds.length > 0) {
+          const { count: msgCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .in('conversation_id', convIds);
+          messages = msgCount || 0;
+        }
+
+        let totalTokens = 0;
+        let apiCalls = 0;
+        try {
+          const { data: usageLogs } = await supabase
+            .from('usage_logs')
+            .select('action_type, tokens_used')
+            .eq('site_id', siteId);
+          if (usageLogs) {
+            totalTokens = usageLogs.reduce((sum: number, l: any) => sum + (l.tokens_used || 0), 0);
+            apiCalls = usageLogs.filter((l: any) => l.action_type === 'api_call' || l.action_type === 'chat_message').length;
+          }
+        } catch {}
+
         const avgMessages = conversations > 0 ? Math.round((messages / conversations) * 10) / 10 : 0;
         const lastActive = convos && convos.length > 0 ? convos[0].started_at : null;
         setStats({ conversations, messages, avgMessages, lastActive, totalTokens, apiCalls });
-      } catch { setStats({ conversations: site.stats?.conversations || 0, messages: site.stats?.messages || 0, avgMessages: 0, lastActive: null, totalTokens: 0, apiCalls: 0 }); }
-      finally { setLoading(false); }
+      } catch {
+        setStats({ conversations: site.stats?.conversations || 0, messages: site.stats?.messages || 0, avgMessages: 0, lastActive: null, totalTokens: 0, apiCalls: 0 });
+      } finally { setLoading(false); }
     };
     fetchStats();
   }, [siteId, site]);
 
-  if (loading) { return <div className="flex items-center justify-center p-10"><div className="w-6 h-6 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" /></div>; }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-10">
+        <div className="w-6 h-6 rounded-full border-[3px] border-slate-200 border-t-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  const cardCls = "bg-white border border-slate-200 rounded-[14px] p-5 md:p-6 mb-5";
 
   const statCards = [
-    { label: 'Samtaler', value: stats?.conversations ?? 0, icon: MessageSquare, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-    { label: 'Meldinger', value: stats?.messages ?? 0, icon: Globe, iconBg: 'bg-violet-50', iconColor: 'text-violet-600' },
-    { label: 'Snitt meldinger', value: stats?.avgMessages ?? 0, icon: BarChart3, iconBg: 'bg-green-50', iconColor: 'text-green-600' },
-    { label: 'Tokens brukt', value: stats?.totalTokens ? stats.totalTokens.toLocaleString('nb-NO') : '0', icon: Settings, iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
+    { label: 'Samtaler', value: stats?.conversations ?? 0, iconBg: 'bg-blue-50', iconColor: '#2563eb', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
+    { label: 'Meldinger', value: stats?.messages ?? 0, iconBg: 'bg-violet-50', iconColor: '#7c3aed', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 7l-10 7L2 7" /></svg> },
+    { label: 'Snitt meldinger', value: stats?.avgMessages ?? 0, iconBg: 'bg-green-50', iconColor: '#059669', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 20V10M12 20V4M6 20v-6" /></svg> },
+    { label: 'Tokens brukt', value: stats?.totalTokens ? stats.totalTokens.toLocaleString('nb-NO') : '0', iconBg: 'bg-amber-50', iconColor: '#d97706', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg> },
   ];
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-lg font-semibold text-slate-900">Statistikk</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((sc) => {
-          const Icon = sc.icon;
-          return (
-            <Card key={sc.label}>
-              <CardContent className="p-5">
-                <div className={`w-10 h-10 rounded-lg ${sc.iconBg} flex items-center justify-center mb-3`}>
-                  <Icon className={`h-5 w-5 ${sc.iconColor}`} />
-                </div>
-                <div className="text-2xl font-bold text-slate-900 tracking-tight mb-0.5">{sc.value}</div>
-                <div className="text-sm text-slate-500">{sc.label}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
+    <div>
+      <h2 className="text-lg font-semibold text-slate-900 mb-5">Statistikk</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        {statCards.map((sc) => (
+          <div key={sc.label} className={cardCls}>
+            <div className={`w-10 h-10 rounded-[10px] ${sc.iconBg} flex items-center justify-center mb-3`}>
+              {sc.icon}
+            </div>
+            <div className="text-2xl md:text-[28px] font-bold text-slate-900 mb-0.5 tracking-tight">{sc.value}</div>
+            <div className="text-[13px] text-slate-500">{sc.label}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Siste aktivitet</div>
-            <div className="text-base font-semibold text-slate-900">
-              {stats?.lastActive
-                ? new Date(stats.lastActive).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                : 'Ingen aktivitet enna'}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Kunnskapskilder</div>
-            <div className="text-2xl font-bold text-slate-900">{site.stats?.knowledgeSources ?? 0}</div>
-            <div className="text-sm text-slate-500">opplastede kilder</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className={cardCls}>
+          <div className="text-[13px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Siste aktivitet</div>
+          <div className="text-base font-semibold text-slate-900">
+            {stats?.lastActive
+              ? new Date(stats.lastActive).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : 'Ingen aktivitet enna'}
+          </div>
+        </div>
+        <div className={cardCls}>
+          <div className="text-[13px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Kunnskapskilder</div>
+          <div className="text-2xl md:text-[28px] font-bold text-slate-900">{site.stats?.knowledgeSources ?? 0}</div>
+          <div className="text-[13px] text-slate-500">opplastede kilder</div>
+        </div>
       </div>
     </div>
   );

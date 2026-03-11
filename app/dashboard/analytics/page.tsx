@@ -442,7 +442,7 @@ export default function AnalyticsPage() {
     <div className="flex flex-col min-h-screen bg-slate-50">
       <AnalyticsHeader period={period} setPeriod={setPeriod} />
 
-      <main className="flex-1 overflow-auto p-6 max-w-[1400px] mx-auto w-full">
+      <main className="flex-1 overflow-auto p-4 md:p-6 max-w-[1400px] mx-auto w-full">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <SummaryCard label="Totale samtaler" value={totalConversations} icon={MessageSquare} />
@@ -568,6 +568,7 @@ export default function AnalyticsPage() {
               {topQueries.length === 0 ? (
                 <EmptyChart text="Ingen brukermeldinger funnet" />
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -590,6 +591,7 @@ export default function AnalyticsPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -604,6 +606,7 @@ export default function AnalyticsPage() {
             {sortedSites.length === 0 ? (
               <EmptyChart text="Ingen nettsteder funnet" />
             ) : (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -663,6 +666,7 @@ export default function AnalyticsPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -725,7 +729,7 @@ function AnalyticsHeader({
   setPeriod: (v: DateRangeKey) => void;
 }) {
   return (
-    <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+    <div className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky top-0 z-20">
       <div>
         <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Analyse</h1>
         <p className="text-sm text-muted-foreground mt-0.5">

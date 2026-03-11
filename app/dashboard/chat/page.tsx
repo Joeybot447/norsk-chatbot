@@ -139,7 +139,7 @@ function ChatBubble({
                 className="mt-2 h-auto p-0 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-transparent"
               >
                 <RefreshCw className="h-3 w-3 mr-1.5" />
-                Prov igjen
+                Prøv igjen
               </Button>
             )}
           </div>
@@ -230,7 +230,7 @@ export default function ChatPlaygroundPage() {
     async (payload: { siteId: string; message: string; conversationId?: string }) => {
       const attempt = async (isRetry: boolean): Promise<any> => {
         const token = await getAccessToken();
-        if (!token) throw new Error('Ikke autentisert. Prov a laste siden pa nytt.');
+        if (!token) throw new Error('Ikke autentisert. Prøv a laste siden pa nytt.');
         const response = await fetch('/api/chat/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -239,7 +239,7 @@ export default function ChatPlaygroundPage() {
         if (response.status === 401 && !isRetry) {
           const { data: { session } } = await supabase.auth.refreshSession();
           if (session?.access_token) return attempt(true);
-          throw new Error('Ikke autentisert. Prov a laste siden pa nytt.');
+          throw new Error('Ikke autentisert. Prøv a laste siden pa nytt.');
         }
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
@@ -291,7 +291,7 @@ export default function ChatPlaygroundPage() {
       const errorMessage: Message = {
         id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
         role: 'error',
-        content: err.message || 'Kunne ikke sende melding. Sjekk tilkoblingen og prov igjen.',
+        content: err.message || 'Kunne ikke sende melding. Sjekk tilkoblingen og prøv igjen.',
         timestamp: new Date(),
         retryPayload: payload as any,
       };
@@ -389,7 +389,7 @@ export default function ChatPlaygroundPage() {
             </div>
             <h2 className="text-base font-semibold text-slate-900 mb-2">Test chatboten din</h2>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Velg et nettsted fra nedtrekkslisten for a starte en testsamtale.
+              Velg et nettsted fra nedtrekkslisten for å starte en testsamtale.
               Samtalen bruker kunnskapsbasen du har lastet opp.
             </p>
             {sites.length === 0 && (
@@ -465,7 +465,7 @@ export default function ChatPlaygroundPage() {
                 </Button>
               </div>
               <p className="text-[11px] text-slate-300 mt-2 pl-1">
-                Enter for a sende &middot; Shift+Enter for ny linje
+                Enter for å sende &middot; Shift+Enter for ny linje
               </p>
             </div>
           </div>

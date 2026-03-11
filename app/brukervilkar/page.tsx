@@ -10,7 +10,7 @@ export default function BrukervilkarPage() {
         <p className="leading-relaxed text-[#0f172a]">
           Ved a opprette en konto, fa tilgang til eller bruke NorskBot AI-plattformen
           (&laquo;Tjenesten&raquo;), aksepterer du a vaere bundet av disse brukervilkarene
-          (&laquo;Vilkarene&raquo;). Dersom du inngar denne avtalen pa vegne av en bedrift
+          (&laquo;Vilkarene&raquo;). Dersom du inngår denne avtalen pa vegne av en bedrift
           eller annen juridisk enhet, bekrefter du at du har fullmakt til a binde enheten til
           disse Vilkarene.
         </p>
@@ -77,7 +77,7 @@ export default function BrukervilkarPage() {
           <li>Bruke Tjenesten til ulovlige formal eller i strid med norsk lov</li>
           <li>Laste opp innhold som er stotende, diskriminerende eller truende</li>
           <li>Forsoke a omga sikkerhetstiltak, autentisering eller tilgangskontroller</li>
-          <li>Overbelaste, forstyrre eller skade Tjenestens infrastruktur</li>
+          <li>Overbelaste, førstyrre eller skade Tjenestens infrastruktur</li>
           <li>Videreselge eller underlisensiere tilgangen uten skriftlig samtykke</li>
           <li>Bruke Tjenesten til a trene konkurrerende AI-modeller</li>
         </ul>
@@ -97,7 +97,7 @@ export default function BrukervilkarPage() {
             merverdiavgift
           </li>
           <li>
-            <strong>Fakturering:</strong> Fakturering skjer forskuddsvis, manedlig eller arlig
+            <strong>Fakturering:</strong> Fakturering skjer forskuddsvis, månedlig eller årlig
           </li>
           <li>
             <strong>Fornyelse:</strong> Abonnementer fornyes automatisk ved utlop av gjeldende
@@ -126,7 +126,7 @@ export default function BrukervilkarPage() {
         </p>
         <p className="leading-relaxed text-[#0f172a]">
           <strong>Dine rettigheter:</strong> Du beholder alle rettigheter til ditt innhold. Du
-          gir oss en begrenset lisens til a behandle ditt innhold utelukkende for a levere
+          gir oss en begrenset lisens til a behandle ditt innhold utelukkende for å levere
           Tjenesten.
         </p>
       </section>
@@ -140,10 +140,10 @@ export default function BrukervilkarPage() {
           garanterer ikke at Tjenesten vil vaere feilfri eller uavbrutt.
         </p>
         <ul className="list-inside list-disc space-y-1 text-[#0f172a]">
-          <li>NorskBot AI er ikke ansvarlig for innholdet i AI-genererte svar</li>
-          <li>Vi er ikke ansvarlig for indirekte tap eller folgeskader</li>
+          <li>NorskBot AI er ikke ansvårlig for innholdet i AI-genererte svar</li>
+          <li>Vi er ikke ansvårlig for indirekte tap eller folgeskader</li>
           <li>
-            Vart samlede erstatningsansvar er begrenset til belopet betalt de siste 12 manedene
+            Vart samlede erstatningsansvar er begrenset til belopet betalt de siste 12 månedene
           </li>
         </ul>
       </section>
